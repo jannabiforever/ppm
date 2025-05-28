@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ppm-frontend
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    ports:
+      - '3200:5173'
+    environment:
+      - NODE_ENV=development
+      - VITE_SURREALDB_URL=http://surrealdb:8000
+      - VITE_SURREALDB_USER=root
+      - VITE_SURREALDB_PASS=root
+      - VITE_SURREALDB_NS=ppm
+      - VITE_SURREALDB_DB=default
+    depends_on:
+      - surrealdb
+    networks:
+      - ppm-network
+
+  surrealdb:
+    image: surrealdb/surrealdb:latest-dev
+    container_name: ppm-surrealdb
+    command: start --log debug --user root --pass root rocksdb:/data/database.db
+    volumes:
+      - surrealdb-data:/data
+    ports:
+      - '3201:8000'
+    networks:
+      - ppm-network
+
+volumes:
+  surrealdb-data:
+    driver: local
+
+networks:
+  ppm-network:
+    name: ppm-network
