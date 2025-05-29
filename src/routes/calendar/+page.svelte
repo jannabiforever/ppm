@@ -2,4 +2,4 @@
 	import SubPageContainer from '$lib/component/SubPageContainer.svelte';
 </script>
 
-<SubPageContainer title="Notes">Notes</SubPageContainer>
+<SubPageContainer title="Calendar">Weekly Calendar</SubPageContainer>

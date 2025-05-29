@@ -5,8 +5,8 @@
 	import { browser } from '$app/environment';
 
 	// Icons
-	import { Folder, LandPlot, LayoutDashboard, Settings, SquareKanban } from '@lucide/svelte';
-	import ThemeButton from '$lib/component/themeButton.svelte';
+	import { Calendar, Folder, LayoutDashboard, Settings, Sunrise } from '@lucide/svelte';
+	import ThemeButton from '$lib/component/ThemeButton.svelte';
 
 	// Get default theme from local storage
 	const theme = browser ? (localStorage.getItem('theme') === 'light' ? 'light' : 'dark') : 'light';
@@ -23,17 +23,17 @@
 			<ThemeButton {isLightMode} />
 		{/snippet}
 		{#snippet tiles()}
-			<Navigation.Tile label="Dashboard" href="/">
+			<Navigation.Tile label="Daily Flow" href="/" labelClasses="text-center">
+				<Sunrise />
+			</Navigation.Tile>
+			<Navigation.Tile label="Project Flow" href="/projects" labelClasses="text-center">
 				<LayoutDashboard />
+			</Navigation.Tile>
+			<Navigation.Tile label="Calendar" href="/calendar" labelClasses="text-center">
+				<Calendar />
 			</Navigation.Tile>
 			<Navigation.Tile label="Notes" href="/notes">
 				<Folder />
-			</Navigation.Tile>
-			<Navigation.Tile label="Planner" href="/planner">
-				<LandPlot />
-			</Navigation.Tile>
-			<Navigation.Tile label="Projects" href="/projects">
-				<SquareKanban />
 			</Navigation.Tile>
 		{/snippet}
 		{#snippet footer()}
@@ -43,7 +43,9 @@
 		{/snippet}
 	</Navigation.Rail>
 	<!-- Content -->
-	<div class="flex items-center justify-center">
-		{@render children()}
+	<div class="h-full overflow-auto">
+		<div class="min-h-full p-4">
+			{@render children()}
+		</div>
 	</div>
 </div>
