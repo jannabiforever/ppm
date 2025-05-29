@@ -1,3 +1,31 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+@import '@skeletonlabs/skeleton';
+@import '@skeletonlabs/skeleton/optional/presets';
+@import '@skeletonlabs/skeleton/themes/cerberus';
+
+@source '../node_modules/@skeletonlabs/skeleton-svelte/dist';
+
+@custom-variant dark (&:where([data-mode=dark], [data-mode=dark] *));
+
+html {
+	/* Background */
+	background-color: var(--body-background-color);
+	@variant dark {
+		background-color: var(--body-background-color-dark);
+	}
+
+	/* Typography */
+	color: var(--base-font-color);
+	font-family: var(--base-font-family);
+	font-size: var(--base-font-size);
+	line-height: var(--base-line-height);
+	font-weight: var(--base-font-weight);
+	font-style: var(--base-font-style);
+	letter-spacing: var(--base-letter-spacing);
+	@variant dark {
+		color: var(--base-font-color-dark);
+	}
+}
