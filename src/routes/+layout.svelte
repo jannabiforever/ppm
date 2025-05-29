@@ -85,7 +85,7 @@
 		{#snippet header()}
 			<div class="theme-toggle-container flex flex-col items-center p-2">
 				<button
-					class="scene-container relative h-16 w-16 overflow-hidden rounded-full border-2 transition-all duration-300 {isLightMode
+					class="relative h-16 w-16 overflow-hidden rounded-full border-2 transition-all duration-300 {isLightMode
 						? 'border-amber-200'
 						: 'border-indigo-800'}"
 					onclick={() => toggleTheme(!isLightMode)}
@@ -100,20 +100,20 @@
 
 					<!-- Stars icon (only visible at night) -->
 					<div
-						class="absolute top-2 right-2 rotate-12 transform transition-opacity duration-1000"
-						style="opacity: {isLightMode ? 0 : 1}"
+						class="absolute top-2 right-2 rotate-12 transform transition-opacity duration-1000 {isLightMode
+							? 'opacity-0'
+							: 'opacity-100'}"
 					>
 						<Stars class="h-4 w-4 text-yellow-50" />
 					</div>
 
 					<!-- Sun/Moon -->
 					<div
-						class="sun-moon absolute flex h-10 w-10 items-center justify-center rounded-full shadow-lg {!isLightMode
+						class="absolute flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-colors duration-1000 {!isLightMode
 							? 'moon-glow'
-							: ''}"
+							: ''} {isLightMode ? 'bg-yellow-400' : 'bg-white'}"
 						style="transform: translate({sunMoonPosition.x}%,
-						{sunMoonPosition.y}%);
-						background-color: {isLightMode ? 'rgb(250, 204, 21)' : 'rgb(255, 255, 255)'}"
+						{sunMoonPosition.y}%);"
 					>
 						{#if isLightMode}
 							<div class="relative h-full w-full">
@@ -127,7 +127,7 @@
 						{:else}
 							<div class="relative h-full w-full">
 								<div
-									class="absolute inset-0 flex items-center justify-center rounded-full border-4 border-yellow-100 bg-white"
+									class="bg-white-400 absolute inset-0 flex items-center justify-center rounded-full"
 								></div>
 								<div
 									class="absolute right-2.5 bottom-2 h-1.5 w-1.5 rounded-full bg-slate-300"
@@ -136,10 +136,11 @@
 						{/if}
 					</div>
 
-					<!-- Additional stars icon at bottom when in night mode -->
 					<div
-						class="absolute bottom-5 left-3 -rotate-6 transform transition-opacity duration-1000"
-						style="opacity: {isLightMode ? 0 : 1}; animation: float 3s infinite ease-in-out"
+						class="absolute bottom-5 left-3 -rotate-6 transform {isLightMode
+							? 'opacity-0'
+							: 'opacity-100'} transition-opacity duration-1000"
+						style="animation: float 3s infinite ease-in-out"
 					>
 						<Stars class="h-3 w-3 text-yellow-100" />
 					</div>
@@ -176,25 +177,7 @@
 </div>
 
 <style>
-	.scene-container {
-		position: relative;
-		overflow: hidden;
-	}
-
-	.sun-moon {
-		transition: background-color 1s ease;
-		/* Note: transform is now animated via JS */
-	}
-
-	.moon-glow {
-		box-shadow:
-			0 0 20px 8px rgba(255, 255, 255, 0.9),
-			0 0 30px 15px rgba(186, 230, 253, 0.6);
-		z-index: 10;
-		border: 2px solid white;
-		animation: pulse 3s infinite ease-in-out;
-	}
-
+	/* Custom animations that can't be handled by Tailwind */
 	@keyframes twinkle {
 		0% {
 			opacity: 0.3;
@@ -238,5 +221,13 @@
 		100% {
 			transform: translateY(0px);
 		}
+	}
+
+	.moon-glow {
+		box-shadow:
+			0 0 20px 8px rgba(255, 255, 255, 0.9),
+			0 0 30px 15px rgba(186, 230, 253, 0.6);
+		z-index: 10;
+		animation: pulse 3s infinite ease-in-out;
 	}
 </style>
