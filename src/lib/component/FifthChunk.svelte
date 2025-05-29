@@ -21,7 +21,7 @@
 			>
 				<Clock5 class="text-surface-700 dark:text-surface-300 h-6 w-6" />
 			</div>
-			<h3 class="text-lg font-semibold">Managing Hours</h3>
+			<h3 class="text-lg font-semibold">05 / Buffers</h3>
 		</div>
 		{#if isHighlighted}
 			<button type="button" class="chip preset-filled-surface-500 text-sm">Current</button>
@@ -29,10 +29,5 @@
 	</div>
 	<div class="mb-4 text-sm opacity-75">
 		{@render children()}
-	</div>
-	<div class="mt-auto text-right">
-		<button class="btn btn-sm variant-ghost-success transition-transform hover:scale-105">
-			View Details
-		</button>
 	</div>
 </div>

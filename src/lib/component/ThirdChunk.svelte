@@ -21,7 +21,7 @@
 			>
 				<Clock1 class="text-tertiary-700 dark:text-tertiary-300 h-6 w-6" />
 			</div>
-			<h3 class="text-lg font-semibold">3rd Chunk</h3>
+			<h3 class="text-lg font-semibold">01 / Third</h3>
 		</div>
 		{#if isHighlighted}
 			<button type="button" class="chip preset-tonal-tertiary text-sm">Current</button>
@@ -29,10 +29,5 @@
 	</div>
 	<div class="mb-4 text-sm opacity-75">
 		{@render children()}
-	</div>
-	<div class="mt-auto text-right">
-		<button class="btn btn-sm variant-filled-tertiary transition-transform hover:scale-105">
-			View Details
-		</button>
 	</div>
 </div>

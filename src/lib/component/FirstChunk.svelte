@@ -21,7 +21,7 @@
 			>
 				<Clock8 class="text-primary-700 dark:text-primary-300 h-6 w-6" />
 			</div>
-			<h3 class="text-lg font-semibold">1st Chunk</h3>
+			<h3 class="text-lg font-semibold">08 / First</h3>
 		</div>
 		{#if isHighlighted}
 			<button type="button" class="chip preset-tonal-primary text-sm">Current</button>
@@ -29,10 +29,5 @@
 	</div>
 	<div class="mb-4 text-sm opacity-75">
 		{@render children()}
-	</div>
-	<div class="mt-auto text-right">
-		<button class="btn btn-sm variant-filled transition-transform hover:scale-105">
-			View Details
-		</button>
 	</div>
 </div>

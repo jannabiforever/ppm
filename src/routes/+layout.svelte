@@ -23,13 +23,13 @@
 			<ThemeButton {isLightMode} />
 		{/snippet}
 		{#snippet tiles()}
-			<Navigation.Tile label="Daily Flow" href="/" labelClasses="text-center">
+			<Navigation.Tile label="Days" href="/" labelClasses="text-center">
 				<Sunrise />
 			</Navigation.Tile>
-			<Navigation.Tile label="Project Flow" href="/projects" labelClasses="text-center">
+			<Navigation.Tile label="Projects" href="/projects" labelClasses="text-center">
 				<LayoutDashboard />
 			</Navigation.Tile>
-			<Navigation.Tile label="Calendar" href="/calendar" labelClasses="text-center">
+			<Navigation.Tile label="Weeks" href="/weeks" labelClasses="text-center">
 				<Calendar />
 			</Navigation.Tile>
 			<Navigation.Tile label="Notes" href="/notes">

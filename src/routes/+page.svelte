@@ -30,7 +30,7 @@
 	}, 10000);
 </script>
 
-<SubPageContainer title="Dashboard">
+<SubPageContainer title="Days">
 	<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 		<FirstChunk isHighlighted={highlightedChunkIndex === 0}>
 			Lorem ipsum dolor sit amet consectetur, adipisicing elit. Similique voluptatem architecto

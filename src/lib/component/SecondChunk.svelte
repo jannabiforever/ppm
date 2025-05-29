@@ -21,7 +21,7 @@
 			>
 				<Clock10 class="text-secondary-700 dark:text-secondary-300 h-6 w-6" />
 			</div>
-			<h3 class="text-lg font-semibold">2nd Chunk</h3>
+			<h3 class="text-lg font-semibold">10 / Second</h3>
 		</div>
 		{#if isHighlighted}
 			<button type="button" class="chip preset-tonal-secondary text-sm">Current</button>
@@ -29,10 +29,5 @@
 	</div>
 	<div class="mb-4 text-sm opacity-75">
 		{@render children()}
-	</div>
-	<div class="mt-auto text-right">
-		<button class="btn btn-sm variant-filled-secondary transition-transform hover:scale-105">
-			View Details
-		</button>
 	</div>
 </div>

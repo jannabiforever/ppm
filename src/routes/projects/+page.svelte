@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Calendar, Clock, Activity, Layers, ArrowUpRight, LayoutDashboard } from '@lucide/svelte';
+	import { Calendar, Clock, Activity, Layers, ArrowUpRight } from '@lucide/svelte';
 
 	let curTime = $state(new Date());
 	const dayMap = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -15,10 +15,7 @@
 <div class="mx-auto w-full max-w-6xl p-6">
 	<div class="mb-8 flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-baseline">
 		<div class="flex items-center gap-3">
-			<div class="bg-primary-500/10 dark:bg-primary-500/20 rounded-xl p-3">
-				<LayoutDashboard />
-			</div>
-			<h2 class="h2 font-bold">Project Flow</h2>
+			<h2 class="h2 font-bold">Projects</h2>
 		</div>
 		<div class="card variant-soft-surface flex items-center gap-3 p-3 shadow-md">
 			<Calendar class="text-primary-500 size-5" />
@@ -59,23 +56,26 @@
 		</div>
 
 		<div
-			class="card variant-soft-error border-error-500 border-l-4 shadow-lg transition-all duration-200 hover:translate-y-[-2px] hover:shadow-xl md:col-span-3"
+			class="card variant-soft-error border-error-500 min-h-60 border-l-4 shadow-lg transition-all duration-200 hover:translate-y-[-2px] hover:shadow-xl md:col-span-3"
 		>
-			<div class="p-6">
-				<div class="mb-4 flex items-center justify-between">
-					<div class="flex items-center gap-3">
-						<Layers class="text-error-500 size-5" />
-						<h3 class="h3 font-semibold">Main Project</h3>
+			<div class="flex h-full flex-col content-between p-6">
+				<div>
+					<div class="mb-4 flex items-center justify-between">
+						<div class="flex items-center gap-3">
+							<Layers class="text-error-500 size-5" />
+							<h3 class="h3 font-semibold">Main Project</h3>
+						</div>
+						<span class="badge variant-filled-error">Priority</span>
 					</div>
-					<span class="badge variant-filled-error">Priority</span>
+					<div class="overflow">
+						<div class="card"></div>
+					</div>
 				</div>
-				<p class="text-surface-700 dark:text-surface-300 mb-4">
-					Your primary project with critical tasks and milestones.
-				</p>
 				<div class="flex justify-end">
-					<button class="btn btn-sm variant-ghost-error"
-						>View Details <ArrowUpRight class="ml-1 size-4" /></button
-					>
+					<button class="btn btn-sm variant-ghost-error">
+						View Details
+						<ArrowUpRight class="ml-1 size-4" />
+					</button>
 				</div>
 			</div>
 		</div>
