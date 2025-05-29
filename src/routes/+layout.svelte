@@ -23,16 +23,16 @@
 			<ThemeButton {isLightMode} />
 		{/snippet}
 		{#snippet tiles()}
-			<Navigation.Tile href="/">
+			<Navigation.Tile label="Dashboard" href="/">
 				<LayoutDashboard />
 			</Navigation.Tile>
-			<Navigation.Tile href="/notes">
+			<Navigation.Tile label="Notes" href="/notes">
 				<Folder />
 			</Navigation.Tile>
-			<Navigation.Tile href="/planner">
+			<Navigation.Tile label="Planner" href="/planner">
 				<LandPlot />
 			</Navigation.Tile>
-			<Navigation.Tile href="/projects">
+			<Navigation.Tile label="Projects" href="/projects">
 				<SquareKanban />
 			</Navigation.Tile>
 		{/snippet}
