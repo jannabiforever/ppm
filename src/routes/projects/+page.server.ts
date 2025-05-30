@@ -1,11 +1,60 @@
-import { getAllRootProjects } from '$lib/project.server';
+import { getAllRootProjects, addRootProject } from '$lib/project.server';
+import type { Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
 	const rootProjects = await getAllRootProjects();
-	rootProjects.sort((a, b) => a.priority - b.priority);
+	// 정렬은 이제 addRootProject에서 처리됨
 
 	return {
 		projects: rootProjects
 	};
 };
+
+export const actions = {
+	addNewProject: async ({ request }) => {
+		const data = await request.formData();
+
+		const name = data.get('name')?.toString() || '';
+		const goal = data.get('goal')?.toString() || '';
+		const priority = parseInt(data.get('priority')?.toString() || '1', 10);
+
+		// Basic validation
+		if (!name) {
+			return { success: false, error: 'Project name is required' };
+		}
+
+		if (!goal) {
+			return { success: false, error: 'Project goal is required' };
+		}
+
+		if (isNaN(priority) || priority < 1 || priority > 10) {
+			return { success: false, error: 'Priority must be between 1 and 10' };
+		}
+
+		try {
+			// 새 프로젝트 추가 메서드 사용
+			const newProject = await addRootProject({
+				id: 'sldkfjsdlkfjdlskfjdsl',
+				name,
+				goal,
+				priority,
+				childProjectIds: []
+			});
+
+			console.log('Created new project:', newProject);
+
+			// Return success
+			return {
+				success: true,
+				project: newProject
+			};
+		} catch (error) {
+			console.error('Failed to create project:', error);
+			return {
+				success: false,
+				error: 'Failed to create project'
+			};
+		}
+	}
+} satisfies Actions;

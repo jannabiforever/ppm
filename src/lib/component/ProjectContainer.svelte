@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { ArrowUpRight, Layers } from '@lucide/svelte';
-	import { Separator } from 'bits-ui';
 	import type { Snippet } from 'svelte';
 
 	let {
