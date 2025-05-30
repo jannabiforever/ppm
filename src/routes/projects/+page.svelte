@@ -8,7 +8,7 @@
 
 	let { data, form }: PageProps = $props();
 
-	const themeAndIconMap: Array<'primary' | 'secondary' | 'tertiary' | 'surface'> = [
+	const themeAndIconMap: Array<'primary' | 'secondary' | 'surface'> = [
 		'primary',
 		'secondary',
 		'surface'
@@ -30,7 +30,7 @@
 	let newProject = $state({
 		name: '',
 		goal: '',
-		priority: 1
+		priority: 'medium' as App.PriorityLevel
 	});
 
 	// Form validation state
@@ -42,22 +42,14 @@
 
 	let isDialogOpen = $state(false);
 
-	// Process form response
+	// 페이지 로드 시 초기화
 	$effect(() => {
-		if (form?.success) {
-			showSuccessMessage = true;
-			// Reset form
-			newProject.name = '';
-			newProject.goal = '';
-			newProject.priority = 1;
-			
-			// Close dialog after a delay
-			setTimeout(() => {
-				isDialogOpen = false;
-				setTimeout(() => {
-					showSuccessMessage = false;
-				}, 300);
-			}, 1000);
+		if (!isDialogOpen) {
+			// 다이얼로그가 닫힐 때 성공 메시지 및 폼 초기화
+			showSuccessMessage = false;
+			nameError = '';
+			goalError = '';
+			priorityError = '';
 		}
 	});
 </script>
@@ -109,25 +101,39 @@
 				{/if}
 				{#if form?.error && !form?.success}
 					<div
-						class="bg-red-600/20 border-red-400 text-red-100 flex items-center gap-2 rounded-lg border p-4 backdrop-blur-sm"
+						class="flex items-center gap-2 rounded-lg border border-red-400 bg-red-600/20 p-4 text-red-100 backdrop-blur-sm"
 					>
-						<div class="bg-red-400 rounded-full p-1">
+						<div class="rounded-full bg-red-400 p-1">
 							<X size={14} class="text-red-900" />
 						</div>
 						<span class="font-medium">{form.error}</span>
 					</div>
 				{/if}
-				<form 
-					class="grid gap-6" 
-					method="POST" 
+				<form
+					class="grid gap-6"
+					method="POST"
 					action="?/addNewProject"
 					use:enhance={() => {
 						isSubmitting = true;
-						
+						showSuccessMessage = false;
+
 						return ({ result }) => {
 							isSubmitting = false;
 							if (result.type === 'success') {
 								invalidateAll();
+
+								// 성공 메시지 표시
+								showSuccessMessage = true;
+
+								// 폼 초기화
+								newProject.name = '';
+								newProject.goal = '';
+								newProject.priority = 'medium';
+
+								// 다이얼로그 닫기 (약간의 지연 후)
+								setTimeout(() => {
+									isDialogOpen = false;
+								}, 1000);
 							}
 						};
 					}}
@@ -180,21 +186,46 @@
 
 					<div class="grid gap-2">
 						<label for="priority" class="flex items-center gap-1.5 text-sm font-medium">
-							Priority
-							<span class="text-xs">(1-10)</span>
+							Priority Level
 						</label>
-						<div class="relative">
-							<input
-								type="number"
-								id="priority"
-								name="priority"
-								class="input border-primary-400/30 focus:border-primary-300 h-11 rounded-lg border pr-10"
-								bind:value={newProject.priority}
-								min="1"
-								max="10"
-								required
-							/>
-							<div class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2">/10</div>
+						<div class="grid grid-cols-3 gap-2">
+							<label
+								class="border-primary-400/30 hover:border-primary-400/50 flex cursor-pointer items-center gap-2 rounded-lg border p-3"
+							>
+								<input
+									type="radio"
+									name="priority"
+									value="high"
+									bind:group={newProject.priority}
+									class="h-4 w-4 accent-red-500"
+								/>
+								<span class="font-medium text-red-500">High</span>
+							</label>
+							<label
+								class="border-primary-400/30 hover:border-primary-400/50 flex cursor-pointer items-center gap-2 rounded-lg border p-3"
+							>
+								<input
+									type="radio"
+									name="priority"
+									value="medium"
+									bind:group={newProject.priority}
+									class="h-4 w-4 accent-yellow-500"
+									checked
+								/>
+								<span class="font-medium text-yellow-500">Medium</span>
+							</label>
+							<label
+								class="border-primary-400/30 hover:border-primary-400/50 flex cursor-pointer items-center gap-2 rounded-lg border p-3"
+							>
+								<input
+									type="radio"
+									name="priority"
+									value="low"
+									bind:group={newProject.priority}
+									class="h-4 w-4 accent-green-500"
+								/>
+								<span class="font-medium text-green-500">Low</span>
+							</label>
 						</div>
 						{#if priorityError}
 							<p class="mt-1 flex items-center gap-1 text-xs font-medium text-red-200">
@@ -202,7 +233,6 @@
 								{priorityError}
 							</p>
 						{/if}
-						<p class="mt-1 text-xs italic">Higher numbers indicate lower priority</p>
 					</div>
 
 					<div class="mt-2 flex justify-end gap-3">
@@ -220,7 +250,9 @@
 							disabled={isSubmitting}
 						>
 							{#if isSubmitting}
-								<div class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+								<div
+									class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
+								></div>
 								<span class="ml-2">Submitting...</span>
 							{:else}
 								<Plus size={16} />

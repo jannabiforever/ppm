@@ -17,7 +17,7 @@ export const actions = {
 
 		const name = data.get('name')?.toString() || '';
 		const goal = data.get('goal')?.toString() || '';
-		const priority = parseInt(data.get('priority')?.toString() || '1', 10);
+		const priority = data.get('priority')?.toString() as App.PriorityLevel || 'medium';
 
 		// Basic validation
 		if (!name) {
@@ -28,8 +28,8 @@ export const actions = {
 			return { success: false, error: 'Project goal is required' };
 		}
 
-		if (isNaN(priority) || priority < 1 || priority > 10) {
-			return { success: false, error: 'Priority must be between 1 and 10' };
+		if (!priority || !['high', 'medium', 'low'].includes(priority)) {
+			return { success: false, error: 'Priority must be high, medium, or low' };
 		}
 
 		try {

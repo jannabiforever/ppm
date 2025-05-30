@@ -4,21 +4,21 @@ const projects: App.RootProject[] = [
 		name: 'System',
 		goal: 'Wise Life',
 		childProjectIds: [],
-		priority: 0
+		priority: 'high'
 	},
 	{
 		id: '1',
 		name: 'Alphaiv',
 		goal: '학원 컨텐츠 관리 프로그램으로 사업하기',
 		childProjectIds: [],
-		priority: 1
+		priority: 'high'
 	},
 	{
 		id: '2',
 		name: 'Relationship',
 		goal: 'Being a fullhearted man',
 		childProjectIds: [],
-		priority: 2
+		priority: 'medium'
 	}
 ];
 
@@ -42,8 +42,11 @@ export async function addRootProject(project: Omit<App.RootProject, 'id' | 'chil
 	// 프로젝트 배열에 추가
 	projects.push(newProject);
 
-	// 정렬
-	projects.sort((a, b) => a.priority - b.priority);
+	// 정렬 (high > medium > low 순서로)
+	projects.sort((a, b) => {
+		const priorityOrder = { high: 0, medium: 1, low: 2 };
+		return priorityOrder[a.priority] - priorityOrder[b.priority];
+	});
 
 	return newProject;
 }

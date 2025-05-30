@@ -13,6 +13,21 @@
 		icon?: Snippet;
 		project: App.RootProject;
 	} = $props();
+
+	const getPriorityChipPreset = (priority: App.PriorityLevel) => {
+		switch (priority) {
+			case 'high':
+				return 'preset-filled-error-500';
+			case 'medium':
+				return 'preset-filled-warning-500';
+			case 'low':
+				return 'preset-filled-success-500';
+			default:
+				return 'preset-filled-warning-500';
+		}
+	};
+
+	const priorityChipPreset = getPriorityChipPreset(project.priority);
 </script>
 
 <div
@@ -32,6 +47,9 @@
 					{project.name}
 				</h4>
 				<span class="vr pl-3 text-end"> {project.goal} </span>
+			</div>
+			<div class="flex items-center">
+				<span class={`chip capitalize ${priorityChipPreset}`}>{project.priority}</span>
 			</div>
 		</div>
 

@@ -7,12 +7,14 @@ declare global {
 		// interface PageData {}
 		// interface PageState {}
 		// interface Platform {}
+		type PriorityLevel = 'high' | 'medium' | 'low';
+		
 		interface RootProject {
 			id: string;
 			name: string;
 			goal: string;
 			childProjectIds: string[];
-			priority: number;
+			priority: PriorityLevel;
 		}
 
 		interface ChildProject {
