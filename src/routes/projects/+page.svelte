@@ -140,6 +140,7 @@
 						<input
 							type="text"
 							id="name"
+							name="name"
 							class="input border-primary-400/30 focus:border-primary-300 h-11 rounded-lg border"
 							bind:value={newProject.name}
 							placeholder="Enter project name"
@@ -162,6 +163,7 @@
 						<input
 							type="text"
 							id="goal"
+							name="goal"
 							class="input border-primary-400/30 focus:border-primary-300 h-11 rounded-lg border"
 							bind:value={newProject.goal}
 							placeholder="Enter project goal"
@@ -185,6 +187,7 @@
 							<input
 								type="number"
 								id="priority"
+								name="priority"
 								class="input border-primary-400/30 focus:border-primary-300 h-11 rounded-lg border pr-10"
 								bind:value={newProject.priority}
 								min="1"

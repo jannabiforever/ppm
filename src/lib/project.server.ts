@@ -26,7 +26,7 @@ export async function getAllRootProjects(): Promise<App.RootProject[]> {
 	return [...projects];
 }
 
-export async function addRootProject(project: App.RootProject): Promise<App.RootProject> {
+export async function addRootProject(project: Omit<App.RootProject, 'id' | 'childProjectIds'>): Promise<App.RootProject> {
 	// 새 ID 생성 (실제 앱에서는 더 안전한 방식 사용)
 	const id = `${Date.now()}`;
 

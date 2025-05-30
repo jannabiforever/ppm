@@ -35,11 +35,9 @@ export const actions = {
 		try {
 			// 새 프로젝트 추가 메서드 사용
 			const newProject = await addRootProject({
-				id: 'sldkfjsdlkfjdlskfjdsl',
 				name,
 				goal,
-				priority,
-				childProjectIds: []
+				priority
 			});
 
 			console.log('Created new project:', newProject);
