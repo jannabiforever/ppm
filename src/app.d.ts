@@ -12,6 +12,7 @@ declare global {
 			name: string;
 			goal: string;
 			childProjectIds: string[];
+			priority: number;
 		}
 
 		interface ChildProject {
