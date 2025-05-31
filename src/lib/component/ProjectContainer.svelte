@@ -22,6 +22,8 @@
 				return 'preset-filled-warning-500';
 			case 'low':
 				return 'preset-filled-success-500';
+			case 'system':
+				return 'preset-filled-primary-500';
 			default:
 				return 'preset-filled-warning-500';
 		}

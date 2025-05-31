@@ -1,10 +1,9 @@
-import { getAllRootProjects, addRootProject } from '$lib/project.server';
+import { getAllRootProjects, createRootProject } from '$lib/project.server';
 import type { Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
 	const rootProjects = await getAllRootProjects();
-	// 정렬은 이제 addRootProject에서 처리됨
 
 	return {
 		projects: rootProjects
@@ -17,7 +16,7 @@ export const actions = {
 
 		const name = data.get('name')?.toString() || '';
 		const goal = data.get('goal')?.toString() || '';
-		const priority = data.get('priority')?.toString() as App.PriorityLevel || 'medium';
+		const priority = (data.get('priority')?.toString() as App.PriorityLevel) || 'medium';
 
 		// Basic validation
 		if (!name) {
@@ -34,7 +33,7 @@ export const actions = {
 
 		try {
 			// 새 프로젝트 추가 메서드 사용
-			const newProject = await addRootProject({
+			const newProject = await createRootProject({
 				name,
 				goal,
 				priority

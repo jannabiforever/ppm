@@ -1,52 +1,92 @@
-const projects: App.RootProject[] = [
-	{
-		id: '0',
-		name: 'System',
-		goal: 'Wise Life',
-		childProjectIds: [],
-		priority: 'high'
-	},
-	{
-		id: '1',
-		name: 'Alphaiv',
-		goal: '학원 컨텐츠 관리 프로그램으로 사업하기',
-		childProjectIds: [],
-		priority: 'high'
-	},
-	{
-		id: '2',
-		name: 'Relationship',
-		goal: 'Being a fullhearted man',
-		childProjectIds: [],
-		priority: 'medium'
-	}
-];
+import { RecordId } from 'surrealdb';
+import { getDb } from './db.server';
+import { sortByPriority } from './util';
 
-export async function getAllRootProjects(): Promise<App.RootProject[]> {
-	return [...projects];
-}
+type FetchedRootProject = {
+	id: RecordId;
+	name: string;
+	goal: string;
+	// child project names.
+	childProjects: string[];
+	priority: App.PriorityLevel;
+};
 
-export async function addRootProject(project: Omit<App.RootProject, 'id' | 'childProjectIds'>): Promise<App.RootProject> {
-	// 새 ID 생성 (실제 앱에서는 더 안전한 방식 사용)
-	const id = `${Date.now()}`;
-
-	// 새 프로젝트 생성
-	const newProject: App.RootProject = {
-		id,
+function castToRootProject(project: FetchedRootProject): App.RootProject {
+	return {
+		id: project.id.toString(),
 		name: project.name,
 		goal: project.goal,
-		childProjectIds: [],
+		childProjects: project.childProjects,
 		priority: project.priority
 	};
+}
 
-	// 프로젝트 배열에 추가
-	projects.push(newProject);
+type FetchedChildProject = {
+	id: RecordId;
+	name: string;
+	goal: string;
+	// root project name.
+	rootProject: string;
+	// task ids.
+	tasks: string[];
+};
 
-	// 정렬 (high > medium > low 순서로)
-	projects.sort((a, b) => {
-		const priorityOrder = { high: 0, medium: 1, low: 2 };
-		return priorityOrder[a.priority] - priorityOrder[b.priority];
-	});
+function castToChildProject(project: FetchedChildProject): App.ChildProject {
+	return {
+		id: project.id.toString(),
+		name: project.name,
+		goal: project.goal,
+		rootProject: project.rootProject,
+		tasks: project.tasks
+	};
+}
 
-	return newProject;
+export async function getAllRootProjects(): Promise<App.RootProject[]> {
+	try {
+		const db = await getDb();
+		const rootProjects = await db.select<FetchedRootProject>('root_project');
+		return sortByPriority(rootProjects.map(castToRootProject));
+	} catch (error) {
+		console.error('Error fetching root projects:', error);
+		return [];
+	}
+}
+
+export async function createRootProject(
+	project: Omit<App.RootProject, 'id' | 'childProjects'>
+): Promise<App.RootProject> {
+	try {
+		const db = await getDb();
+		// @ts-expect-error I don't know why this throws an error, but works fine.
+		const rootProject = await db.create<FetchedRootProject>('root_project', {
+			name: project.name,
+			goal: project.goal,
+			priority: project.priority
+		});
+		return castToRootProject(rootProject);
+	} catch (error) {
+		console.error('Error creating root project:', error);
+		throw error;
+	}
+}
+
+export async function getAllChildProjectsFromRoot(
+	rootProjectName: string
+): Promise<App.ChildProject[]> {
+	try {
+		const db = await getDb();
+		const rootProject = await db.select<FetchedRootProject>(
+			new RecordId('root_project', rootProjectName)
+		);
+
+		const childProjectPromises = rootProject.childProjects.map((childProjectName) => {
+			return db.select<FetchedChildProject>(new RecordId('child_project', childProjectName));
+		});
+
+		const childProjects = await Promise.all(childProjectPromises);
+		return childProjects.map(castToChildProject);
+	} catch (error) {
+		console.error('Error fetching child projects:', error);
+		return [];
+	}
 }
