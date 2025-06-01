@@ -3,6 +3,7 @@
 	import { enhance } from '$app/forms';
 	import { invalidate } from '$app/navigation';
 	import { Pencil, Trash, Plus, X, Check } from '@lucide/svelte';
+	import PriorityChip from '$lib/component/PriorityChip.svelte';
 
 	let { data }: PageProps = $props();
 
@@ -63,23 +64,7 @@
 	}
 
 	// Priority options
-	const priorityOptions: App.PriorityLevel[] = ['high', 'medium', 'low', 'system'];
-
-	// Function to get priority chip class
-	function getPriorityChipClass(priority: App.PriorityLevel): string {
-		switch (priority) {
-			case 'high':
-				return 'variant-filled-error';
-			case 'medium':
-				return 'variant-filled-warning';
-			case 'low':
-				return 'variant-filled-success';
-			case 'system':
-				return 'variant-filled-primary';
-			default:
-				return 'variant-filled-warning';
-		}
-	}
+	const priorityOptions: App.PriorityLevel[] = ['system', 'high', 'medium', 'low'];
 </script>
 
 <div class="container mx-auto">
@@ -90,13 +75,16 @@
 				<h4 class="h4">
 					{rootProject.name}
 				</h4>
-				<div class="vr text-surface-700-300 pl-3">{rootProject.goal}</div>
+				<div class="vr text-surface-700-300 pl-3 text-lg">{rootProject.goal}</div>
+				<div class="vr text-surface-700-300 pl-3">
+					<PriorityChip priority={rootProject.priority} />
+				</div>
 			</div>
 			<div class="flex gap-2">
 				{#if !editingRootProject}
 					<button class="btn btn-sm variant-soft-primary" onclick={startEditingRootProject}>
 						<Pencil class="mr-1 size-4" />
-						Edit
+						수정
 					</button>
 					<form
 						method="POST"
@@ -112,7 +100,7 @@
 						<input type="hidden" name="id" value={rootProject.id} />
 						<button class="btn btn-sm variant-soft-error" type="submit">
 							<Trash class="mr-1 size-4" />
-							Delete
+							삭제
 						</button>
 					</form>
 				{/if}
@@ -175,7 +163,7 @@
 									bind:group={editedPriority}
 									class="radio"
 								/>
-								<span class="chip {getPriorityChipClass(priority)} capitalize">{priority}</span>
+								<PriorityChip {priority} />
 							</label>
 						{/each}
 					</div>
@@ -192,29 +180,12 @@
 					</button>
 				</div>
 			</form>
-		{:else}
-			<!-- Root Project Display -->
-			<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-				<div class="space-y-2">
-					<p class="text-sm opacity-75">Priority</p>
-					<div>
-						<span class="chip {getPriorityChipClass(rootProject.priority)} capitalize">
-							{rootProject.priority}
-						</span>
-					</div>
-				</div>
-
-				<div class="space-y-2">
-					<p class="text-sm opacity-75">Child Projects</p>
-					<p class="text-xl font-semibold">{childProjects.length}</p>
-				</div>
-			</div>
 		{/if}
 	</div>
 
 	<!-- Child Projects Section -->
 	<div class="mb-6 flex items-center justify-between">
-		<h2 class="h2">Child Projects</h2>
+		<h4 class="h4">Child Projects</h4>
 		{#if !addingChildProject}
 			<button class="btn variant-soft-primary" onclick={toggleAddChildProject}>
 				<Plus class="mr-1 size-4" />

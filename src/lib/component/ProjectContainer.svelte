@@ -1,32 +1,27 @@
 <script lang="ts">
 	import { ArrowUpRight } from '@lucide/svelte';
+	import PriorityChip from './PriorityChip.svelte';
 
 	let {
 		isFocused,
-		theme,
 		project
 	}: {
 		isFocused?: boolean;
-		theme: 'primary' | 'secondary' | 'tertiary' | 'surface';
 		project: App.RootProject;
 	} = $props();
 
-	const getPriorityChipPreset = (priority: App.PriorityLevel) => {
-		switch (priority) {
-			case 'high':
-				return 'preset-filled-error-500';
-			case 'medium':
-				return 'preset-filled-warning-500';
-			case 'low':
-				return 'preset-filled-success-500';
+	let theme = $derived.by(() => {
+		switch (project.priority) {
 			case 'system':
-				return 'preset-filled-primary-500';
-			default:
-				return 'preset-filled-warning-500';
+				return 'primary';
+			case 'high':
+				return 'error';
+			case 'medium':
+				return 'warning';
+			case 'low':
+				return 'surface';
 		}
-	};
-
-	const priorityChipPreset = getPriorityChipPreset(project.priority);
+	});
 </script>
 
 <div
@@ -43,12 +38,12 @@
 				<span class="vr pl-3 text-end"> {project.goal} </span>
 			</div>
 			<div class="flex items-center">
-				<span class="chip capitalize {priorityChipPreset}">{project.priority}</span>
+				<PriorityChip priority={project.priority} />
 			</div>
 		</div>
 
 		<div class="flex justify-end">
-			<a href="/projects/{project.id}" class="btn btn-sm border">
+			<a href="/projects/{project.id}" class="btn btn-sm hover:bg-surface-300-700">
 				자세히 보기
 				<ArrowUpRight class="ml-1 size-4" />
 			</a>
