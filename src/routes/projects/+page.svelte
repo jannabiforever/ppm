@@ -8,22 +8,8 @@
 
 	let { data, form }: PageProps = $props();
 
-	const themeAndIconMap: Array<'primary' | 'secondary' | 'surface'> = [
-		'primary',
-		'secondary',
-		'surface'
-	];
-
 	const isFocused = (i: number) => {
 		return i === 0 || i === 1;
-	};
-
-	const getTheme = (i: number) => {
-		if (isFocused(i)) {
-			return themeAndIconMap[i];
-		} else {
-			return themeAndIconMap[2];
-		}
 	};
 
 	// New project form data with state
@@ -56,7 +42,7 @@
 
 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 	{#each data.projects as project, i (i)}
-		<ProjectContainer theme={getTheme(i)} {project} isFocused={isFocused(i)} />
+		<ProjectContainer {project} isFocused={isFocused(i)} />
 	{/each}
 
 	<Dialog.Root open={isDialogOpen} onOpenChange={(open) => (isDialogOpen = open)}>
