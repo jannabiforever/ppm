@@ -2,7 +2,8 @@
 	import { Calendar, Clock } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
 
-	let { title, children }: { title: string; children: Snippet } = $props();
+	let { title, directTo, children }: { directTo: string; title: string; children: Snippet } =
+		$props();
 
 	let curTime = $state(new Date());
 	const dayMap = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -18,7 +19,7 @@
 <div class="mx-auto w-full max-w-6xl p-6">
 	<div class="mb-8 flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-baseline">
 		<div class="flex items-center gap-3">
-			<h2 class="h2 font-bold">{title}</h2>
+			<a href={directTo} class="h2 font-bold">{title}</a>
 		</div>
 		<div class="card variant-soft-surface flex items-center gap-3 p-3 shadow-md">
 			<Calendar class="text-primary-500 size-5" />

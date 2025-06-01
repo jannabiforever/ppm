@@ -1,16 +1,13 @@
 <script lang="ts">
-	import { ArrowUpRight, Layers } from '@lucide/svelte';
-	import type { Snippet } from 'svelte';
+	import { ArrowUpRight } from '@lucide/svelte';
 
 	let {
 		isFocused,
 		theme,
-		icon,
 		project
 	}: {
 		isFocused?: boolean;
 		theme: 'primary' | 'secondary' | 'tertiary' | 'surface';
-		icon?: Snippet;
 		project: App.RootProject;
 	} = $props();
 
@@ -40,26 +37,21 @@
 	<div class="p-6">
 		<div class="mb-4 flex items-center justify-between">
 			<div class="flex items-center gap-3">
-				{#if icon}
-					{@render icon()}
-				{:else}
-					<Layers />
-				{/if}
 				<h4 class="h4 font-semibold">
 					{project.name}
 				</h4>
 				<span class="vr pl-3 text-end"> {project.goal} </span>
 			</div>
 			<div class="flex items-center">
-				<span class={`chip capitalize ${priorityChipPreset}`}>{project.priority}</span>
+				<span class="chip capitalize {priorityChipPreset}">{project.priority}</span>
 			</div>
 		</div>
 
 		<div class="flex justify-end">
-			<button class="btn btn-sm variant-ghost-{theme}">
+			<a href="/projects/{project.id}" class="btn btn-sm border">
 				View Details
 				<ArrowUpRight class="ml-1 size-4" />
-			</button>
+			</a>
 		</div>
 	</div>
 </div>

@@ -6,19 +6,21 @@ declare global {
 		type PriorityLevel = 'high' | 'medium' | 'low' | 'system';
 
 		type RootProject = {
+			// ex) 'root_project:{id}'
 			id: string;
 			name: string;
 			goal: string;
-			// child project names.
+			// child project ids.
 			childProjects: string[];
 			priority: PriorityLevel;
 		};
 
 		interface ChildProject {
+			// ex) 'child_project:{id}'
 			id: string;
 			name: string;
 			goal: string;
-			// root project name.
+			// root project id.
 			rootProject: string;
 			// task ids.
 			tasks: string[];
@@ -27,7 +29,7 @@ declare global {
 		interface Chunk {
 			id: string;
 			interval: [number, number];
-			// child project name.
+			// child project id.
 			childProject: string;
 			// task ids.
 			tasks: string[];
@@ -35,7 +37,7 @@ declare global {
 
 		interface Task {
 			id: string;
-			// child project name.
+			// child project id.
 			childProject: string;
 			description: string;
 			isDone: boolean;

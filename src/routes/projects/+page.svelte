@@ -91,7 +91,7 @@
 
 				{#if showSuccessMessage}
 					<div
-						class="bg-success-600/20 border-success-400 text-success-100 flex animate-pulse items-center gap-2 rounded-lg border p-4 backdrop-blur-sm"
+						class="bg-success-600/20 border-success-400 flex animate-pulse items-center gap-2 rounded-lg border p-4 backdrop-blur-sm"
 					>
 						<div class="bg-success-400 rounded-full p-1">
 							<Check size={14} class="text-success-900" />
@@ -130,10 +130,10 @@
 								newProject.goal = '';
 								newProject.priority = 'medium';
 
-								// 다이얼로그 닫기 (약간의 지연 후)
+								// 다이얼로그 닫기
 								setTimeout(() => {
 									isDialogOpen = false;
-								}, 1000);
+								}, 3000);
 							}
 						};
 					}}

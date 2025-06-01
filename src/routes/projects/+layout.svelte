@@ -4,6 +4,6 @@
 	let { children } = $props();
 </script>
 
-<SubPageContainer title="Projects">
+<SubPageContainer directTo="/projects" title="Projects">
 	{@render children()}
 </SubPageContainer>
