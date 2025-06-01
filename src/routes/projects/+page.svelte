@@ -67,16 +67,16 @@
 			<div class="bg-surface-100 dark:bg-surface-800 mb-3 rounded-full p-3">
 				<Plus />
 			</div>
-			<p class="font-medium">Add New Project</p>
+			<p class="font-medium">새 프로젝트</p>
 		</Dialog.Trigger>
 		<Dialog.Portal>
 			<Dialog.Overlay class="fixed inset-0 z-50 backdrop-blur-sm" />
 			<Dialog.Content
-				class="card border-primary-300 fixed top-1/2 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-5 rounded-xl border-l-4 p-8 shadow-2xl"
+				class="card bg-surface-50-950 primary-300 fixed top-1/2 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-5 rounded-xl border-t-4 p-8 shadow-2xl"
 			>
 				<div class="flex items-center justify-between">
 					<Dialog.Title class="flex items-center gap-2 text-2xl font-bold">
-						<span>Add New Project</span>
+						<span>새 프로젝트 생성하기</span>
 					</Dialog.Title>
 					<Dialog.Close
 						class="btn-icon bg-primary-50-950 hover:bg-primary-600 h-8 w-8 rounded-full transition-all duration-200"
@@ -85,10 +85,6 @@
 					</Dialog.Close>
 				</div>
 
-				<Dialog.Description class="-mt-1 text-sm">
-					Create a new project to organize your work and track your progress.
-				</Dialog.Description>
-
 				{#if showSuccessMessage}
 					<div
 						class="bg-success-600/20 border-success-400 flex animate-pulse items-center gap-2 rounded-lg border p-4 backdrop-blur-sm"
@@ -96,7 +92,7 @@
 						<div class="bg-success-400 rounded-full p-1">
 							<Check size={14} class="text-success-900" />
 						</div>
-						<span class="font-medium">Project created successfully!</span>
+						<span class="font-medium">프로젝트가 성공적으로 생성되었습니다!</span>
 					</div>
 				{/if}
 				{#if form?.error && !form?.success}
@@ -139,17 +135,14 @@
 					}}
 				>
 					<div class="grid gap-2">
-						<label for="name" class="flex items-center gap-1.5 text-sm font-medium">
-							Project Name
-							<span class="text-xs">(required)</span>
-						</label>
+						<label for="name" class="flex items-center gap-1.5 text-sm font-medium"> Name </label>
 						<input
 							type="text"
 							id="name"
 							name="name"
-							class="input border-primary-400/30 focus:border-primary-300 h-11 rounded-lg border"
+							class="input border-primary-400/30 focus:border-primary-300 h-11 rounded-lg border text-sm"
 							bind:value={newProject.name}
-							placeholder="Enter project name"
+							placeholder="예) 프로젝트1"
 							maxlength="50"
 							required
 						/>
@@ -162,17 +155,14 @@
 					</div>
 
 					<div class="grid gap-2">
-						<label for="goal" class="flex items-center gap-1.5 text-sm font-medium">
-							Project Goal
-							<span class="text-xs">(required)</span>
-						</label>
+						<label for="goal" class="flex items-center gap-1.5 text-sm font-medium"> Goal </label>
 						<input
 							type="text"
 							id="goal"
 							name="goal"
-							class="input border-primary-400/30 focus:border-primary-300 h-11 rounded-lg border"
+							class="input border-primary-400/30 focus:border-primary-300 h-11 rounded-lg border text-sm"
 							bind:value={newProject.goal}
-							placeholder="Enter project goal"
+							placeholder="예) 더 나은 사람이 되기 위함"
 							maxlength="100"
 							required
 						/>
@@ -186,7 +176,7 @@
 
 					<div class="grid gap-2">
 						<label for="priority" class="flex items-center gap-1.5 text-sm font-medium">
-							Priority Level
+							중요도
 						</label>
 						<div class="grid grid-cols-3 gap-2">
 							<label
@@ -238,11 +228,11 @@
 					<div class="mt-2 flex justify-end gap-3">
 						<button
 							type="button"
-							class="btn h-10 bg-red-400 px-4 transition-all duration-200"
+							class="btn bg-error-400-600 h-10 px-4 transition-all duration-200"
 							onclick={() => (isDialogOpen = false)}
 							disabled={isSubmitting}
 						>
-							Cancel
+							취소
 						</button>
 						<button
 							type="submit"
@@ -256,12 +246,12 @@
 								<span class="ml-2">Submitting...</span>
 							{:else}
 								<Plus size={16} />
-								Create Project
+								생성하기
 							{/if}
 						</button>
 					</div>
 					<p class="mt-3 border-t pt-3 text-center text-xs">
-						New projects will appear in your project list after creation
+						새로운 프로젝트는 생성 후 프로젝트 목록에 표시됩니다.
 					</p>
 				</form>
 			</Dialog.Content>

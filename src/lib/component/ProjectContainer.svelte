@@ -49,7 +49,7 @@
 
 		<div class="flex justify-end">
 			<a href="/projects/{project.id}" class="btn btn-sm border">
-				View Details
+				자세히 보기
 				<ArrowUpRight class="ml-1 size-4" />
 			</a>
 		</div>
