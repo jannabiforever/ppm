@@ -2,10 +2,14 @@
 	import type { PageProps } from './$types';
 	import { enhance } from '$app/forms';
 	import { invalidate } from '$app/navigation';
-	import { Pencil, Trash, Plus, X, Check } from '@lucide/svelte';
+	import { Pencil, Plus, X, Check } from '@lucide/svelte';
 	import PriorityChip from '$lib/component/PriorityChip.svelte';
+	import { Dialog } from 'bits-ui';
+	import ProjectDeletebutton from '$lib/component/project/ProjectDeletebutton.svelte';
 
 	let { data }: PageProps = $props();
+
+	let isDialogOpen = $state(false);
 
 	// Type assertions for TypeScript
 	let rootProject: App.RootProject = $derived(data.rootProject);
@@ -98,10 +102,7 @@
 						}}
 					>
 						<input type="hidden" name="id" value={rootProject.id} />
-						<button class="btn btn-sm variant-soft-error" type="submit">
-							<Trash class="mr-1 size-4" />
-							삭제
-						</button>
+						<ProjectDeletebutton />
 					</form>
 				{/if}
 			</div>
@@ -183,17 +184,6 @@
 		{/if}
 	</div>
 
-	<!-- Child Projects Section -->
-	<div class="mb-6 flex items-center justify-between">
-		<h4 class="h4">Child Projects</h4>
-		{#if !addingChildProject}
-			<button class="btn variant-soft-primary" onclick={toggleAddChildProject}>
-				<Plus class="mr-1 size-4" />
-				Add Child Project
-			</button>
-		{/if}
-	</div>
-
 	<!-- Add Child Project Form -->
 	{#if addingChildProject}
 		<div class="card variant-soft-primary mb-6 p-6">
@@ -253,119 +243,37 @@
 		</div>
 	{/if}
 
-	<!-- Child Projects List -->
-	{#if childProjects.length > 0}
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			{#each childProjects as childProject (childProject.id)}
-				<div class="card variant-soft-surface p-6">
-					{#if editingChildProjectId === childProject.id}
-						<!-- Child Project Edit Form -->
-						<form
-							method="POST"
-							action="?/updateChildProject"
-							class="space-y-4"
-							use:enhance={() => {
-								return async ({ result }) => {
-									if (result.type === 'success') {
-										editingChildProjectId = null;
-										await invalidate('app:projects');
-									}
-								};
-							}}
-						>
-							<input type="hidden" name="id" value={childProject.id} />
-
-							<div class="space-y-2">
-								<label for="childName_{childProject.id}" class="label">Name</label>
-								<input
-									id="childName_{childProject.id}"
-									name="name"
-									type="text"
-									class="input"
-									bind:value={editedChildName}
-									required
-								/>
-							</div>
-
-							<div class="space-y-2">
-								<label for="childGoal_{childProject.id}" class="label">Goal</label>
-								<input
-									id="childGoal_{childProject.id}"
-									name="goal"
-									type="text"
-									class="input"
-									bind:value={editedChildGoal}
-									required
-								/>
-							</div>
-
-							<div class="flex justify-end gap-2">
-								<button
-									type="button"
-									class="btn btn-sm variant-soft-surface"
-									onclick={cancelEditingChildProject}
-								>
-									<X class="mr-1 size-4" />
-									Cancel
-								</button>
-								<button type="submit" class="btn btn-sm variant-filled-primary">
-									<Check class="mr-1 size-4" />
-									Save
-								</button>
-							</div>
-						</form>
-					{:else}
-						<!-- Child Project Display -->
-						<div class="mb-4 flex items-start justify-between">
-							<div>
-								<h3 class="h3 mb-2">{childProject.name}</h3>
-								<p class="text-base opacity-90">{childProject.goal}</p>
-							</div>
-							<div class="flex gap-2">
-								<button
-									class="btn btn-sm variant-soft-primary"
-									onclick={() => startEditingChildProject(childProject)}
-								>
-									<Pencil class="size-4" />
-								</button>
-								<form
-									method="POST"
-									action="?/deleteChildProject"
-									use:enhance={() => {
-										return async ({ result }) => {
-											if (result.type === 'success') {
-												await invalidate('app:projects');
-											}
-										};
-									}}
-								>
-									<input type="hidden" name="id" value={childProject.id} />
-									<button class="btn btn-sm variant-soft-error" type="submit">
-										<Trash class="size-4" />
-									</button>
-								</form>
-							</div>
-						</div>
-
-						<div class="flex items-center justify-between">
-							<div class="space-y-2">
-								<p class="text-sm opacity-75">Tasks</p>
-								<p class="text-lg font-semibold">{childProject.tasks.length}</p>
-							</div>
-							<a
-								href="/projects/{rootProject.id}/child/{childProject.id}"
-								class="btn btn-sm variant-soft-primary"
-							>
-								View Tasks
-							</a>
-						</div>
-					{/if}
+	<div class="container grid grid-cols-2">
+		{#each childProjects as childProject, i (i)}
+			<div class="card card-hover">{childProject.id}</div>
+		{/each}
+		<Dialog.Root open={isDialogOpen} onOpenChange={(open) => (isDialogOpen = open)}>
+			<Dialog.Trigger
+				class="card border-surface-300 dark:border-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 flex flex-col items-center justify-center border border-dashed p-6 transition-all duration-200"
+				onclick={() => (isDialogOpen = true)}
+			>
+				<div class="bg-surface-100 dark:bg-surface-800 mb-3 rounded-full p-3">
+					<Plus />
 				</div>
-			{/each}
-		</div>
-	{:else}
-		<div class="card variant-ghost-surface p-6 text-center">
-			<p class="text-lg">No child projects yet. Create one to get started!</p>
-		</div>
-	{/if}
+				<p class="font-medium">새 프로젝트</p>
+			</Dialog.Trigger>
+			<Dialog.Portal>
+				<Dialog.Overlay class="fixed inset-0 z-50 backdrop-blur-sm" />
+				<Dialog.Content
+					class="card bg-surface-50-950 primary-300 fixed top-1/2 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-5 rounded-xl border-t-4 p-8 shadow-2xl"
+				>
+					<div class="flex items-center justify-between">
+						<Dialog.Title class="flex items-center gap-2 text-2xl font-bold">
+							<span>새 프로젝트 생성하기</span>
+						</Dialog.Title>
+						<Dialog.Close
+							class="btn-icon bg-primary-50-950 hover:bg-primary-600 h-8 w-8 rounded-full transition-all duration-200"
+						>
+							<X size={16} />
+						</Dialog.Close>
+					</div>
+				</Dialog.Content>
+			</Dialog.Portal>
+		</Dialog.Root>
+	</div>
 </div>
