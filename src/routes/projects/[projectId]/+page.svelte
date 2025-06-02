@@ -255,7 +255,7 @@
 				<div class="bg-surface-100 dark:bg-surface-800 mb-3 rounded-full p-3">
 					<Plus />
 				</div>
-				<p class="font-medium">새 프로젝트</p>
+				<p class="font-medium">하위 프로젝트 추가</p>
 			</Dialog.Trigger>
 			<Dialog.Portal>
 				<Dialog.Overlay class="fixed inset-0 z-50 backdrop-blur-sm" />
@@ -264,7 +264,7 @@
 				>
 					<div class="flex items-center justify-between">
 						<Dialog.Title class="flex items-center gap-2 text-2xl font-bold">
-							<span>새 프로젝트 생성하기</span>
+							<span>하위 프로젝트 생성하기</span>
 						</Dialog.Title>
 						<Dialog.Close
 							class="btn-icon bg-primary-50-950 hover:bg-primary-600 h-8 w-8 rounded-full transition-all duration-200"

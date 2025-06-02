@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
-	import { createEventDispatcher } from 'svelte';
 
 	let {
 		id,
@@ -11,7 +10,8 @@
 		error = '',
 		placeholder = '',
 		maxlength,
-		required = false
+		required = false,
+		onInput = undefined
 	}: {
 		id: string;
 		label: string;
@@ -22,11 +22,8 @@
 		placeholder?: string;
 		maxlength?: number;
 		required?: boolean;
+		onInput?: (e: Event) => void;
 	} = $props();
-
-	const dispatch = createEventDispatcher<{
-		input: Event;
-	}>();
 </script>
 
 <div class="grid gap-2">
@@ -42,7 +39,7 @@
 		{placeholder}
 		{maxlength}
 		{required}
-		oninput={(e) => dispatch('input', e)}
+		oninput={(e) => onInput && onInput(e)}
 	/>
 	{#if error}
 		<p class="mt-1 flex items-center gap-1 text-xs font-medium text-red-200">

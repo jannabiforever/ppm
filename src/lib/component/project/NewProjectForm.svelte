@@ -97,7 +97,7 @@
 		placeholder="예) 프로젝트1"
 		maxlength={50}
 		error={nameError}
-		on:input={(e) => {
+		onInput={(e) => {
 			if (e.target && 'value' in e.target) {
 				newProject.name = String(e.target.value);
 			}
@@ -112,7 +112,7 @@
 		placeholder="예) 더 나은 사람이 되기 위함"
 		maxlength={100}
 		error={goalError}
-		on:input={(e) => {
+		onInput={(e) => {
 			if (e.target && 'value' in e.target) {
 				newProject.goal = String(e.target.value);
 			}
@@ -123,10 +123,8 @@
 		value={newProject.priority} 
 		name="priority"
 		error={priorityError}
-		on:change={(e) => {
-			if (typeof e.detail === 'string') {
-				newProject.priority = e.detail as App.PriorityLevel;
-			}
+		onChange={(value) => {
+			newProject.priority = value;
 		}}
 	/>
 

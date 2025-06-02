@@ -2,16 +2,17 @@
 	import { Combobox } from 'bits-ui';
 	import { ChevronsUpDown, Check, X } from '@lucide/svelte';
 	import PriorityChip from '$lib/component/PriorityChip.svelte';
-	import { createEventDispatcher } from 'svelte';
 
 	let {
 		value = 'medium' as App.PriorityLevel,
 		error = '',
-		name = 'priority'
+		name = 'priority',
+		onChange = undefined
 	}: {
 		value: App.PriorityLevel;
 		error?: string;
 		name: string;
+		onChange?: (value: App.PriorityLevel) => void;
 	} = $props();
 
 	// Priority options
@@ -20,14 +21,11 @@
 	// Track combobox open state
 	let isComboboxOpen = $state(false);
 	
-	// Event dispatcher
-	const dispatch = createEventDispatcher<{
-		change: App.PriorityLevel;
-	}>();
-	
 	// Handle value change
 	function handleValueChange(newValue: string) {
-		dispatch('change', newValue as App.PriorityLevel);
+		if (onChange) {
+			onChange(newValue as App.PriorityLevel);
+		}
 	}
 </script>
 
@@ -37,11 +35,11 @@
 	</label>
 	<input type="hidden" {name} {value} />
 	<Combobox.Root
-		type="single"
-		bind:open={isComboboxOpen}
-		value={value}
-		onValueChange={handleValueChange}
-	>
+	type="single"
+	bind:open={isComboboxOpen}
+	value={value}
+	onValueChange={handleValueChange}
+>
 		<div class="relative w-full">
 			<div class="input flex h-11 items-center justify-between rounded-lg border px-3">
 				<div class="flex items-center gap-2">
