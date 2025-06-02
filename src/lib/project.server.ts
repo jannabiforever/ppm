@@ -7,7 +7,7 @@ type FetchedRootProject = {
 	name: string;
 	goal: string;
 	// child project names.
-	childProjects: string[];
+	child_projects: RecordId[];
 	priority: App.PriorityLevel;
 };
 
@@ -16,7 +16,7 @@ function castToRootProject(project: FetchedRootProject): App.RootProject {
 		id: project.id.toString(),
 		name: project.name,
 		goal: project.goal,
-		childProjects: project.childProjects,
+		childProjects: project.child_projects.map((id) => id.toString()),
 		priority: project.priority
 	};
 }
@@ -26,9 +26,9 @@ type FetchedChildProject = {
 	name: string;
 	goal: string;
 	// root project name.
-	rootProject: string;
+	root_project: RecordId;
 	// task ids.
-	tasks: string[];
+	tasks: RecordId[];
 };
 
 function castToChildProject(project: FetchedChildProject): App.ChildProject {
@@ -36,8 +36,8 @@ function castToChildProject(project: FetchedChildProject): App.ChildProject {
 		id: project.id.toString(),
 		name: project.name,
 		goal: project.goal,
-		rootProject: project.rootProject,
-		tasks: project.tasks
+		rootProject: project.root_project.toString(),
+		tasks: project.tasks.map((id) => id.toString())
 	};
 }
 
@@ -55,9 +55,7 @@ export async function getAllRootProjects(): Promise<App.RootProject[]> {
 export async function getRootProject(rootProjectId: string): Promise<App.RootProject | null> {
 	try {
 		const db = await getDb();
-		const rootProjectRecordId = rootProjectId.startsWith('root_project')
-			? new StringRecordId(rootProjectId)
-			: new RecordId('root_project', rootProjectId);
+		const rootProjectRecordId = new StringRecordId(rootProjectId);
 
 		const rootProject = await db.select<FetchedRootProject>(rootProjectRecordId);
 		return rootProject ? castToRootProject(rootProject) : null;
@@ -92,11 +90,15 @@ export async function getAllChildProjectsFromRoot(
 		const db = await getDb();
 		const rootProject = await db.select<FetchedRootProject>(new StringRecordId(rootProjectId));
 
-		const childProjectPromises = rootProject.childProjects.map((childProjectId) => {
-			return db.select<FetchedChildProject>(new StringRecordId(childProjectId));
-		});
+		if (!rootProject || !rootProject.child_projects) {
+			return [];
+		}
 
-		const childProjects = await Promise.all(childProjectPromises);
+		const childProjects = await Promise.all(
+			rootProject.child_projects.map((childProjectId) => {
+				return db.select<FetchedChildProject>(new StringRecordId(childProjectId));
+			})
+		);
 		return childProjects.map(castToChildProject);
 	} catch (error) {
 		console.error('Error fetching child projects:', error);
@@ -238,7 +240,7 @@ export async function deleteChildProject(childProjectId: string): Promise<boolea
 			const rootProject = await db.select<FetchedRootProject>(rootProjectRecordId);
 			if (rootProject) {
 				const updatedChildProjects = rootProject.childProjects.filter(
-					(id) => id !== childProjectId
+					(id) => id.toString() !== childProjectId
 				);
 				await db.update(rootProjectRecordId, { childProjects: updatedChildProjects });
 			}

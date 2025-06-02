@@ -1,4 +1,8 @@
-import { getAllRootProjects, createRootProject } from '$lib/project.server';
+import {
+	getAllRootProjects,
+	createRootProject,
+	getAllChildProjectsFromRoot
+} from '$lib/project.server';
 import type { Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
@@ -6,7 +10,14 @@ export const load: PageServerLoad = async () => {
 	const rootProjects = await getAllRootProjects();
 
 	return {
-		projects: rootProjects
+		projects: rootProjects.map(async (rootProject) => {
+			const childProjects = await getAllChildProjectsFromRoot(rootProject.id);
+
+			return {
+				rootProject,
+				childProjects
+			};
+		})
 	};
 };
 
