@@ -1,26 +1,30 @@
-DEFINE TABLE root_project SCHEMAFULL;
-DEFINE TABLE child_project SCHEMAFULL;
+DEFINE TABLE rootProject SCHEMAFULL;
+DEFINE TABLE childProject SCHEMAFULL;
 DEFINE TABLE chunk SCHEMAFUll;
 DEFINE TABLE task SCHEMAFULL;
 
-// root_project columns
-DEFINE FIELD name ON root_project TYPE string;
-DEFINE FIELD goal ON root_project TYPE string;
-DEFINE FIELD child_projects ON root_project TYPE record<child_project>;
-DEFINE FIELD priority ON root_project TYPE 'high' | 'medium' | 'low';
+// rootProject columns
+DEFINE FIELD name ON rootProject TYPE string;
+DEFINE FIELD goal ON rootProject TYPE string;
+DEFINE FIELD childProjects ON rootProject TYPE Array<record<childProject>> DEFAULT [];
+DEFINE FIELD priority ON rootProject TYPE 'high' | 'medium' | 'low' | 'system';
 
-// child_project columns
-DEFINE FIELD name ON child_project TYPE string;
-DEFINE FIELD goal ON child_project TYPE string;
-DEFINE FIELD root_project ON child_project TYPE record<root_project>;
-DEFINE FIELD tasks ON child_project TYPE Array<record<task>>;
+DEFINE INDEX rootProjectName ON rootProject FIELDS name UNIQUE;
+
+// childProject columns
+DEFINE FIELD name ON childProject TYPE string;
+DEFINE FIELD goal ON childProject TYPE string;
+DEFINE FIELD rootProject ON childProject TYPE record<rootProject>;
+DEFINE FIELD tasks ON childProject TYPE Array<record<task>> DEFAULT [];
+
+DEFINE INDEX childProjectName ON childProject FIELDS name UNIQUE;
 
 // chunk columns
 DEFINE FIELD interval ON chunk TYPE Array<datetime, 2>;
-DEFINE FIELD child_project ON chunk TYPE record<child_project>;
+DEFINE FIELD childProject ON chunk TYPE record<childProject>;
 DEFINE FIELD tasks ON chunk TYPE Array<record<task>>;
 
 // task columns
-DEFINE FIELD child_project ON task TYPE record<child_project>;
+DEFINE FIELD childProject ON task TYPE record<childProject>;
 DEFINE FIELD description ON task TYPE string;
 DEFINE FIELD is_done ON task TYPE bool;

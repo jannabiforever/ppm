@@ -6,39 +6,37 @@ declare global {
 		type PriorityLevel = 'high' | 'medium' | 'low' | 'system';
 
 		type RootProject = {
-			// ex) 'root_project:{id}'
+			// ex) RecordId fetched from surrealdb would look like 'root_project:{id}'.
 			id: string;
 			name: string;
 			goal: string;
 			// child project ids.
-			childProjects: string[];
+			childProjectIds: string[];
 			priority: PriorityLevel;
 		};
 
 		interface ChildProject {
-			// ex) 'child_project:{id}'
+			// ex) RecordId fetched from surrealdb would look like 'child_project:{id}'.
 			id: string;
 			name: string;
 			goal: string;
-			// root project id.
-			rootProject: string;
-			// task ids.
-			tasks: string[];
+			// ex) RecordId fetched from surrealdb would look like 'root_project:{id}'.
+			rootProjectId: string;
+			taskIds: string[];
 		}
 
 		interface Chunk {
 			id: string;
 			interval: [number, number];
 			// child project id.
-			childProject: string;
+			childProjectId: string;
 			// task ids.
-			tasks: string[];
+			taskIds: string[];
 		}
 
 		interface Task {
 			id: string;
-			// child project id.
-			childProject: string;
+			childProjectId: string;
 			description: string;
 			isDone: boolean;
 		}

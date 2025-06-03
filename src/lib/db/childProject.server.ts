@@ -1,0 +1,84 @@
+import { getDb } from '$lib/db/db.server';
+import { RecordId } from 'surrealdb';
+import { recordIdToString } from '$lib/util';
+
+type FetchedChildProject = {
+	id: RecordId;
+	name: string;
+	goal: string;
+	rootProjectId: RecordId;
+	taskIds: RecordId[];
+};
+
+/**
+ * Converts a FetchedChildProject to App.ChildProject format by transforming RecordIds to strings
+ */
+function cast(fetchedChildProject: FetchedChildProject): App.ChildProject {
+	return {
+		id: recordIdToString(fetchedChildProject.id),
+		name: fetchedChildProject.name,
+		goal: fetchedChildProject.goal,
+		rootProjectId: recordIdToString(fetchedChildProject.rootProjectId),
+		taskIds: fetchedChildProject.taskIds.map(recordIdToString)
+	};
+}
+
+/**
+ * Retrieves a child project by its ID
+ *
+ * @param childProjectId - The ID of the child project to retrieve
+ * @returns The child project if found, null otherwise
+ *
+ * @throws May throw database connection errors or query execution errors
+ * @logs Logs any errors encountered to the console
+ */
+export async function selectChildProjectWithId(
+	childProjectId: string
+): Promise<App.ChildProject | null> {
+	const db = await getDb();
+	const fcp: FetchedChildProject = await db.select<FetchedChildProject>(
+		new RecordId('childProject', childProjectId)
+	);
+
+	// Note: Even in case of not found, surrealdb sdk still would return an empty object, and bypass type checking.
+	// To prevent this, we can check if the id is undefined.
+	if (!fcp.id) {
+		return null;
+	}
+
+	return cast(fcp);
+}
+
+/**
+ * Creates a new child project
+ *
+ * @param options - Object containing the new child project properties
+ * @param options.name - The name of the child project
+ * @param options.goal - The goal of the child project
+ * @param options.rootProjectId - The ID of the root project this child project belongs to
+ * @returns The created child project if successful, null otherwise
+ *
+ * @throws May throw database connection errors, validation errors, or creation errors
+ * @logs Logs any errors encountered to the console with error level
+ */
+export async function createChildProject({
+	name,
+	goal,
+	rootProjectId
+}: {
+	name: string;
+	goal: string;
+	rootProjectId: string;
+}): Promise<App.ChildProject | null> {
+	const db = await getDb();
+	return await db
+		.create<FetchedChildProject, Pick<FetchedChildProject, 'name' | 'goal' | 'rootProjectId'>>(
+			'childProject',
+			{
+				name,
+				goal,
+				rootProjectId: new RecordId('rootProject', rootProjectId)
+			}
+		)
+		.then(([p]) => cast(p));
+}

@@ -1,18 +1,19 @@
-import {
-	getAllRootProjects,
-	createRootProject,
-	getAllChildProjectsFromRoot
-} from '$lib/project.server';
 import type { Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
+import { createRootProject, selectAllRootProjects } from '$lib/db/rootProject.server';
+import { selectChildProjectWithId } from '$lib/db/childProject.server';
 
 export const load: PageServerLoad = async () => {
-	const rootProjects = await getAllRootProjects();
+	const rootProjects = await selectAllRootProjects();
 
 	return {
 		projects: rootProjects.map(async (rootProject) => {
-			const childProjects = await getAllChildProjectsFromRoot(rootProject.id);
-
+			const childProjects = await Promise.all(
+				rootProject.childProjectIds.map(async (childProjectId) => {
+					const childProject = await selectChildProjectWithId(childProjectId);
+					return childProject;
+				})
+			);
 			return {
 				rootProject,
 				childProjects
@@ -27,19 +28,19 @@ export const actions = {
 
 		const name = data.get('name')?.toString() || '';
 		const goal = data.get('goal')?.toString() || '';
-		const priority = (data.get('priority')?.toString() as App.PriorityLevel) || 'medium';
+		const priority = data.get('priority')?.toString() as App.PriorityLevel;
 
 		// Basic validation
 		if (!name) {
-			return { success: false, error: 'Project name is required' };
+			return { success: false, error: '프로젝트 이름은 필수입니다.' };
 		}
 
 		if (!goal) {
-			return { success: false, error: 'Project goal is required' };
+			return { success: false, error: '프로젝트 목표는 필수입니다.' };
 		}
 
-		if (!priority || !['high', 'medium', 'low'].includes(priority)) {
-			return { success: false, error: 'Priority must be high, medium, or low' };
+		if (!priority || !['high', 'medium', 'low', 'system'].includes(priority)) {
+			return { success: false, error: '우선순위는 high, medium, low, system 중 하나여야 합니다.' };
 		}
 
 		try {
@@ -50,7 +51,11 @@ export const actions = {
 				priority
 			});
 
-			console.log('Created new project:', newProject);
+			if (!newProject) {
+				throw Error('DB 오류가 발생했습니다.');
+			}
+
+			console.log('프로젝트를 생성했습니다:', newProject);
 
 			// Return success
 			return {
@@ -58,10 +63,11 @@ export const actions = {
 				project: newProject
 			};
 		} catch (error) {
-			console.error('Failed to create project:', error);
+			const errMsg = error instanceof Error ? error.message : 'Unknown error';
+			console.error(errMsg);
 			return {
 				success: false,
-				error: 'Failed to create project'
+				error: `프로젝트를 생성하는 데에 실패했습니다: ${errMsg}`
 			};
 		}
 	}

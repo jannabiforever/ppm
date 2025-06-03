@@ -1,3 +1,5 @@
+import type { RecordId } from 'surrealdb';
+
 function comparePriority(a: App.RootProject, b: App.RootProject): number {
 	return priorityToNumber(a.priority) - priorityToNumber(b.priority);
 }
@@ -17,4 +19,8 @@ function priorityToNumber(priority: App.PriorityLevel): number {
 
 export function sortByPriority(rootProjects: App.RootProject[]): App.RootProject[] {
 	return rootProjects.toSorted(comparePriority);
+}
+
+export function recordIdToString(recordId: RecordId): string {
+	return recordId.id.toString();
 }
