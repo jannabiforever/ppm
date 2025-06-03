@@ -2,9 +2,10 @@ import type { Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { createRootProject, selectAllRootProjects } from '$lib/db/rootProject.server';
 import { selectChildProjectWithId } from '$lib/db/childProject.server';
+import { sortByPriority } from '$lib/util';
 
 export const load: PageServerLoad = async () => {
-	const rootProjects = await selectAllRootProjects();
+	const rootProjects = await selectAllRootProjects().then(sortByPriority);
 
 	return {
 		projects: rootProjects.map(async (rootProject) => {
