@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { TriangleAlert, Trash, X, CheckCircle, XCircle } from '@lucide/svelte';
 	import { Dialog } from 'bits-ui';
 	import { enhance } from '$app/forms';
@@ -26,7 +26,7 @@
 		}, 3000);
 	}
 
-	function handleDeleteFailure(message) {
+	function handleDeleteFailure(message?: string) {
 		showingFailureMessage = true;
 		failureMessage = message || '프로젝트 삭제 중 오류가 발생했습니다.';
 		setTimeout(() => {
@@ -83,7 +83,10 @@
 									if (result.type === 'success') {
 										handleDeleteSuccess();
 									} else if (result.type === 'failure') {
-										const message = result.data?.message || form?.message || '프로젝트 삭제 중 오류가 발생했습니다.';
+										const message =
+											result.data?.message ||
+											form?.message ||
+											'프로젝트 삭제 중 오류가 발생했습니다.';
 										handleDeleteFailure(message);
 									} else if (result.type === 'error') {
 										handleDeleteFailure('서버 오류가 발생했습니다.');
