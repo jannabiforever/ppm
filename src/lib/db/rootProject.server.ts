@@ -13,6 +13,16 @@ type FetchedRootProject = {
 	priority: App.PriorityLevel;
 };
 
+function isEveryFieldSet(fetchedRootProject: FetchedRootProject): boolean {
+	return (
+		fetchedRootProject.id !== undefined &&
+		fetchedRootProject.name !== undefined &&
+		fetchedRootProject.goal !== undefined &&
+		fetchedRootProject.childProjects !== undefined &&
+		fetchedRootProject.priority !== undefined
+	);
+}
+
 /**
  * Converts a SurrealDB root project record to the application model format.
  *
@@ -22,7 +32,7 @@ type FetchedRootProject = {
 function cast(fetchedRootProject: FetchedRootProject): App.RootProject | null {
 	// Note: Even in case of not found, surrealdb sdk still would return an empty object, and bypass type checking.
 	// To prevent this, we can check if the id is undefined.
-	if (!fetchedRootProject.id) {
+	if (!isEveryFieldSet(fetchedRootProject)) {
 		return null;
 	}
 
@@ -100,20 +110,14 @@ export async function createRootProject({
 	const db = await getDb();
 	const rootProject = await db
 		.create<FetchedRootProject, Pick<FetchedRootProject, 'name' | 'goal' | 'priority'>>(
-			'root_project',
+			ROOT_PROJECT_TABLE,
 			{
 				name,
 				goal,
 				priority
 			}
 		)
-		.then((frps) => frps.at(0));
-
-	// Note: Even in case of not found, surrealdb sdk still would return an empty object, and bypass type checking.
-	// To prevent this, we can check if the id is undefined.
-	if (!rootProject) {
-		return null;
-	}
+		.then(([p]) => p);
 
 	return cast(rootProject);
 }

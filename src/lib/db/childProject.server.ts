@@ -2,6 +2,8 @@ import { getDb } from '$lib/db/db.server';
 import { RecordId } from 'surrealdb';
 import { recordIdToString } from '$lib/util';
 
+const CHILD_PROJECT_TABLE = 'childProject';
+
 type FetchedChildProject = {
 	id: RecordId;
 	name: string;
@@ -37,7 +39,7 @@ export async function selectChildProjectWithId(
 ): Promise<App.ChildProject | null> {
 	const db = await getDb();
 	const fcp: FetchedChildProject = await db.select<FetchedChildProject>(
-		new RecordId('childProject', childProjectId)
+		new RecordId(CHILD_PROJECT_TABLE, childProjectId)
 	);
 
 	// Note: Even in case of not found, surrealdb sdk still would return an empty object, and bypass type checking.
@@ -73,7 +75,7 @@ export async function createChildProject({
 	const db = await getDb();
 	return await db
 		.create<FetchedChildProject, Pick<FetchedChildProject, 'name' | 'goal' | 'rootProjectId'>>(
-			'childProject',
+			CHILD_PROJECT_TABLE,
 			{
 				name,
 				goal,
