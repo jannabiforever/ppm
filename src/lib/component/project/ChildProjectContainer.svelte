@@ -10,8 +10,8 @@
 	</header>
 	<article class="p-4">
 		<ul>
-			{#each childProject.tasks as task, i (i)}
-				{task}
+			{#each childProject.taskIds as taskId (taskId)}
+				{taskId}
 			{/each}
 		</ul>
 	</article>

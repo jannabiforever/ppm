@@ -14,7 +14,8 @@ export const load: PageServerLoad = async () => {
 					const childProject = await selectChildProjectWithId(childProjectId);
 					return childProject;
 				})
-			);
+			).then((projects) => projects.filter((project) => project !== null));
+
 			return {
 				rootProject,
 				childProjects

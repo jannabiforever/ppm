@@ -11,7 +11,8 @@
 		childProjects: App.ChildProject[];
 	} = $props();
 
-	let theme = $derived.by(() => {
+	// 테마 추출
+	let theme: 'primary' | 'error' | 'warning' | 'surface' = $derived.by(() => {
 		switch (rootProject.priority) {
 			case 'system':
 				return 'primary';
@@ -27,12 +28,40 @@
 	let isPriorityHigh = $derived(
 		rootProject.priority === 'high' || rootProject.priority === 'system'
 	);
+
+	// 정적 클래스 맵
+	type ThemeClassMapType = {
+		[key in 'primary' | 'error' | 'warning' | 'surface']: {
+			card: string;
+			button: string;
+		};
+	};
+
+	const themeClassMap: ThemeClassMapType = {
+		primary: {
+			card: 'variant-soft-primary border-primary-500',
+			button: 'hover:bg-primary-300-700'
+		},
+		error: {
+			card: 'variant-soft-error border-error-500',
+			button: 'hover:bg-error-300-700'
+		},
+		warning: {
+			card: 'variant-soft-warning border-warning-500',
+			button: 'hover:bg-warning-300-700'
+		},
+		surface: {
+			card: 'variant-soft-surface border-surface-500',
+			button: 'hover:bg-surface-300-700'
+		}
+	};
 </script>
 
+<!-- 카드 본문 -->
 <div
-	class="card variant-soft-{theme} border-{theme}-500 border-l-8 shadow-lg transition-all duration-200 hover:translate-y-[-2px] hover:shadow-xl {isPriorityHigh
-		? 'col-span-full'
-		: ''}"
+	class={`card border-l-8 shadow-lg transition-all duration-200 hover:translate-y-[-2px] hover:shadow-xl ${
+		themeClassMap[theme].card
+	} ${isPriorityHigh ? 'col-span-full' : ''}`}
 >
 	<div class="p-6">
 		<div class="mb-4 flex items-center justify-between">
@@ -40,7 +69,7 @@
 				<h4 class="h4 font-semibold">
 					{rootProject.name}
 				</h4>
-				<span class="vr pl-3 text-end"> {rootProject.goal} </span>
+				<span class="vr pl-3 text-end">{rootProject.goal}</span>
 			</div>
 			<div class="flex items-center">
 				<PriorityChip priority={rootProject.priority} />
@@ -48,7 +77,6 @@
 		</div>
 
 		{#if isPriorityHigh}
-			<!-- Show description if priority is high enough -->
 			{#if childProjects.length > 0}
 				{#each childProjects as childProject (childProject.id)}
 					<ChildProjectContainer {childProject} />
@@ -59,7 +87,7 @@
 		{/if}
 
 		<div class="flex justify-end">
-			<a href="/projects/{rootProject.id}" class="btn btn-sm hover:bg-surface-300-700">
+			<a href="/projects/{rootProject.id}" class="btn btn-sm hover:bg-surface-300-700 pt-2 pb-2">
 				자세히 보기
 				<ArrowUpRight class="ml-1 size-4" />
 			</a>

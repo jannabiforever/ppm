@@ -126,7 +126,7 @@
 	<div class="mt-2 flex justify-end gap-3">
 		<button
 			type="button"
-			class="btn hover:bg-surface-300-700 h-10 px-4 transition-all duration-200"
+			class="btn bg-error-400-600 h-10 px-4 transition-all duration-200"
 			onclick={onClose}
 			disabled={isSubmitting}
 		>
@@ -134,7 +134,7 @@
 		</button>
 		<button
 			type="submit"
-			class="btn hover:bg-surface-300-700 flex h-10 items-center gap-1 px-5 font-medium transition-all duration-200"
+			class="btn bg-primary-50-950 hover:bg-primary-200-800 flex h-10 items-center gap-1 px-5 font-medium transition-all duration-200"
 			disabled={isSubmitting}
 		>
 			{#if isSubmitting}
