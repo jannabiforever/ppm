@@ -1,8 +1,6 @@
-import { getDb } from '$lib/db/db.server';
+import { getDb, ROOT_PROJECT_TABLE } from '$lib/db/db.server';
 import { recordIdToString } from '$lib/util';
 import { RecordId } from 'surrealdb';
-
-const ROOT_PROJECT_TABLE = 'rootProject';
 
 type FetchedRootProject = {
 	id: RecordId;

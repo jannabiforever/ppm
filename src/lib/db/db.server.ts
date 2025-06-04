@@ -7,6 +7,9 @@ import {
 	VITE_SURREALDB_DB
 } from '$env/static/private';
 
+export const CHILD_PROJECT_TABLE = 'childProject';
+export const ROOT_PROJECT_TABLE = 'rootProject';
+
 export async function getDb(): Promise<Surreal> {
 	const db = new Surreal();
 	await db.connect(VITE_SURREALDB_URL, {

@@ -1,8 +1,6 @@
-import { getDb } from '$lib/db/db.server';
+import { CHILD_PROJECT_TABLE, getDb, ROOT_PROJECT_TABLE } from '$lib/db/db.server';
 import { RecordId } from 'surrealdb';
 import { recordIdToString } from '$lib/util';
-
-const CHILD_PROJECT_TABLE = 'childProject';
 
 type FetchedChildProject = {
 	id: RecordId;
@@ -79,7 +77,7 @@ export async function createChildProject({
 			{
 				name,
 				goal,
-				rootProjectId: new RecordId('rootProject', rootProjectId)
+				rootProjectId: new RecordId(ROOT_PROJECT_TABLE, rootProjectId)
 			}
 		)
 		.then(([p]) => cast(p));
