@@ -76,14 +76,10 @@
 	</header>
 	{#if isPriorityHigh}
 		<section class="p-6 pb-0">
-			{#if childProjects.length > 0}
-				<ChildProjectSummaryContainer {childProjects} />
-			{:else}
-				<p class="text-surface-500 text-center">세부 프로젝트가 없습니다</p>
-			{/if}
+			<ChildProjectSummaryContainer {childProjects} />
 		</section>
 	{/if}
-	<footer class="flex justify-end p-6">
+	<footer class="flex justify-end p-6 pt-2">
 		<a href="/projects/{rootProject.id}" class="btn btn-sm hover:bg-surface-300-700">
 			자세히 보기
 			<ArrowUpRight class="ml-1 size-4" />
