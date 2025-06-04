@@ -8,8 +8,7 @@ type FetchedRootProject = {
 	id: RecordId;
 	name: string;
 	goal: string;
-	// child project ids.
-	childProjects: RecordId[];
+	childProjectIds: RecordId[];
 	priority: App.PriorityLevel;
 };
 
@@ -18,7 +17,7 @@ function isEveryFieldSet(fetchedRootProject: FetchedRootProject): boolean {
 		fetchedRootProject.id !== undefined &&
 		fetchedRootProject.name !== undefined &&
 		fetchedRootProject.goal !== undefined &&
-		fetchedRootProject.childProjects !== undefined &&
+		fetchedRootProject.childProjectIds !== undefined &&
 		fetchedRootProject.priority !== undefined
 	);
 }
@@ -40,7 +39,7 @@ function cast(fetchedRootProject: FetchedRootProject): App.RootProject | null {
 		id: recordIdToString(fetchedRootProject.id),
 		name: fetchedRootProject.name,
 		goal: fetchedRootProject.goal,
-		childProjectIds: fetchedRootProject.childProjects.map(recordIdToString),
+		childProjectIds: fetchedRootProject.childProjectIds.map(recordIdToString),
 		priority: fetchedRootProject.priority
 	};
 }
