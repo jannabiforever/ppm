@@ -1,4 +1,4 @@
-import { getDb, ROOT_PROJECT_TABLE } from '$lib/db/db.server';
+import { getDb, replaceData, ROOT_PROJECT_TABLE } from '$lib/db/db.server';
 import { recordIdToString } from '$lib/util';
 import { RecordId } from 'surrealdb';
 
@@ -133,17 +133,16 @@ export async function createRootProject({
  * @param payload - Object containing the fields to update
  * @returns Promise with the updated root project, or null on error
  */
-export async function updateRootProject<
-	K extends keyof FetchedRootProject,
-	P extends Pick<FetchedRootProject, K>
->(rootProjectId: string, payload: P): Promise<App.RootProject | null> {
+export async function updateRootProject<P extends Partial<FetchedRootProject>>(
+	rootProjectId: string,
+	payload: P
+): Promise<App.RootProject | null> {
 	const db = await getDb();
-	return await db
-		.update<
-			FetchedRootProject,
-			Pick<FetchedRootProject, K>
-		>(new RecordId(ROOT_PROJECT_TABLE, rootProjectId), payload)
-		.then(cast);
+	return await replaceData<FetchedRootProject, P>(
+		db,
+		new RecordId(ROOT_PROJECT_TABLE, rootProjectId),
+		payload
+	).then((p) => (p ? cast(p) : null));
 }
 
 /**

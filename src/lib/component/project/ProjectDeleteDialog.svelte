@@ -2,6 +2,8 @@
 	import { TriangleAlert, Trash, X } from '@lucide/svelte';
 	import { Dialog } from 'bits-ui';
 
+	let { form } = $props();
+
 	let showingConfirmButton = $state(false);
 	let dialogOpen = $state(false);
 
@@ -38,13 +40,11 @@
 			</Dialog.Description>
 			<div class="flex w-full justify-center">
 				{#if showingConfirmButton}
-					<Dialog.Close
-						class="btn hover:bg-surface-300-700 w-1/2"
-						type="submit"
-						onclick={() => console.log('삭제')}
-					>
-						확인
-					</Dialog.Close>
+					<form action="?/deleteRootProject">
+						<Dialog.Close class="btn hover:bg-surface-300-700 w-1/2" type="submit">
+							확인
+						</Dialog.Close>
+					</form>
 				{/if}
 			</div>
 		</Dialog.Content>

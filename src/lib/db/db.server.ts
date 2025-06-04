@@ -1,4 +1,4 @@
-import Surreal from 'surrealdb';
+import Surreal, { RecordId, type Patch } from 'surrealdb';
 import {
 	VITE_SURREALDB_URL,
 	VITE_SURREALDB_USER,
@@ -24,4 +24,32 @@ export async function getDb(): Promise<Surreal> {
 	await db.signin({ username: VITE_SURREALDB_USER, password: VITE_SURREALDB_PASS });
 
 	return db;
+}
+
+export async function replaceData<T extends { [x: string]: unknown }, P extends Partial<T>>(
+	surreal: Surreal,
+	recordId: RecordId,
+	payload: P
+): Promise<T | null> {
+	const patches: Patch[] = Object.entries(payload).map(([key, value]) => ({
+		op: 'replace',
+		path: `/${key}`,
+		value
+	}));
+	const result = await surreal.patch<T>(recordId, patches);
+	return result;
+}
+
+export async function addData<T extends { [x: string]: unknown }, P extends Partial<T>>(
+	surreal: Surreal,
+	recordId: RecordId,
+	payload: P
+): Promise<T | null> {
+	const patches: Patch[] = Object.entries(payload).map(([key, value]) => ({
+		op: 'add',
+		path: `/${key}`,
+		value
+	}));
+	const result = await surreal.patch<T>(recordId, patches);
+	return result;
 }

@@ -82,3 +82,21 @@ export async function createChildProject({
 		)
 		.then(([p]) => cast(p));
 }
+
+/**
+ * Deletes a child project
+ *
+ * @param childProjectId - The ID of the child project to delete
+ * @returns A promise that resolves when the child project is deleted
+ *
+ * @throws May throw database connection errors or deletion errors
+ * @logs Logs any errors encountered to the console with error level
+ */
+export async function deleteChildProject(childProjectId: string): Promise<App.ChildProject | null> {
+	const db = await getDb();
+	const fetchedChildProject = await db
+		.delete<FetchedChildProject>(new RecordId(CHILD_PROJECT_TABLE, childProjectId))
+		.then(cast);
+
+	return fetchedChildProject;
+}
