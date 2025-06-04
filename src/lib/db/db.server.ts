@@ -40,15 +40,28 @@ export async function replaceData<T extends { [x: string]: unknown }, P extends 
 	return result;
 }
 
-export async function addData<T extends { [x: string]: unknown }, P extends Partial<T>>(
+export async function addData<T extends { [x: string]: unknown }>(
 	surreal: Surreal,
 	recordId: RecordId,
-	payload: P
+	payload: Partial<T>
 ): Promise<T | null> {
 	const patches: Patch[] = Object.entries(payload).map(([key, value]) => ({
 		op: 'add',
 		path: `/${key}`,
 		value
+	}));
+	const result = await surreal.patch<T>(recordId, patches);
+	return result;
+}
+
+export async function removeData<T extends { [x: string]: unknown }>(
+	surreal: Surreal,
+	recordId: RecordId,
+	payload: Partial<T>
+): Promise<T | null> {
+	const patches: Patch[] = Object.keys(payload).map((key) => ({
+		op: 'remove',
+		path: `/${key}`
 	}));
 	const result = await surreal.patch<T>(recordId, patches);
 	return result;

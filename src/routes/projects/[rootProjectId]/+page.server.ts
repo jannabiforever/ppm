@@ -5,7 +5,11 @@ import {
 	selectRootProjectWithId,
 	updateRootProject
 } from '$lib/db/rootProject.server';
-import { deleteChildProject, selectChildProjectWithId } from '$lib/db/childProject.server';
+import {
+	createChildProject,
+	deleteChildProject,
+	selectChildProjectWithId
+} from '$lib/db/childProject.server';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const rootProjectId = params.rootProjectId;
@@ -99,14 +103,35 @@ export const actions: Actions = {
 			console.error(errMsg);
 			return {
 				success: false,
-				error: `프로젝트를 생성하는 데에 실패했습니다: ${errMsg}`
+				error: `프로젝트를 삭제하는 데에 실패했습니다: ${errMsg}`
 			};
 		}
 	},
 
-	createChildProject: async () => {
-		// TODO: Implement createChildProject action
-		return;
+	createChildProject: async ({ params, request }) => {
+		const rootProjectId = params.rootProjectId;
+		const data = await request.formData();
+
+		const name = data.get('name')?.toString() || '';
+		const goal = data.get('goal')?.toString() || '';
+
+		try {
+			const childProject = await createChildProject({ name, goal, rootProjectId });
+			if (!childProject) {
+				throw Error('DB 오류가 발생했습니다.');
+			}
+
+			return {
+				success: true
+			};
+		} catch (error) {
+			const errMsg = error instanceof Error ? error.message : 'Unknown error';
+			console.error(errMsg);
+			return {
+				success: false,
+				error: `세부 프로젝트를 생성하는 데에 실패했습니다: ${errMsg}`
+			};
+		}
 	},
 
 	updateChildProject: async () => {

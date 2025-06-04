@@ -4,6 +4,7 @@
 	import NewChildProjectDialog from '$lib/component/project/NewChildProjectDialog.svelte';
 	import ProjectEditDialog from '$lib/component/project/ProjectEditDialog.svelte';
 	import ProjectDeleteDialog from '$lib/component/project/ProjectDeleteDialog.svelte';
+	import ChildProjectContainer from '$lib/component/project/ChildProjectContainer.svelte';
 
 	let { data, form }: PageProps = $props();
 
@@ -37,11 +38,11 @@
 		</div>
 	</div>
 
-	<div class="container grid grid-cols-1 md:grid-cols-2">
+	<div class="container grid grid-cols-1 gap-4 md:grid-cols-2">
 		{#each childProjects as childProject, i (i)}
-			<div class="card card-hover">{childProject.id}</div>
+			<ChildProjectContainer {childProject} />
 		{/each}
 
-		<NewChildProjectDialog />
+		<NewChildProjectDialog {form} />
 	</div>
 </div>

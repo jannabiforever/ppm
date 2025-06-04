@@ -1,6 +1,7 @@
-import { CHILD_PROJECT_TABLE, getDb, ROOT_PROJECT_TABLE } from '$lib/db/db.server';
+import { addData, CHILD_PROJECT_TABLE, getDb, ROOT_PROJECT_TABLE } from '$lib/db/db.server';
 import { RecordId } from 'surrealdb';
 import { recordIdToString } from '$lib/util';
+import { type FetchedRootProject } from './rootProject.server';
 
 type FetchedChildProject = {
 	id: RecordId;
@@ -10,10 +11,24 @@ type FetchedChildProject = {
 	taskIds: RecordId[];
 };
 
+function isEveryFieldSet(fetchedChildProject: FetchedChildProject): boolean {
+	return (
+		fetchedChildProject.id !== undefined &&
+		fetchedChildProject.name !== undefined &&
+		fetchedChildProject.goal !== undefined &&
+		fetchedChildProject.rootProjectId !== undefined &&
+		fetchedChildProject.taskIds !== undefined
+	);
+}
+
 /**
  * Converts a FetchedChildProject to App.ChildProject format by transforming RecordIds to strings
  */
-function cast(fetchedChildProject: FetchedChildProject): App.ChildProject {
+function cast(fetchedChildProject: FetchedChildProject): App.ChildProject | null {
+	if (!isEveryFieldSet(fetchedChildProject)) {
+		return null;
+	}
+
 	return {
 		id: recordIdToString(fetchedChildProject.id),
 		name: fetchedChildProject.name,
@@ -40,17 +55,11 @@ export async function selectChildProjectWithId(
 		new RecordId(CHILD_PROJECT_TABLE, childProjectId)
 	);
 
-	// Note: Even in case of not found, surrealdb sdk still would return an empty object, and bypass type checking.
-	// To prevent this, we can check if the id is undefined.
-	if (!fcp.id) {
-		return null;
-	}
-
 	return cast(fcp);
 }
 
 /**
- * Creates a new child project
+ * Creates a new child project and register it to the root project.
  *
  * @param options - Object containing the new child project properties
  * @param options.name - The name of the child project
@@ -71,7 +80,7 @@ export async function createChildProject({
 	rootProjectId: string;
 }): Promise<App.ChildProject | null> {
 	const db = await getDb();
-	return await db
+	const childProject = await db
 		.create<FetchedChildProject, Pick<FetchedChildProject, 'name' | 'goal' | 'rootProjectId'>>(
 			CHILD_PROJECT_TABLE,
 			{
@@ -81,6 +90,17 @@ export async function createChildProject({
 			}
 		)
 		.then(([p]) => cast(p));
+
+	if (childProject === null) {
+		return null;
+	}
+
+	// Register the child project to the root project.
+	await addData<FetchedRootProject>(db, new RecordId(ROOT_PROJECT_TABLE, rootProjectId), {
+		childProjectIds: [new RecordId(CHILD_PROJECT_TABLE, childProject.id)]
+	});
+
+	return childProject;
 }
 
 /**
@@ -90,7 +110,6 @@ export async function createChildProject({
  * @returns A promise that resolves when the child project is deleted
  *
  * @throws May throw database connection errors or deletion errors
- * @logs Logs any errors encountered to the console with error level
  */
 export async function deleteChildProject(childProjectId: string): Promise<App.ChildProject | null> {
 	const db = await getDb();

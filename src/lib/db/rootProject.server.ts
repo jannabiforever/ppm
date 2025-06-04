@@ -2,7 +2,7 @@ import { getDb, replaceData, ROOT_PROJECT_TABLE } from '$lib/db/db.server';
 import { recordIdToString } from '$lib/util';
 import { RecordId } from 'surrealdb';
 
-type FetchedRootProject = {
+export type FetchedRootProject = {
 	id: RecordId;
 	name: string;
 	goal: string;
@@ -120,7 +120,10 @@ export async function createRootProject({
 }
 
 /**
- * Update a root project's data in the database.
+ * Update a root project's data only for following fields:
+ * - name
+ * - goal
+ * - priority
  *
  * Possible errors include:
  * - Database connection issues.
@@ -133,10 +136,9 @@ export async function createRootProject({
  * @param payload - Object containing the fields to update
  * @returns Promise with the updated root project, or null on error
  */
-export async function updateRootProject<P extends Partial<FetchedRootProject>>(
-	rootProjectId: string,
-	payload: P
-): Promise<App.RootProject | null> {
+export async function updateRootProject<
+	P extends Partial<Pick<FetchedRootProject, 'name' | 'goal' | 'priority'>>
+>(rootProjectId: string, payload: P): Promise<App.RootProject | null> {
 	const db = await getDb();
 	return await replaceData<FetchedRootProject, P>(
 		db,
