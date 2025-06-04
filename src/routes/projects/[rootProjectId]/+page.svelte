@@ -180,7 +180,7 @@
 		{/if}
 	</div>
 
-	<div class="container grid grid-cols-2">
+	<div class="container grid grid-cols-1 md:grid-cols-2">
 		{#each childProjects as childProject, i (i)}
 			<div class="card card-hover">{childProject.id}</div>
 		{/each}
