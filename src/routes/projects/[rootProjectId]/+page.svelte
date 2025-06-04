@@ -4,9 +4,9 @@
 	import { invalidate } from '$app/navigation';
 	import { X, Check } from '@lucide/svelte';
 	import PriorityChip from '$lib/component/PriorityChip.svelte';
-	import ProjectDeleteButton from '$lib/component/project/ProjectDeleteButton.svelte';
-	import NewChildProjectButton from '$lib/component/project/NewChildProjectButton.svelte';
-	import ProjectEditButton from '$lib/component/project/ProjectEditButton.svelte';
+	import ProjectDeleteDialog from '$lib/component/project/ProjectDeleteDialog.svelte';
+	import NewChildProjectDialog from '$lib/component/project/NewChildProjectDialog.svelte';
+	import ProjectEditButton from '$lib/component/project/ProjectEditDialog.svelte';
 
 	let { data }: PageProps = $props();
 
@@ -98,7 +98,7 @@
 						}}
 					>
 						<input type="hidden" name="id" value={rootProject.id} />
-						<ProjectDeleteButton />
+						<ProjectDeleteDialog />
 					</form>
 				{/if}
 			</div>
@@ -185,6 +185,6 @@
 			<div class="card card-hover">{childProject.id}</div>
 		{/each}
 
-		<NewChildProjectButton />
+		<NewChildProjectDialog />
 	</div>
 </div>

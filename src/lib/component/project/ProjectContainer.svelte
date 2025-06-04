@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ArrowUpRight } from '@lucide/svelte';
-	import PriorityChip from './PriorityChip.svelte';
-	import ChildProjectContainer from './project/ChildProjectContainer.svelte';
+	import PriorityChip from '$lib/component/PriorityChip.svelte';
+	import ChildProjectContainer from '$lib/component/project/ChildProjectContainer.svelte';
 
 	let {
 		rootProject,

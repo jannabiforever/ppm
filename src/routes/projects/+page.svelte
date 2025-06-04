@@ -1,7 +1,7 @@
 <script lang="ts">
-	import NewProjectButton from '$lib/component/project/NewProjectButton.svelte';
+	import NewProjectButton from '$lib/component/project/NewProjectDialog.svelte';
 	import ProjectPlaceholder from '$lib/component/project/ProjectPlaceholder.svelte';
-	import ProjectContainer from '$lib/component/ProjectContainer.svelte';
+	import ProjectContainer from '$lib/component/project/ProjectContainer.svelte';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
