@@ -63,7 +63,7 @@
 		themeClassMap[theme].card
 	} ${isPriorityHigh ? 'col-span-full' : ''}`}
 >
-	<header class="mb-4 flex items-center justify-between gap-2 p-6 pb-0">
+	<header class="flex items-center justify-between gap-2 p-6 pb-0">
 		<div class="flex items-center gap-3">
 			<h4 class="h4 font-semibold">
 				{rootProject.name}
@@ -75,16 +75,16 @@
 		</div>
 	</header>
 	{#if isPriorityHigh}
-		<section class="p-6">
+		<section class="p-6 pb-0">
 			{#if childProjects.length > 0}
 				<ChildProjectSummaryContainer {childProjects} />
 			{:else}
-				<p class="text-surface-500 text-center">하위 프로젝트가 없습니다</p>
+				<p class="text-surface-500 text-center">세부 프로젝트가 없습니다</p>
 			{/if}
 		</section>
 	{/if}
 	<footer class="flex justify-end p-6">
-		<a href="/projects/{rootProject.id}" class="btn btn-sm hover:bg-surface-300-700 pt-2 pb-2">
+		<a href="/projects/{rootProject.id}" class="btn btn-sm hover:bg-surface-300-700">
 			자세히 보기
 			<ArrowUpRight class="ml-1 size-4" />
 		</a>
