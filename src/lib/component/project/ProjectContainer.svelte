@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ArrowUpRight } from '@lucide/svelte';
 	import PriorityChip from '$lib/component/PriorityChip.svelte';
-	import ChildProjectContainer from '$lib/component/project/ChildProjectContainer.svelte';
+	import ChildProjectSummaryContainer from '$lib/component/project/ChildProjectSummaryContainer.svelte';
 
 	let {
 		rootProject,
@@ -63,34 +63,30 @@
 		themeClassMap[theme].card
 	} ${isPriorityHigh ? 'col-span-full' : ''}`}
 >
-	<div class="p-6">
-		<div class="mb-4 flex items-center justify-between">
-			<div class="flex items-center gap-3">
-				<h4 class="h4 font-semibold">
-					{rootProject.name}
-				</h4>
-				<span class="vr pl-3 text-end">{rootProject.goal}</span>
-			</div>
-			<div class="flex items-center">
-				<PriorityChip priority={rootProject.priority} />
-			</div>
+	<header class="mb-4 flex items-center justify-between gap-2 p-6 pb-0">
+		<div class="flex items-center gap-3">
+			<h4 class="h4 font-semibold">
+				{rootProject.name}
+			</h4>
+			<span class="vr pl-3 text-end">{rootProject.goal}</span>
 		</div>
-
-		{#if isPriorityHigh}
+		<div class="flex items-center">
+			<PriorityChip priority={rootProject.priority} />
+		</div>
+	</header>
+	{#if isPriorityHigh}
+		<section class="p-6">
 			{#if childProjects.length > 0}
-				{#each childProjects as childProject (childProject.id)}
-					<ChildProjectContainer {childProject} />
-				{/each}
+				<ChildProjectSummaryContainer {childProjects} />
 			{:else}
 				<p class="text-surface-500 text-center">하위 프로젝트가 없습니다</p>
 			{/if}
-		{/if}
-
-		<div class="flex justify-end">
-			<a href="/projects/{rootProject.id}" class="btn btn-sm hover:bg-surface-300-700 pt-2 pb-2">
-				자세히 보기
-				<ArrowUpRight class="ml-1 size-4" />
-			</a>
-		</div>
-	</div>
+		</section>
+	{/if}
+	<footer class="flex justify-end p-6">
+		<a href="/projects/{rootProject.id}" class="btn btn-sm hover:bg-surface-300-700 pt-2 pb-2">
+			자세히 보기
+			<ArrowUpRight class="ml-1 size-4" />
+		</a>
+	</footer>
 </div>
