@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Dialog } from 'bits-ui';
 	import { Plus, X } from '@lucide/svelte';
-	import PrioritySelector from '$lib/component/form/PrioritySelector.svelte';
 	import FormField from '$lib/component/form/FormField.svelte';
 	import FormMessage from '$lib/component/form/FormMessage.svelte';
 	import { invalidateAll } from '$app/navigation';
@@ -24,7 +23,6 @@
 	// Form validation state
 	let nameError = $state('');
 	let goalError = $state('');
-	let priorityError = $state('');
 	let showSuccessMessage = $state(false);
 	let isSubmitting = $state(false);
 	let formError = $state('');
