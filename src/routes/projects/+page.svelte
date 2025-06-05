@@ -12,7 +12,7 @@
 		{#await project}
 			<ProjectPlaceholder />
 		{:then project}
-			<ProjectContainer rootProject={project.rootProject} childProjects={project.childProjects} />
+			<ProjectContainer rootProject={project.rootProject} childProjects={project.childProjects} tasksMap={project.tasksMap} />
 		{/await}
 	{/each}
 

@@ -2,6 +2,7 @@ import type { Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { createRootProject, selectAllRootProjects } from '$lib/db/rootProject.server';
 import { selectChildProjectWithId } from '$lib/db/childProject.server';
+import { selectTasksByIds } from '$lib/db/task.server';
 import { sortByPriority } from '$lib/util';
 
 export const load: PageServerLoad = async () => {
@@ -16,9 +17,22 @@ export const load: PageServerLoad = async () => {
 				})
 			).then((projects) => projects.filter((project) => project !== null));
 
+			// Collect all task IDs from child projects
+			const allTaskIds = childProjects.flatMap(project => project?.taskIds || []);
+			
+			// Fetch all tasks at once
+			const tasks = await selectTasksByIds(allTaskIds);
+			
+			// Create a map for quick task lookup
+			const tasksMap = tasks.reduce((map, task) => {
+				map[task.id] = task;
+				return map;
+			}, {} as Record<string, App.Task>);
+
 			return {
 				rootProject,
-				childProjects
+				childProjects,
+				tasksMap
 			};
 		})
 	};

@@ -5,10 +5,12 @@
 
 	let {
 		rootProject,
-		childProjects
+		childProjects,
+		tasksMap = {}
 	}: {
 		rootProject: App.RootProject;
 		childProjects: App.ChildProject[];
+		tasksMap?: Record<string, App.Task>;
 	} = $props();
 
 	// 테마 추출
@@ -76,7 +78,7 @@
 	</header>
 	{#if isPriorityHigh}
 		<section class="p-6 pb-0">
-			<ChildProjectSummaryContainer {childProjects} />
+			<ChildProjectSummaryContainer {childProjects} {tasksMap} />
 		</section>
 	{/if}
 	<footer class="flex justify-end p-6 pt-2">

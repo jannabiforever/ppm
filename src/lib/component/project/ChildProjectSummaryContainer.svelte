@@ -1,8 +1,14 @@
 <script lang="ts">
-	import { ListTodo } from '@lucide/svelte';
+	import { ListTodo, CheckSquare, FileText } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 
-	let { childProjects }: { childProjects: App.ChildProject[] } = $props();
+	let {
+		childProjects,
+		tasksMap = {}
+	}: {
+		childProjects: App.ChildProject[];
+		tasksMap?: Record<string, App.Task>;
+	} = $props();
 
 	// 반응형 디스플레이 관련 상태
 	let displayCount = $state(3);
@@ -50,6 +56,40 @@
 								작업: {childProject.taskIds.length}개
 							</div>
 						</div>
+
+						<!-- 최대 3개 작업 표시 -->
+						{#if childProject.taskIds.length > 0}
+							<div class="mt-2 space-y-1.5">
+								{#each childProject.taskIds.slice(0, 3) as taskId (taskId)}
+									{#if tasksMap[taskId]}
+										<div class="bg-surface-100-800 flex items-center gap-2 rounded-sm text-sm">
+											<CheckSquare
+												class={`size-4 ${tasksMap[taskId].isDone ? 'text-primary-500' : 'text-surface-500'}`}
+											/>
+											<span class="truncate">{tasksMap[taskId].description}</span>
+										</div>
+									{:else}
+										<div class="bg-surface-100-800 flex items-center gap-2 rounded-sm text-sm">
+											<CheckSquare class="text-surface-500 size-4" />
+											<span class="truncate">{taskId}</span>
+										</div>
+									{/if}
+								{/each}
+
+								{#if childProject.taskIds.length > 3}
+									<div class="text-surface-500 mt-1.5 text-center text-xs">
+										외 {childProject.taskIds.length - 3}개
+									</div>
+								{/if}
+							</div>
+						{:else}
+							<div
+								class="bg-surface-100-800 border-surface-300-600 mt-2 rounded-sm border border-dashed p-3 text-center"
+							>
+								<FileText class="text-surface-500 mx-auto mb-1 size-5 opacity-50" />
+								<p class="text-surface-600-300 text-sm">등록된 작업이 없습니다</p>
+							</div>
+						{/if}
 					</div>
 				{/each}
 			</div>
