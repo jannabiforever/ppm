@@ -1,6 +1,6 @@
 import { getDb, replaceData, ROOT_PROJECT_TABLE } from '$lib/db/db.server';
 import { recordIdToString } from '$lib/util';
-import { RecordId } from 'surrealdb';
+import { PreparedQuery, RecordId } from 'surrealdb';
 
 export type FetchedRootProject = {
 	id: RecordId;
@@ -162,7 +162,28 @@ export async function updateRootProject<
  */
 export async function deleteRootProject(rootProjectId: string): Promise<App.RootProject | null> {
 	const db = await getDb();
-	return await db
-		.delete<FetchedRootProject>(new RecordId(ROOT_PROJECT_TABLE, rootProjectId))
-		.then(cast);
+	const query = new PreparedQuery(
+		`
+	  BEGIN TRANSACTION;
+			LET $rootProject = DELETE ONLY $rootProjectRecordId RETURN BEFORE;
+			IF $rootProject === NONE {
+			  RETURN NONE;
+			};
+
+			FOR $childProjectId IN $rootProject.childProjectIds {
+				LET $childProject = DELETE ONLY $childProjectId RETURN BEFORE;
+
+				FOR $taskId in $childProject.taskIds {
+				  DELETE $taskId;
+				}
+			};
+
+			RETURN $rootProject;
+		COMMIT TRANSACTION;
+	`,
+		{
+			rootProjectRecordId: new RecordId(ROOT_PROJECT_TABLE, rootProjectId)
+		}
+	);
+	return await db.query<[FetchedRootProject]>(query).then(([p]) => cast(p));
 }
