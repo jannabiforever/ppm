@@ -51,7 +51,7 @@ export async function createTask(
 	return task;
 }
 
-export async function selectTaskById(taskId: string, done?: boolean): Promise<App.Task | null> {
+export async function selectTaskById(taskId: string): Promise<App.Task | null> {
 	const db = await getDb();
 	const task = await db.select<FetchedTask>(new RecordId(TASK_TABLE, taskId)).then(cast);
 
