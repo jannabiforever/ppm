@@ -10,6 +10,7 @@ import {
 	deleteChildProject,
 	selectChildProjectWithId
 } from '$lib/db/childProject.server';
+import { createTask } from '$lib/db/task.server';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const rootProjectId = params.rootProjectId;
@@ -142,5 +143,30 @@ export const actions: Actions = {
 	deleteChildProject: async () => {
 		// TODO: Implement deleteChildProject action
 		return;
+	},
+
+	createTask: async ({ request }) => {
+		const data = await request.formData();
+
+		const childProjectId = data.get('childProjectId')?.toString() || '';
+		const description = data.get('description')?.toString() || '';
+
+		try {
+			const task = await createTask(childProjectId, description);
+			if (!task) {
+				throw Error('DB 오류가 발생했습니다.');
+			}
+
+			return {
+				success: true
+			};
+		} catch (error) {
+			const errMsg = error instanceof Error ? error.message : 'Unknown error';
+			console.error(errMsg);
+			return {
+				success: false,
+				error: `작업을 생성하는 데에 실패했습니다: ${errMsg}`
+			};
+		}
 	}
 };

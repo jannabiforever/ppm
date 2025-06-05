@@ -9,6 +9,8 @@ import {
 
 export const CHILD_PROJECT_TABLE = 'childProject';
 export const ROOT_PROJECT_TABLE = 'rootProject';
+export const TASK_TABLE = 'task';
+export const CHUNK_TABLE = 'chunk';
 
 export async function getDb(): Promise<Surreal> {
 	const db = new Surreal();

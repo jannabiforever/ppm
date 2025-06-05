@@ -40,7 +40,7 @@
 
 	<div class="container grid grid-cols-1 gap-4 md:grid-cols-2">
 		{#each childProjects as childProject, i (i)}
-			<ChildProjectContainer {childProject} />
+			<ChildProjectContainer {childProject} action="?/createTask" />
 		{/each}
 
 		<NewChildProjectDialog {form} />

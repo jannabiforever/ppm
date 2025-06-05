@@ -3,7 +3,7 @@ import { RecordId } from 'surrealdb';
 import { recordIdToString } from '$lib/util';
 import { type FetchedRootProject } from './rootProject.server';
 
-type FetchedChildProject = {
+export type FetchedChildProject = {
 	id: RecordId;
 	name: string;
 	goal: string;

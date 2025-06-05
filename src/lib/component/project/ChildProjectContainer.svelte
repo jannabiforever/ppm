@@ -1,21 +1,33 @@
 <script lang="ts">
 	import { FileText, ListTodo, CheckSquare } from '@lucide/svelte';
 
-	let { childProject }: { childProject: App.ChildProject } = $props();
+	let { childProject, action }: { childProject: App.ChildProject; action: string } = $props();
+
+	let mode = $state<'view' | 'edit'>('view');
+
+	const toggleToView = () => {
+		mode = 'view';
+	};
+
+	const toggleToEdit = () => {
+		mode = 'edit';
+	};
 </script>
 
-<div class="card p-4 shadow-md hover:shadow-lg transition-all duration-200 h-full min-h-[250px] flex flex-col">
-	<header class="pb-3 border-b border-surface-200-700">
+<div
+	class="card flex h-full min-h-[250px] flex-col p-4 shadow-md transition-all duration-200 hover:shadow-lg"
+>
+	<header class="border-surface-200-700 border-b pb-3">
 		<div class="flex items-center gap-3">
 			<h5 class="h5 font-semibold">{childProject.name}</h5>
-			<div class="vr pl-3 text-surface-600-300">{childProject.goal}</div>
+			<div class="vr text-surface-600-300 pl-3">{childProject.goal}</div>
 		</div>
 	</header>
 
-	<section class="py-5 flex-grow">
-		<div class="flex items-center justify-between mb-3">
+	<section class="flex-grow py-5">
+		<div class="mb-3 flex items-center justify-between">
 			<div class="flex items-center gap-2">
-				<ListTodo class="size-4 text-surface-500" />
+				<ListTodo class="text-surface-500 size-4" />
 				<span class="text-sm font-semibold">작업</span>
 			</div>
 			<span class="badge variant-soft-surface text-xs font-medium">
@@ -24,23 +36,54 @@
 		</div>
 
 		{#if childProject.taskIds.length > 0}
-			<div class="space-y-2 max-h-40 overflow-y-auto pr-1">
+			<div class="max-h-40 space-y-2 overflow-y-auto pr-1">
 				{#each childProject.taskIds as taskId (taskId)}
-					<div class="flex items-center gap-2 p-2 rounded-md bg-surface-50-900 border border-surface-200-700">
-						<CheckSquare class="size-4 text-surface-500" />
-						<span class="text-sm truncate">{taskId}</span>
+					<div
+						class="bg-surface-50-900 border-surface-200-700 flex items-center gap-2 rounded-md border p-2"
+					>
+						<CheckSquare class="text-surface-500 size-4" />
+						<span class="truncate text-sm">{taskId}</span>
 					</div>
 				{/each}
 			</div>
 		{:else}
-			<div class="bg-surface-50-900 rounded-md py-10 text-center border border-dashed border-surface-300-600">
-				<FileText class="mx-auto mb-2 size-6 opacity-50 text-surface-500" />
-				<p class="text-sm text-surface-600-300">등록된 작업이 없습니다</p>
+			<div
+				class="bg-surface-50-900 border-surface-300-600 rounded-md border border-dashed py-10 text-center"
+			>
+				<FileText class="text-surface-500 mx-auto mb-2 size-6 opacity-50" />
+				<p class="text-surface-600-300 text-sm">등록된 작업이 없습니다</p>
 			</div>
 		{/if}
 	</section>
 
-	<footer class="pt-3 mt-auto border-t border-surface-200-700 flex justify-end items-center">
-		<button class="btn btn-sm variant-soft-surface">상세보기</button>
+	<footer
+		class="border-surface-200-700 mt-auto flex h-12 items-center justify-between border-t pt-3"
+	>
+		{#if mode === 'edit'}
+			<form {action} method="POST" class="flex w-full gap-2">
+				<div class="input-group flex w-full">
+					<input class="input-ghost" type="hidden" name="childProjectId" value={childProject.id} />
+					<input
+						class="ig-input placeholder:text-xs"
+						type="text"
+						name="description"
+						placeholder="작업 설명"
+					/>
+					<button class="ig-btn btn-sm preset-filled-surface-500" type="submit">생성</button>
+					<button
+						class="ig-btn btn-sm preset-filled-error-500"
+						type="button"
+						onclick={toggleToView}
+					>
+						취소
+					</button>
+				</div>
+			</form>
+		{:else}
+			<button
+				class="btn btn-sm hover:bg-surface-300-700 px-4 transition-all duration-200"
+				onclick={toggleToEdit}>작업 추가</button
+			>
+		{/if}
 	</footer>
 </div>
