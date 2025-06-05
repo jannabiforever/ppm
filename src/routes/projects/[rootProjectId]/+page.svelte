@@ -3,8 +3,9 @@
 	import PriorityChip from '$lib/component/PriorityChip.svelte';
 	import NewChildProjectDialog from '$lib/component/project/NewChildProjectDialog.svelte';
 	import ProjectEditDialog from '$lib/component/project/ProjectEditDialog.svelte';
-	import ProjectDeleteDialog from '$lib/component/project/ProjectDeleteDialog.svelte';
 	import ChildProjectContainer from '$lib/component/project/ChildProjectContainer.svelte';
+	import DeleteConfirmDialog from '$lib/component/common/DeleteConfirmDialog.svelte';
+	import { Trash } from '@lucide/svelte';
 
 	let { data, form }: PageProps = $props();
 
@@ -34,14 +35,27 @@
 			<!-- Root Project Actions: Edit & Delete -->
 			<div class="flex">
 				<ProjectEditDialog {form} {rootProject} />
-				<ProjectDeleteDialog {form} />
+				<DeleteConfirmDialog 
+					entityName="프로젝트" 
+					entityId={rootProject.id} 
+					actionPath="?/deleteRootProject" 
+					warningMessage="해당 작업은 복구할 수 없습니다. 그래도 진행하시겠습니까?"
+					triggerButtonClass="btn hover:bg-surface-300-700"
+					navigateTo="/projects"
+					successMessage="프로젝트가 성공적으로 삭제되었습니다. 3초 후 프로젝트 목록으로 이동합니다."
+					{form}
+				>
+					{#snippet triggerContent()}
+						<Trash class="mr-1 size-4" /> 삭제
+					{/snippet}
+				</DeleteConfirmDialog>
 			</div>
 		</div>
 	</div>
 
 	<div class="container grid grid-cols-1 gap-4 md:grid-cols-2">
 		{#each childProjects as childProject, i (i)}
-			<ChildProjectContainer {childProject} {tasksMap} action="?/createTask" />
+			<ChildProjectContainer {childProject} {tasksMap} {form} action="?/createTask" />
 		{/each}
 
 		<NewChildProjectDialog {form} />

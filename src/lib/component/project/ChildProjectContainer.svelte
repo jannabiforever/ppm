@@ -1,15 +1,18 @@
 <script lang="ts">
-	import { FileText, ListTodo, CheckSquare, Plus } from '@lucide/svelte';
+	import { FileText, ListTodo, CheckSquare, Plus, Trash2 } from '@lucide/svelte';
 	import TaskItem from '$lib/component/task/TaskItem.svelte';
+	import DeleteConfirmDialog from '$lib/component/common/DeleteConfirmDialog.svelte';
 
 	let {
 		childProject,
 		action,
-		tasksMap = {}
+		tasksMap = {},
+		form = undefined
 	}: {
 		childProject: App.ChildProject;
 		action: string;
 		tasksMap?: Record<string, App.Task>;
+		form?: unknown;
 	} = $props();
 
 	let mode = $state<'view' | 'edit'>('view');
@@ -27,9 +30,25 @@
 	class="card flex h-full min-h-[250px] flex-col p-4 shadow-md transition-all duration-200 hover:shadow-lg"
 >
 	<header class="border-surface-200-700 border-b pb-3">
-		<div class="flex items-center gap-3">
-			<h5 class="h5 font-semibold">{childProject.name}</h5>
-			<div class="vr text-surface-600-300 pl-3">{childProject.goal}</div>
+		<div class="flex items-center justify-between">
+			<div class="flex items-center gap-3">
+				<h5 class="h5 font-semibold">{childProject.name}</h5>
+				<div class="vr text-surface-600-300 pl-3">{childProject.goal}</div>
+			</div>
+			
+			<!-- 삭제 버튼 -->
+			<DeleteConfirmDialog 
+				entityName={childProject.name}
+				entityId={childProject.id}
+				actionPath="?/deleteChildProject"
+				inputName="childProjectId"
+				warningMessage="모든 작업도 함께 삭제됩니다. 정말 삭제하시겠습니까?"
+				form={form}
+			>
+				{#snippet triggerContent()}
+					<Trash2 class="size-4" />
+				{/snippet}
+			</DeleteConfirmDialog>
 		</div>
 	</header>
 

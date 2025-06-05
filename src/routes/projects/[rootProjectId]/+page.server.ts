@@ -153,9 +153,31 @@ export const actions: Actions = {
 		return;
 	},
 
-	deleteChildProject: async () => {
-		// TODO: Implement deleteChildProject action
-		return;
+	deleteChildProject: async ({ request }) => {
+		const data = await request.formData();
+		const childProjectId = data.get('childProjectId')?.toString() || '';
+
+		if (!childProjectId) {
+			return { success: false, error: '세부 프로젝트 ID가 필요합니다.' };
+		}
+
+		try {
+			const deletedChildProject = await deleteChildProject(childProjectId);
+			if (!deletedChildProject) {
+				throw Error('세부 프로젝트 삭제에 실패했습니다.');
+			}
+
+			return {
+				success: true
+			};
+		} catch (error) {
+			const errMsg = error instanceof Error ? error.message : 'Unknown error';
+			console.error(errMsg);
+			return {
+				success: false,
+				error: `세부 프로젝트를 삭제하는 데에 실패했습니다: ${errMsg}`
+			};
+		}
 	},
 
 	createTask: async ({ request }) => {

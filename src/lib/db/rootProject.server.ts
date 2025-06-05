@@ -166,7 +166,7 @@ export async function deleteRootProject(rootProjectId: string): Promise<App.Root
 		`
 	  BEGIN TRANSACTION;
 			LET $rootProject = DELETE ONLY $rootProjectRecordId RETURN BEFORE;
-			IF $rootProject === NONE {
+			IF $rootProject == NONE {
 			  RETURN NONE;
 			};
 
