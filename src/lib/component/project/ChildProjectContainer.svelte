@@ -43,6 +43,9 @@
 				actionPath="?/deleteChildProject"
 				inputName="childProjectId"
 				warningMessage="모든 작업도 함께 삭제됩니다. 정말 삭제하시겠습니까?"
+				reloadPage={true}
+				waitTimeBeforeNavigate={1500}
+				successMessage="세부 프로젝트가 성공적으로 삭제되었습니다."
 				form={form}
 			>
 				{#snippet triggerContent()}

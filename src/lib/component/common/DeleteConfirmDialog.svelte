@@ -3,6 +3,7 @@
 	import { Dialog } from 'bits-ui';
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
 
 	let {
 		entityName = '',
@@ -18,7 +19,8 @@
 		form = undefined,
 		navigateTo = undefined,
 		successMessage = undefined,
-		waitTimeBeforeNavigate = 3000
+		waitTimeBeforeNavigate = 3000,
+		reloadPage = false
 	}: {
 		entityName?: string;
 		entityId?: string;
@@ -34,6 +36,7 @@
 		navigateTo?: string;
 		successMessage?: string;
 		waitTimeBeforeNavigate?: number;
+		reloadPage?: boolean;
 	} = $props();
 
 	let dialogOpen = $state(false);
@@ -54,12 +57,14 @@
 		setTimeout(() => {
 			if (navigateTo) {
 				goto(navigateTo);
+			} else if (reloadPage && browser) {
+				window.location.reload();
 			} else {
 				dialogOpen = false;
 				showingSuccessMessage = false;
 				if (onSuccess) onSuccess();
 			}
-		}, navigateTo ? waitTimeBeforeNavigate : 2000);
+		}, (navigateTo || reloadPage) ? waitTimeBeforeNavigate : 2000);
 	}
 
 	function handleDeleteFailure(message?: string) {
