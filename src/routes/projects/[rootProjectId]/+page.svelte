@@ -11,6 +11,7 @@
 	// Type assertions for TypeScript
 	let rootProject: App.RootProject = $derived(data.rootProject);
 	let childProjects: App.ChildProject[] = $derived(data.childProjects);
+	let tasksMap: Record<string, App.Task> = $derived(data.tasksMap);
 </script>
 
 <div class="container mx-auto">
@@ -40,7 +41,7 @@
 
 	<div class="container grid grid-cols-1 gap-4 md:grid-cols-2">
 		{#each childProjects as childProject, i (i)}
-			<ChildProjectContainer {childProject} action="?/createTask" />
+			<ChildProjectContainer {childProject} {tasksMap} action="?/createTask" />
 		{/each}
 
 		<NewChildProjectDialog {form} />

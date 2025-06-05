@@ -1,7 +1,16 @@
 <script lang="ts">
-	import { FileText, ListTodo, CheckSquare } from '@lucide/svelte';
+	import { FileText, ListTodo, CheckSquare, Plus } from '@lucide/svelte';
+	import TaskItem from '$lib/component/task/TaskItem.svelte';
 
-	let { childProject, action }: { childProject: App.ChildProject; action: string } = $props();
+	let {
+		childProject,
+		action,
+		tasksMap = {}
+	}: {
+		childProject: App.ChildProject;
+		action: string;
+		tasksMap?: Record<string, App.Task>;
+	} = $props();
 
 	let mode = $state<'view' | 'edit'>('view');
 
@@ -38,12 +47,16 @@
 		{#if childProject.taskIds.length > 0}
 			<div class="max-h-40 space-y-2 overflow-y-auto pr-1">
 				{#each childProject.taskIds as taskId (taskId)}
-					<div
-						class="bg-surface-50-900 border-surface-200-700 flex items-center gap-2 rounded-md border p-2"
-					>
-						<CheckSquare class="text-surface-500 size-4" />
-						<span class="truncate text-sm">{taskId}</span>
-					</div>
+					{#if tasksMap[taskId]}
+						<TaskItem task={tasksMap[taskId]} />
+					{:else}
+						<div
+							class="bg-surface-50-900 border-surface-200-700 flex items-center gap-2 rounded-md border p-2"
+						>
+							<CheckSquare class="text-surface-500 size-4" />
+							<span class="truncate text-sm">{taskId}</span>
+						</div>
+					{/if}
 				{/each}
 			</div>
 		{:else}
@@ -81,9 +94,12 @@
 			</form>
 		{:else}
 			<button
-				class="btn btn-sm hover:bg-surface-300-700 px-4 transition-all duration-200"
-				onclick={toggleToEdit}>작업 추가</button
+				class="btn btn-sm hover:bg-surface-300-700 flex items-center gap-2 pt-1 pb-1 transition-all duration-200"
+				onclick={toggleToEdit}
 			>
+				<Plus size={16} class="text-surface-500" />
+				작업 추가
+			</button>
 		{/if}
 	</footer>
 </div>

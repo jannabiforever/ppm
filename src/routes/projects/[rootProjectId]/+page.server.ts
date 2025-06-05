@@ -10,7 +10,7 @@ import {
 	deleteChildProject,
 	selectChildProjectWithId
 } from '$lib/db/childProject.server';
-import { createTask } from '$lib/db/task.server';
+import { createTask, selectTasksByIds } from '$lib/db/task.server';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const rootProjectId = params.rootProjectId;
@@ -22,9 +22,22 @@ export const load: PageServerLoad = async ({ params }) => {
 		rootProject.childProjectIds.map(selectChildProjectWithId)
 	).then((childProjects) => childProjects.filter((p) => p !== null));
 
+	// Collect all task IDs from child projects
+	const allTaskIds = childProjects.flatMap(project => project?.taskIds || []);
+	
+	// Fetch all tasks at once
+	const tasks = await selectTasksByIds(allTaskIds);
+	
+	// Create a map for quick task lookup
+	const tasksMap = tasks.reduce((map, task) => {
+		map[task.id] = task;
+		return map;
+	}, {} as Record<string, App.Task>);
+
 	return {
 		rootProject,
-		childProjects
+		childProjects,
+		tasksMap
 	};
 };
 

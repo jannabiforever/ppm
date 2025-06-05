@@ -57,3 +57,18 @@ export async function selectTaskById(taskId: string): Promise<App.Task | null> {
 
 	return task;
 }
+
+export async function selectTasksByIds(taskIds: string[]): Promise<App.Task[]> {
+	if (taskIds.length === 0) return [];
+	
+	const db = await getDb();
+	const tasks = await Promise.all(
+		taskIds.map(taskId => 
+			db.select<FetchedTask>(new RecordId(TASK_TABLE, taskId))
+				.then(t => cast(t))
+		)
+	);
+	
+	// Filter out null values
+	return tasks.filter((task): task is App.Task => task !== null);
+}
