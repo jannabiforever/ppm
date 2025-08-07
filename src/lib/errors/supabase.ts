@@ -1,6 +1,6 @@
 import { AuthError, PostgrestError } from '@supabase/supabase-js';
-import { StorageError } from '@supabase/storage-js';
 import { Data } from 'effect';
+import { StorageError } from '@supabase/storage-js';
 
 /**
  * An auth error's wrapper class that helps implementing error tags introduced from 'effect'.

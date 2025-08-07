@@ -1,10 +1,10 @@
-import { Context, Effect, Layer } from 'effect';
-import { type Session, type SupabaseClient, type User } from '@supabase/supabase-js';
-import { createServerClient } from '@supabase/ssr';
-import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { mapAuthError, SupabaseAuthError } from '$lib/errors/supabase';
-import { CookiesService } from './cookies';
 import type { Database } from '$lib/database.types';
+import { Context, Effect, Layer } from 'effect';
+import { CookiesService } from './cookies';
+import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { createServerClient } from '@supabase/ssr';
+import { mapAuthError, SupabaseAuthError } from '$lib/errors';
+import { type Session, type SupabaseClient, type User } from '@supabase/supabase-js';
 
 export class SupabaseService extends Context.Tag('Supabase')<
 	SupabaseService,

@@ -1,10 +1,9 @@
-import { type Handle, redirect } from '@sveltejs/kit';
-import { sequence } from '@sveltejs/kit/hooks';
 import HttpStatusCodes from 'http-status-codes';
-
-import { makeCookiesLayer } from '$lib/services/cookies';
 import { Effect, Layer, Console } from 'effect';
 import { SupabaseLive, SupabaseService } from '$lib/services/supabase';
+import { makeCookiesLayer } from '$lib/services/cookies';
+import { sequence } from '@sveltejs/kit/hooks';
+import { type Handle, redirect } from '@sveltejs/kit';
 
 const supabase: Handle = async ({ event, resolve }) => {
 	const cookiesLayer = makeCookiesLayer(event.cookies);
