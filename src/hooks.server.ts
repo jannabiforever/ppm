@@ -3,7 +3,7 @@ import { sequence } from '@sveltejs/kit/hooks';
 import HttpStatusCodes from 'http-status-codes';
 
 import { makeCookiesLayer } from '$lib/services/cookies';
-import { Effect, Layer } from 'effect';
+import { Effect, Layer, Console } from 'effect';
 import { SupabaseLive, SupabaseService } from '$lib/services/supabase';
 
 const supabase: Handle = async ({ event, resolve }) => {
@@ -24,22 +24,25 @@ const supabase: Handle = async ({ event, resolve }) => {
 };
 
 const authGuard: Handle = async ({ event, resolve }) => {
-	const safeGetSessionEffect = Effect.gen(function* () {
+	const safeGetSessionAsync = Effect.gen(function* () {
 		const supabaseService = yield* SupabaseService;
-		const result = yield* supabaseService.safeGetSession();
+		const result = yield* supabaseService.safeGetSessionAsync();
 		return result;
 	}).pipe(
 		Effect.provide(event.locals.supabase),
-		Effect.catchAll(() => Effect.succeed({ session: null, user: null }))
+		Effect.catchAll((error) => {
+			Console.error(error);
+			return Effect.succeed({ session: null, user: null });
+		})
 	);
 
-	const { session, user } = await Effect.runPromise(safeGetSessionEffect);
+	const { session, user } = await Effect.runPromise(safeGetSessionAsync);
 
 	event.locals.user = user;
 	event.locals.session = session;
 
 	if (!session && event.url.pathname.startsWith('/app')) {
-		redirect(HttpStatusCodes.SEE_OTHER, '/auth');
+		redirect(HttpStatusCodes.SEE_OTHER, '/auth/login');
 	}
 
 	if (session && event.url.pathname === '/auth/login') {

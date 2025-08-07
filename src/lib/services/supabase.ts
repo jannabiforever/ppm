@@ -9,12 +9,8 @@ import type { Database } from '$lib/database.types';
 export class SupabaseService extends Context.Tag('Supabase')<
 	SupabaseService,
 	{
-		readonly getClient: () => Effect.Effect<SupabaseClient>;
-		/**
-		 * Since all errors handled within `@supabase/ssr` are configured to be fail fast,
-		 * we don't have to handle as expected errors.
-		 */
-		readonly safeGetSession: () => Effect.Effect<
+		readonly getClientSync: () => Effect.Effect<SupabaseClient>;
+		readonly safeGetSessionAsync: () => Effect.Effect<
 			{ session: Session | null; user: User | null },
 			SupabaseAuthError
 		>;
@@ -29,20 +25,13 @@ export const SupabaseLive = Layer.effect(
 			PUBLIC_SUPABASE_URL,
 			PUBLIC_SUPABASE_ANON_KEY,
 			{
-				cookies: {
-					getAll: () => Effect.runSync(cookies.getAll()),
-					setAll: (
-						cookiesToSet: {
-							name: string;
-							value: string;
-						}[]
-					) => Effect.runSync(cookies.setAll(cookiesToSet))
-				}
+				cookies: Effect.runSync(cookies.plainCookieSync())
 			}
 		);
+
 		return {
-			getClient: () => Effect.succeed(client),
-			safeGetSession: () => {
+			getClientSync: () => Effect.succeed(client),
+			safeGetSessionAsync: () => {
 				const sessionResult = Effect.promise(() => client.auth.getSession()).pipe(
 					Effect.flatMap(({ data: { session }, error }) => {
 						return error === null ? Effect.succeed(session) : Effect.fail(mapAuthError(error));
