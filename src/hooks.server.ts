@@ -40,15 +40,23 @@ const authGuard: Handle = async ({ event, resolve }) => {
 	event.locals.user = user;
 	event.locals.session = session;
 
-	if (!session && event.url.pathname.startsWith('/app')) {
+	if (!session && isProtectedRoute(event.url.pathname)) {
 		redirect(HttpStatusCodes.SEE_OTHER, '/auth/login');
 	}
 
-	if (session && event.url.pathname === '/auth/login') {
+	if (session && isPublicRoute(event.url.pathname)) {
 		redirect(HttpStatusCodes.SEE_OTHER, '/app');
 	}
 
 	return resolve(event);
+};
+
+const isProtectedRoute = (pathname: string) => {
+	return pathname.startsWith('/app') || pathname === '/';
+};
+
+const isPublicRoute = (pathname: string) => {
+	return pathname === '/auth/login' || pathname === '/auth/register';
 };
 
 export const handle: Handle = sequence(supabase, authGuard);
