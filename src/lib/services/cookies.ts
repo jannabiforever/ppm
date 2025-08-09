@@ -8,7 +8,10 @@ export class CookiesService extends Context.Tag('Cookies')<
 		setAllSync: (cookiesToSet: Array<{ name: string; value: string }>) => Effect.Effect<void>;
 		/**
 		 * Returns a plain cookie service that can be used outside of the Effect ecosystem.
-		 * @returns
+		 * @returns Effect.Effect<{
+		 *  getAll: () => Array<{ name: string; value: string }>;
+		 *  setAll: (cookiesToSet: Array<{ name: string; value: string }>) => void;
+		 * }>
 		 */
 		plainCookieSync: () => Effect.Effect<{
 			getAll: () => Array<{ name: string; value: string }>;

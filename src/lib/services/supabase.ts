@@ -9,7 +9,7 @@ import { type Session, type SupabaseClient, type User } from '@supabase/supabase
 export class SupabaseService extends Context.Tag('Supabase')<
 	SupabaseService,
 	{
-		readonly getClientSync: () => Effect.Effect<SupabaseClient>;
+		readonly getClientSync: () => Effect.Effect<SupabaseClient<Database>>;
 		readonly safeGetSessionAsync: () => Effect.Effect<
 			{ session: Session | null; user: User | null },
 			SupabaseAuthError
