@@ -4,7 +4,7 @@ import { Effect } from 'effect';
 import HttpStatusCodes from 'http-status-codes';
 
 export const actions = {
-	default: async ({ locals, request }) => {
+	login: async ({ locals, request }) => {
 		const formData = await request.formData();
 		const email = formData.get('email')?.toString() ?? '';
 		const password = formData.get('password')?.toString() ?? '';

@@ -1,3 +1,31 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+@import '@skeletonlabs/skeleton';
+@import '@skeletonlabs/skeleton/optional/presets';
+@import '@skeletonlabs/skeleton/themes/cerberus';
+
+@source '../node_modules/@skeletonlabs/skeleton-svelte/dist';
+
+/* Font override */
+[data-theme='cerberus'] {
+	--base-font-family:
+		'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+		'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic',
+		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+	--heading-font-family: var(--base-font-family);
+	--anchor-font-family: var(--base-font-family);
+
+	--base-font-weight: 400; /* Regular; 일반체 */
+	--heading-font-weight: 600; /* Semibold; 세미볼드체 */
+
+	--text-scaling: 1;
+}
+
+@custom-variant dark (&:where([data-mode=dark], [data-mode=dark] *));
+
+html {
+	margin: 0;
+	padding: 0;
+}
