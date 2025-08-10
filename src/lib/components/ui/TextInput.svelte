@@ -14,8 +14,9 @@
 		disabled = false,
 		name,
 		type = 'text',
-		autocomplete = null
-	}: Props = $props();
+		autocomplete = null,
+		...props
+	}: Props & Record<string, unknown> = $props();
 </script>
 
 <div class="flex w-full flex-col gap-1">
@@ -29,5 +30,6 @@
 		{name}
 		{type}
 		{autocomplete}
+		{...props}
 	/>
 </div>

@@ -7,7 +7,7 @@
 		type: 'submit' | 'reset' | 'button';
 	}
 
-	let { children, filled, type }: Props = $props();
+	let { children, filled, type, ...props }: Props & Record<string, unknown> = $props();
 
 	let bgClass = $derived(
 		filled
@@ -19,6 +19,7 @@
 <button
 	{type}
 	class="rounded-[9px] {bgClass} flex items-center justify-center gap-2.5 px-6 py-4 heading-font-weight"
+	{...props}
 >
 	{@render children()}
 </button>
