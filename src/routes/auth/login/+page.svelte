@@ -17,12 +17,19 @@
 		</div>
 		<form action="?/login" class="flex w-full flex-col gap-12">
 			<div class="flex flex-col gap-2.5">
-				<TextInput label="이메일" name="email" placeholder="이메일을 입력하세요" type="email" />
+				<TextInput
+					label="이메일"
+					name="email"
+					placeholder="이메일을 입력하세요"
+					autocomplete="email"
+					type="email"
+				/>
 				<TextInput
 					label="비밀번호"
 					name="password"
 					placeholder="비밀번호를 입력하세요"
 					type="password"
+					autocomplete="current-password"
 				/>
 				<div class="container flex flex-row items-center justify-between pt-2.5">
 					<Checkbox name="remember" bind:checked={remember} label="이메일 기억하기" />

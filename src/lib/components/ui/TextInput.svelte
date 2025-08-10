@@ -5,9 +5,17 @@
 		disabled?: boolean;
 		name: string;
 		type?: string;
+		autocomplete?: 'email' | 'username' | 'current-password' | null;
 	}
 
-	let { label, placeholder, disabled = false, name, type }: Props = $props();
+	let {
+		label,
+		placeholder,
+		disabled = false,
+		name,
+		type = 'text',
+		autocomplete = null
+	}: Props = $props();
 </script>
 
 <div class="flex w-full flex-col gap-1">
@@ -20,5 +28,6 @@
 		{placeholder}
 		{name}
 		{type}
+		{autocomplete}
 	/>
 </div>
