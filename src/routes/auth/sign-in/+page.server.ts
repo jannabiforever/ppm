@@ -6,7 +6,7 @@ import { Console, Effect, Layer } from 'effect';
 import HttpStatusCodes from 'http-status-codes';
 
 export const actions = {
-	'sign-in': async ({ locals, request }) => {
+	'sign-in': async ({ locals, request, cookies }) => {
 		const formData = await request.formData();
 		const decodedFormData = decodeFormData(formData, SignInSchema).pipe(
 			Effect.tapError(Console.error),
@@ -32,6 +32,16 @@ export const actions = {
 
 		switch (result._tag) {
 			case 'Right':
+				// Handle remember
+				if (decodedFormData.right.remember) {
+					cookies.set('email', decodedFormData.right.email, {
+						httpOnly: true,
+						sameSite: 'strict',
+						secure: true,
+						path: '/auth',
+						maxAge: 60 * 60 * 24 * 30 // 30 days
+					});
+				}
 				throw redirect(HttpStatusCodes.SEE_OTHER, '/app');
 			case 'Left':
 				return fail(HttpStatusCodes.UNAUTHORIZED, { error: result.left });

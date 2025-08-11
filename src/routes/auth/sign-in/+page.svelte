@@ -47,7 +47,7 @@
 
 		{#if form !== null}
 			<div
-				class="bottom fixed w-full text-center text-base heading-font-weight"
+				class="w-full text-center text-base heading-font-weight"
 				class:text-success-500={!form.error}
 				class:text-error-500={form.error}
 			>
