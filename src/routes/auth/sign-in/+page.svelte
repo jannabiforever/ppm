@@ -4,14 +4,7 @@
 	import TextInput from '$lib/components/ui/TextInput.svelte';
 	import google from '$lib/assets/google.svg';
 
-	let {
-		form
-	}: {
-		form: {
-			success: boolean;
-			message: string;
-		} | null;
-	} = $props();
+	let { form } = $props();
 
 	let remember = $state(false);
 </script>
@@ -45,7 +38,7 @@
 			</div>
 			<div class="flex flex-col gap-2.5">
 				<Button type="submit" filled={true}>로그인</Button>
-				<Button type="button" filled={false} formaction="?/sign-in-google">
+				<Button type="submit" filled={false} formaction="?/sign-in-google">
 					<img src={google} alt="Google" width="18px" height="18px" />
 					구글로 로그인
 				</Button>
@@ -54,11 +47,11 @@
 
 		{#if form !== null}
 			<div
-				class="w-full text-base heading-font-weight"
-				class:text-success-500={form.success}
-				class:text-error-500={!form.success}
+				class="bottom fixed w-full text-center text-base heading-font-weight"
+				class:text-success-500={!form.error}
+				class:text-error-500={form.error}
 			>
-				{form.message}
+				{form.error.message}
 			</div>
 		{/if}
 	</div>

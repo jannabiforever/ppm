@@ -8,7 +8,7 @@ import { StorageError } from '@supabase/storage-js';
  * error specific to Supabase authentication operations.
  */
 export class SupabaseAuthError extends Data.TaggedError('SupabaseAuth')<{
-	readonly originalError: AuthError;
+	readonly message: string;
 }> {}
 
 /**
@@ -19,7 +19,7 @@ export class SupabaseAuthError extends Data.TaggedError('SupabaseAuth')<{
  * @returns A new SupabaseAuthError instance containing the original error
  */
 export function mapAuthError(error: AuthError): SupabaseAuthError {
-	return new SupabaseAuthError({ originalError: error });
+	return new SupabaseAuthError({ message: error.message });
 }
 
 /**
@@ -28,7 +28,7 @@ export function mapAuthError(error: AuthError): SupabaseAuthError {
  * error specific to Supabase storage operations.
  */
 export class SupabaseStorageError extends Data.TaggedError('SupabaseStorage')<{
-	readonly originalError: StorageError;
+	readonly message: string;
 }> {}
 
 /**
@@ -39,7 +39,7 @@ export class SupabaseStorageError extends Data.TaggedError('SupabaseStorage')<{
  * @returns A new SupabaseStorageError instance containing the original error
  */
 export function mapStorageError(error: StorageError): SupabaseStorageError {
-	return new SupabaseStorageError({ originalError: error });
+	return new SupabaseStorageError({ message: error.message });
 }
 
 /**
@@ -48,7 +48,7 @@ export function mapStorageError(error: StorageError): SupabaseStorageError {
  * error specific to Supabase Postgrest operations.
  */
 export class SupabasePostgrestError extends Data.TaggedError('SupabasePostgrest')<{
-	readonly originalError: PostgrestError;
+	readonly message: string;
 }> {}
 
 /**
@@ -59,5 +59,5 @@ export class SupabasePostgrestError extends Data.TaggedError('SupabasePostgrest'
  * @returns A new SupabasePostgrestError instance containing the original error
  */
 export function mapPostgrestError(error: PostgrestError): SupabasePostgrestError {
-	return new SupabasePostgrestError({ originalError: error });
+	return new SupabasePostgrestError({ message: error.message });
 }

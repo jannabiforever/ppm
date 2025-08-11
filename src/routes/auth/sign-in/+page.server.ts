@@ -1,13 +1,16 @@
 import { AuthLive, AuthService, SignInSchema } from '$lib/modules/auth';
 import { decodeFormData } from '$lib/parse';
+import { toObj } from '$lib/shared/errors';
 import { fail, redirect, type Actions } from '@sveltejs/kit';
-import { Effect, Layer } from 'effect';
+import { Console, Effect, Layer } from 'effect';
 import HttpStatusCodes from 'http-status-codes';
 
 export const actions = {
 	'sign-in': async ({ locals, request }) => {
 		const formData = await request.formData();
 		const decodedFormData = decodeFormData(formData, SignInSchema).pipe(
+			Effect.tapError(Console.error),
+			Effect.mapError(toObj),
 			Effect.either,
 			Effect.runSync
 		);
@@ -21,13 +24,15 @@ export const actions = {
 			return yield* auth.signInWithPasswordAsync(decodedFormData.right);
 		}).pipe(
 			Effect.provide(Layer.provide(AuthLive, locals.supabase)),
+			Effect.tapError(Console.error),
+			Effect.mapError(toObj),
 			Effect.either,
 			Effect.runPromise
 		);
 
 		switch (result._tag) {
 			case 'Right':
-				return redirect(HttpStatusCodes.SEE_OTHER, '/app');
+				throw redirect(HttpStatusCodes.SEE_OTHER, '/app');
 			case 'Left':
 				return fail(HttpStatusCodes.UNAUTHORIZED, { error: result.left });
 		}
@@ -39,13 +44,15 @@ export const actions = {
 			return yield* auth.signInWithGoogleOAuthAsync();
 		}).pipe(
 			Effect.provide(Layer.provide(AuthLive, locals.supabase)),
+			Effect.tapError(Console.error),
+			Effect.mapError(toObj),
 			Effect.either,
 			Effect.runPromise
 		);
 
 		switch (result._tag) {
 			case 'Right':
-				return redirect(HttpStatusCodes.SEE_OTHER, result.right);
+				throw redirect(HttpStatusCodes.SEE_OTHER, result.right);
 			case 'Left':
 				return fail(HttpStatusCodes.UNAUTHORIZED, { error: result.left });
 		}
