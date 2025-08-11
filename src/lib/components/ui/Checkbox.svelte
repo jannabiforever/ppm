@@ -8,13 +8,15 @@
 		checked: boolean;
 	}
 
-	let { label, name, checked = $bindable(), ...props }: Props = $props();
+	let { label, name, checked = $bindable(), ...props }: Props & Record<string, unknown> = $props();
 </script>
 
 <div class="flex items-center gap-2.5">
 	<Checkbox.Root
 		bind:checked
 		class="inline-flex size-[24px] items-center justify-center rounded-md border border-surface-100-900 bg-surface-50-950 transition-all duration-150 ease-in-out active:scale-[0.98] data-[state=checked]:bg-surface-800-200 data-[state=unchecked]:hover:border-surface-400-600"
+		{name}
+		id={name}
 		{...props}
 	>
 		{#snippet children({ checked, indeterminate })}
