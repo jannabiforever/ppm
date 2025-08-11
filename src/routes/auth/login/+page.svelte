@@ -40,7 +40,7 @@
 				/>
 				<div class="container flex flex-row items-center justify-between pt-2.5">
 					<Checkbox name="remember" bind:checked={remember} label="이메일 기억하기" />
-					<a href="/auth/find-password" class="anchor text-xs">비밀번호 찾기</a>
+					<a href="/auth/find-password" class="anchor text-sm">비밀번호 찾기</a>
 				</div>
 			</div>
 			<div class="flex flex-col gap-2.5">
