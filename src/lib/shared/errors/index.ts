@@ -1,4 +1,5 @@
 export * from './supabase';
+export * from './domain';
 
 /**
  * A helper function to map error objects to a standardized format, to avoid pojo error.

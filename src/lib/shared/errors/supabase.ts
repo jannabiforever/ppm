@@ -61,3 +61,29 @@ export class SupabasePostgrestError extends Data.TaggedError('SupabasePostgrest'
 export function mapPostgrestError(error: PostgrestError): SupabasePostgrestError {
 	return new SupabasePostgrestError({ message: error.message });
 }
+
+/**
+ * Union type for all Supabase errors
+ */
+export type SupabaseError = SupabaseAuthError | SupabaseStorageError | SupabasePostgrestError;
+
+/**
+ * General mapper function that handles any Supabase error type
+ */
+export function mapSupabaseError(
+	error: PostgrestError | AuthError | StorageError | { message: string }
+): SupabaseError {
+	if ('code' in error && 'details' in error) {
+		// PostgrestError
+		return mapPostgrestError(error as PostgrestError);
+	} else if ('status' in error && 'statusText' in error) {
+		// AuthError
+		return mapAuthError(error as AuthError);
+	} else if ('statusCode' in error) {
+		// StorageError
+		return mapStorageError(error as StorageError);
+	} else {
+		// Generic error - default to Postgrest
+		return new SupabasePostgrestError({ message: error.message });
+	}
+}
