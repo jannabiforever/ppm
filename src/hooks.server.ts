@@ -1,7 +1,7 @@
 import HttpStatusCodes from 'http-status-codes';
 import { Effect, Layer, Console } from 'effect';
-import { SupabaseLive, SupabaseService } from '$lib/services/supabase';
-import { makeCookiesLayer } from '$lib/services/cookies';
+import { SupabaseLive, SupabaseService } from '$lib/infra/supabase/layer.server';
+import { makeCookiesLayer } from '$lib/infra/cookies';
 import { sequence } from '@sveltejs/kit/hooks';
 import { type Handle, redirect } from '@sveltejs/kit';
 
