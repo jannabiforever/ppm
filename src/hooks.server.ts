@@ -41,7 +41,7 @@ const authGuard: Handle = async ({ event, resolve }) => {
 	event.locals.session = session;
 
 	if (!session && isProtectedRoute(event.url.pathname)) {
-		redirect(HttpStatusCodes.SEE_OTHER, '/auth/login');
+		redirect(HttpStatusCodes.SEE_OTHER, '/auth/sign-in');
 	}
 
 	if (session && isPublicRoute(event.url.pathname)) {
@@ -56,7 +56,7 @@ const isProtectedRoute = (pathname: string) => {
 };
 
 const isPublicRoute = (pathname: string) => {
-	return pathname === '/auth/login' || pathname === '/auth/register';
+	return pathname === '/auth/sign-in' || pathname === '/auth/register';
 };
 
 export const handle: Handle = sequence(supabase, authGuard);
