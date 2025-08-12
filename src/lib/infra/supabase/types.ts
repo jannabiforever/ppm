@@ -36,39 +36,33 @@ export type Database = {
     Tables: {
       focus_sessions: {
         Row: {
+          closed_at: string | null
           created_at: string
-          ended_at: string | null
           id: string
-          intensity_note: string | null
           owner_id: string
-          progress_note: string | null
           project_id: string | null
+          scheduled_end_at: string
           started_at: string
-          task_id: string | null
           updated_at: string
         }
         Insert: {
+          closed_at?: string | null
           created_at?: string
-          ended_at?: string | null
           id?: string
-          intensity_note?: string | null
           owner_id?: string
-          progress_note?: string | null
           project_id?: string | null
+          scheduled_end_at?: string
           started_at: string
-          task_id?: string | null
           updated_at?: string
         }
         Update: {
+          closed_at?: string | null
           created_at?: string
-          ended_at?: string | null
           id?: string
-          intensity_note?: string | null
           owner_id?: string
-          progress_note?: string | null
           project_id?: string | null
+          scheduled_end_at?: string
           started_at?: string
-          task_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -77,13 +71,6 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "focus_sessions_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -114,6 +101,48 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      session_tasks: {
+        Row: {
+          created_at: string
+          order_index: number | null
+          seconds_spent: number
+          session_id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          order_index?: number | null
+          seconds_spent?: number
+          session_id: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          order_index?: number | null
+          seconds_spent?: number
+          session_id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_tasks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "focus_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_tasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {
