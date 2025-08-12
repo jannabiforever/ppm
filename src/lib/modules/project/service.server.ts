@@ -30,6 +30,9 @@ export class ProjectService extends Context.Tag('Project')<
 		readonly deleteProjectAsync: (
 			id: string
 		) => Effect.Effect<void, SupabasePostgrestError | DomainError>;
+		readonly getAllActiveProjectsAsync: () => Effect.Effect<Project[], SupabasePostgrestError>;
+		readonly archiveProjectAsync: (id: string) => Effect.Effect<Project, SupabasePostgrestError>;
+		readonly restoreProjectAsync: (id: string) => Effect.Effect<Project, SupabasePostgrestError>;
 	}
 >() {}
 
@@ -44,7 +47,8 @@ export const ProjectLive = Layer.effect(
 					Effect.flatMap((client) => {
 						const insertData: TablesInsert<'projects'> = {
 							name: input.name,
-							description: input.description
+							description: input.description,
+							active: input.active ?? true
 						};
 
 						return Effect.promise(() =>
@@ -70,6 +74,9 @@ export const ProjectLive = Layer.effect(
 				supabase.getClientSync().pipe(
 					Effect.flatMap((client) => {
 						let queryBuilder = client.from('projects').select();
+
+						// Filter by active status (default to true if not specified)
+						queryBuilder = queryBuilder.eq('active', query?.active ?? true);
 
 						if (query?.name) {
 							queryBuilder = queryBuilder.ilike('name', `%${query.name}%`);
@@ -106,6 +113,9 @@ export const ProjectLive = Layer.effect(
 						if (input.description !== undefined) {
 							updateData.description = input.description;
 						}
+						if (input.active !== undefined) {
+							updateData.active = input.active;
+						}
 
 						return Effect.promise(() =>
 							client.from('projects').update(updateData).eq('id', id).select().single()
@@ -134,16 +144,56 @@ export const ProjectLive = Layer.effect(
 						return yield* Effect.fail(createProjectHasTasksError(taskCount));
 					}
 
-					// Proceed with deletion
+					// Perform soft delete by setting active to false instead of hard delete
 					return yield* supabase.getClientSync().pipe(
 						Effect.flatMap((client) =>
-							Effect.promise(() => client.from('projects').delete().eq('id', id))
+							Effect.promise(() => client.from('projects').update({ active: false }).eq('id', id))
 						),
 						Effect.flatMap((res) =>
 							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.void
 						)
 					);
-				})
+				}),
+
+			getAllActiveProjectsAsync: () =>
+				supabase.getClientSync().pipe(
+					Effect.flatMap((client) => {
+						const queryBuilder = client
+							.from('projects')
+							.select()
+							.eq('active', true)
+							.order('updated_at', { ascending: false });
+
+						return Effect.promise(() => queryBuilder);
+					}),
+					Effect.flatMap((res) =>
+						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+					)
+				),
+
+			archiveProjectAsync: (id: string) =>
+				supabase.getClientSync().pipe(
+					Effect.flatMap((client) =>
+						Effect.promise(() =>
+							client.from('projects').update({ active: false }).eq('id', id).select().single()
+						)
+					),
+					Effect.flatMap((res) =>
+						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+					)
+				),
+
+			restoreProjectAsync: (id: string) =>
+				supabase.getClientSync().pipe(
+					Effect.flatMap((client) =>
+						Effect.promise(() =>
+							client.from('projects').update({ active: true }).eq('id', id).select().single()
+						)
+					),
+					Effect.flatMap((res) =>
+						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+					)
+				)
 		};
 	})
 );

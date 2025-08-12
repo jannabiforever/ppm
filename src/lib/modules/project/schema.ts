@@ -5,7 +5,8 @@ import { Schema } from 'effect';
  */
 export const CreateProjectSchema = Schema.Struct({
 	name: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(100)),
-	description: Schema.optional(Schema.String.pipe(Schema.maxLength(500)))
+	description: Schema.optional(Schema.String.pipe(Schema.maxLength(500))),
+	active: Schema.optional(Schema.Boolean)
 });
 
 /**
@@ -13,7 +14,8 @@ export const CreateProjectSchema = Schema.Struct({
  */
 export const UpdateProjectSchema = Schema.Struct({
 	name: Schema.optional(Schema.String.pipe(Schema.minLength(1), Schema.maxLength(100))),
-	description: Schema.optional(Schema.String.pipe(Schema.maxLength(500)))
+	description: Schema.optional(Schema.String.pipe(Schema.maxLength(500))),
+	active: Schema.optional(Schema.Boolean)
 });
 
 /**
@@ -21,6 +23,7 @@ export const UpdateProjectSchema = Schema.Struct({
  */
 export const ProjectQuerySchema = Schema.Struct({
 	name: Schema.optional(Schema.String),
+	active: Schema.optional(Schema.Boolean),
 	limit: Schema.optional(Schema.Number.pipe(Schema.positive(), Schema.int())),
 	offset: Schema.optional(Schema.Number.pipe(Schema.nonNegative(), Schema.int()))
 });
