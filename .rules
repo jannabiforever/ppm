@@ -1,3 +1,9 @@
+# typescript 관련 코드 룰
+
+## No any
+
+타입 추론 시, `any`를 그 어떤 경우에도 사용하지 않는다.
+
 # Effect.ts 관련 코드 룰
 
 ## Naming Conventions
