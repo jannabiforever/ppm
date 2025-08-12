@@ -12,10 +12,21 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
-		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run"
+		"test": "vitest",
+		"test:watch": "vitest --watch",
+		"test:coverage": "vitest --coverage",
+		"test:ui": "vitest --ui",
+		"test:run": "vitest --run",
+		"test:db": "TEST_DB_CLEANUP=true vitest",
+		"test:timing": "vitest --grep='timing|timeout|duration'",
+		"test:concurrent": "vitest --grep='concurrent|race|parallel'",
+		"test:integration": "vitest --grep='integration'",
+		"test:unit": "vitest --grep='unit'"
 	},
 	"devDependencies": {
+		"@effect/platform": "^0.90.2",
+		"@effect/platform-node": "^0.95.0",
+		"@effect/vitest": "^0.25.0",
 		"@eslint/compat": "^1.2.5",
 		"@eslint/js": "^9.18.0",
 		"@skeletonlabs/skeleton": "^3.1.7",
