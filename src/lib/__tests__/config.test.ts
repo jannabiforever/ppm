@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { Effect } from 'effect';
-import { runTestEffect } from './setup/test-helpers';
-import { createMockSupabaseService } from './setup/mock-supabase';
+import { runTestEffect } from '../shared/__tests__/test-helpers';
+import { createMockSupabaseService } from '../shared/__tests__/mocks/supabase.mock';
 
 describe('Test Configuration', () => {
 	test('should run basic Effect operations', async () => {

@@ -31,9 +31,21 @@ export type FocusSessionWithTasks = FocusSession & {
 export class FocusSessionService extends Context.Tag('FocusSession')<
 	FocusSessionService,
 	{
+		/**
+		 * Creates a new focus session.
+		 *
+		 * @param input - The focus session creation parameters
+		 * @returns Effect that succeeds with the created FocusSession or fails with an error
+		 *
+		 * @throws {SupabasePostgrestError} When database operations fail (connection, constraint violations, etc.)
+		 * @throws {ActiveFocusSessionExistsError} When user already has an active focus session
+		 * @throws {ProjectNotFoundError} When specified project_id doesn't exist or user lacks access
+		 * @throws {TaskNotFoundError} When any of the specified task_ids don't exist or user lacks access
+		 * @throws {InvalidTaskStatusTransitionError} When tasks are not in a valid state for focus session
+		 */
 		readonly createFocusSessionAsync: (
 			input: CreateFocusSessionInput
-		) => Effect.Effect<FocusSession, SupabasePostgrestError>;
+		) => Effect.Effect<FocusSession, SupabasePostgrestError | DomainError>;
 		readonly getFocusSessionByIdAsync: (
 			id: string
 		) => Effect.Effect<FocusSession | null, SupabasePostgrestError>;
@@ -58,9 +70,34 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 			id: string,
 			input: UpdateFocusSessionInput
 		) => Effect.Effect<FocusSession, SupabasePostgrestError>;
+		/**
+		 * Starts a new focus session with specified tasks and duration.
+		 *
+		 * @param input - The session start parameters including tasks and duration
+		 * @returns Effect that succeeds with the started FocusSession or fails with an error
+		 *
+		 * @throws {SupabasePostgrestError} When database operations fail
+		 * @throws {ActiveFocusSessionExistsError} When user already has an active focus session
+		 * @throws {TaskNotFoundError} When any of the specified task_ids don't exist or user lacks access
+		 * @throws {InvalidTaskStatusTransitionError} When tasks cannot be transitioned to 'in_session' status
+		 * @throws {ProjectNotFoundError} When specified project_id doesn't exist or user lacks access
+		 */
 		readonly startFocusSessionAsync: (
 			input: StartFocusSessionInput
 		) => Effect.Effect<FocusSession, SupabasePostgrestError | DomainError>;
+		/**
+		 * Ends an active focus session and updates task completion states.
+		 *
+		 * @param sessionId - The ID of the session to end
+		 * @param input - The session completion data including task updates
+		 * @returns Effect that succeeds with the ended FocusSession or fails with an error
+		 *
+		 * @throws {SupabasePostgrestError} When database operations fail
+		 * @throws {FocusSessionNotFoundError} When session doesn't exist or user lacks access
+		 * @throws {FocusSessionAlreadyEndedError} When session is already closed
+		 * @throws {InvalidTaskStatusTransitionError} When task status transitions are invalid
+		 * @throws {TaskNotFoundError} When any task in completion updates doesn't exist
+		 */
 		readonly endFocusSessionAsync: (
 			sessionId: string,
 			input: EndFocusSessionInput
