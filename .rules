@@ -147,3 +147,191 @@ const result = await Effect.gen(function* () {
 - **Business Logic Unit Tests**: 순수 비즈니스 로직 함수들
 - **Service Integration Tests**: 전체 Effect 파이프라인 및 의존성
 - **Error Handling Tests**: Effect 에러 전파 및 처리
+
+# Error Handling Rules
+
+이 프로젝트는 Effect.ts 기반의 타입 안전한 에러 처리 시스템을 구축하기 위한 일관된 룰을 따른다.
+
+## 에러 클래스 정의 규칙
+
+### Constructor 기반 에러 정의
+
+모든 도메인 에러는 `Data.TaggedError`를 상속하고 constructor 기반으로 정의한다.
+
+```typescript
+// ✅ GOOD: Constructor 기반 에러 정의
+export class UserProfileNotFoundError extends Data.TaggedError('UserProfileNotFound')<{
+	readonly message: string;
+	readonly userId: string;
+}> {
+	constructor(userId: string) {
+		super({
+			message: `User profile not found for user ${userId}`,
+			userId
+		});
+	}
+}
+
+// ❌ BAD: 헬퍼 함수 기반 (지양)
+export const createUserProfileNotFoundError = (userId: string) =>
+	new UserProfileNotFoundError({ message: `...`, userId });
+```
+
+**핵심 원칙:**
+- `Data.TaggedError`를 상속하여 태그된 에러 생성
+- Constructor에서 메시지와 메타데이터를 자동 생성
+- 에러 생성 시 필요한 최소한의 인자만 받기
+- 일관된 메시지 형식과 톤 유지
+
+## 에러 모듈 구조 규칙
+
+### 모듈별 에러 관리
+
+각 모듈의 에러는 해당 모듈에서 정의하고 관리한다.
+
+```
+📁 src/lib/modules/
+├── 📁 task/
+│   ├── errors.ts          # 태스크 관련 에러들
+│   ├── service.server.ts  # 에러 import 및 사용
+│   └── index.ts           # errors export 포함
+├── 📁 user_profile/
+│   ├── schema.ts          # 에러 정의 (스키마와 밀접한 경우)
+│   └── service.server.ts  # 에러 사용
+└── 📁 shared/errors/
+    └── domain.ts          # 중앙 집중식 re-export
+```
+
+**핵심 원칙:**
+- 각 모듈의 도메인 에러는 해당 모듈에서 정의
+- `shared/errors/domain.ts`는 모든 에러를 re-export하는 중앙 허브 역할
+- 스키마와 밀접한 에러는 `schema.ts`에 정의 가능
+- 모든 모듈의 `index.ts`에서 에러들을 export
+
+## 서비스 에러 타입 명시 규칙
+
+### 정확한 에러 타입 선언
+
+모든 서비스 메서드는 발생 가능한 에러 타입을 정확히 명시한다.
+
+```typescript
+// ✅ GOOD: 정확한 에러 타입 명시
+export class UserProfileService extends Context.Tag('UserProfile')<
+	UserProfileService,
+	{
+		readonly getCurrentUserProfileAsync: () => Effect.Effect<
+			UserProfile,
+			SupabasePostgrestError | SupabaseAuthError | NoSessionOrUserError | UserProfileNotFoundError
+		>;
+	}
+>() {}
+
+// ❌ BAD: 불명확한 에러 타입
+readonly getCurrentUserProfileAsync: () => Effect.Effect<UserProfile, unknown>;
+```
+
+**핵심 원칙:**
+- 모든 가능한 에러 타입을 유니온으로 명시
+- `unknown`, `any`, `never` 사용 금지 (적절한 경우 제외)
+- 각 메서드별로 실제 발생 가능한 에러만 포함
+- 인프라 에러와 도메인 에러를 구분하여 타입에 반영
+
+## 에러 변환 및 전파 규칙
+
+### 적절한 에러 변환
+
+외부 시스템의 에러나 null/undefined 값을 적절한 도메인 에러로 변환한다.
+
+```typescript
+// ✅ GOOD: null 체크 후 도메인 에러로 변환
+if (!res.data) {
+	return yield* Effect.fail(new UserProfileNotFoundError(id));
+}
+
+// ✅ GOOD: 외부 API 에러를 적절히 매핑
+if (res.error) {
+	return yield* Effect.fail(mapPostgrestError(res.error, res.status));
+}
+
+// ❌ BAD: null을 그대로 반환
+return res.data; // null일 수 있음 - 타입 안전하지 않음
+```
+
+**핵심 원칙:**
+- 외부 API 에러는 내부 에러 타입으로 변환
+- null/undefined는 적절한 도메인 에러로 변환
+- 에러 체인에서 타입 안전성 유지
+- 의미 있는 에러 메시지와 메타데이터 제공
+
+## 에러 핸들링 및 복구 규칙
+
+### 타입 안전한 에러 처리
+
+`catchTag`를 사용하여 특정 에러 타입별로 적절한 처리를 수행한다.
+
+```typescript
+// ✅ GOOD: 특정 에러 타입별 처리
+Effect.catchTag('UserProfileNotFound', () =>
+	Effect.succeed(Option.none())
+),
+Effect.catchTag('NoSessionOrUser', () =>
+	Effect.succeed(Option.none())
+),
+
+// ✅ GOOD: 에러 객체 구조 차이 고려
+const err = clientData.left;
+const status = 'status' in err ? err.status : 500;
+error(status, toObj(err));
+```
+
+**핵심 원칙:**
+- `catchTag`를 사용한 타입 안전한 에러 처리
+- 에러별 적절한 fallback 로직 제공
+- 서로 다른 에러 구조 간 안전한 속성 접근
+- 복구 가능한 에러와 치명적 에러 구분
+
+## DomainError 유니온 타입 규칙
+
+### 중앙 집중식 에러 타입 관리
+
+모든 도메인 에러를 포함하는 유니온 타입을 `domain.ts`에서 관리한다.
+
+```typescript
+// ✅ GOOD: 모든 도메인 에러를 포함하는 유니온 타입
+export type DomainError =
+	| ActiveFocusSessionExistsError
+	| FocusSessionNotFoundError
+	| TaskNotFoundError
+	| UserProfileNotFoundError
+	// ... 기타 모든 도메인 에러들
+```
+
+**핵심 원칙:**
+- 새로운 도메인 에러 추가 시 반드시 유니온 타입에 포함
+- 인프라 에러(Supabase, Auth 등)와 도메인 에러 명확히 구분
+- 타입 안전성을 통한 에러 처리 누락 방지
+- 컴파일 타임에 모든 에러 케이스 검증 가능하도록 구성
+
+## 에러 메시지 컨벤션
+
+### 일관된 메시지 형식
+
+모든 에러 메시지는 구체적이고 액션 가능한 형태로 작성한다.
+
+```typescript
+// ✅ GOOD: 일관된 메시지 형식
+message: `User profile not found for user ${userId}`
+message: `Task with ID ${taskId} not found.`
+message: `Cannot transition task from ${currentStatus} to ${targetStatus}.`
+
+// ❌ BAD: 일관성 없고 모호한 메시지
+message: "Profile missing"
+message: "Not found"
+message: "Error occurred"
+```
+
+**핵심 원칙:**
+- 구체적이고 명확한 에러 상황 설명
+- 관련 ID나 상태 정보를 메시지에 포함
+- 사용자나 개발자가 다음 액션을 취할 수 있도록 안내
+- 일관된 문장 구조와 톤 유지 (영어 기준)
