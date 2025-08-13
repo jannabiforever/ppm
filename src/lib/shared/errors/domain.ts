@@ -2,7 +2,9 @@
 export * from '$lib/modules/focus_session/errors';
 export * from '$lib/modules/task/errors';
 export * from '$lib/modules/project/errors';
-export * from '$lib/modules/user_profile/schema';
+
+// Import user profile error from schema
+export { UserProfileNotFoundError } from '$lib/modules/user_profile/schema';
 
 // Import types for union type
 import type {
