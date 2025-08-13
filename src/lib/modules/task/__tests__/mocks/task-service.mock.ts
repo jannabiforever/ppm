@@ -1,6 +1,6 @@
 import { Layer, Effect } from 'effect';
 import { TaskService } from '../../service.server';
-import { createInvalidTaskStatusTransitionError, type DomainError } from '$lib/shared/errors';
+import { type DomainError } from '$lib/shared/errors';
 import type { Tables } from '$lib/infra/supabase/types';
 import type {
 	CreateTaskInput,
@@ -8,6 +8,7 @@ import type {
 	TaskQueryInput,
 	MoveTaskToProjectInput
 } from '../../schema';
+import { InvalidTaskStatusTransitionError } from '../../errors';
 
 // Mock Task Service
 export const createMockTaskService = (
@@ -123,18 +124,18 @@ export const createMockTaskService = (
 			if (validTransitions[currentStatus]?.includes(newStatus)) {
 				return Effect.void;
 			}
-			return Effect.fail(createInvalidTaskStatusTransitionError(currentStatus, newStatus));
+			return Effect.fail(new InvalidTaskStatusTransitionError(currentStatus, newStatus));
 		}
 	};
 
 	return Layer.succeed(TaskService, { ...defaultTaskService, ...overrides });
 };
 
-// Error simulation helpers
-export const createFailingTaskService = () => {
-	return createMockTaskService({
-		getTaskByIdAsync: () => Effect.succeed(null),
-		updateTaskStatusAsync: () =>
-			Effect.fail(createInvalidTaskStatusTransitionError('unknown', 'unknown'))
-	});
-};
+// // Error simulation helpers
+// export const createFailingTaskService = () => {
+// 	return createMockTaskService({
+// 		getTaskByIdAsync: () => Effect.succeed(null),
+// 		updateTaskStatusAsync: () =>
+// 			Effect.fail(new InvalidTaskStatusTransitionError('completed', 'completed'))
+// 	});
+// };

@@ -7,7 +7,6 @@ import {
 import { Context, Effect, Layer } from 'effect';
 import { SupabaseService } from '$lib/infra/supabase/layer.server';
 import {
-	createUserProfileNotFoundError,
 	UserProfileNotFoundError,
 	type CreateUserProfileInput,
 	type UpdateUserProfileInput
@@ -71,7 +70,7 @@ export const UserProfileLive = Layer.effect(
 					}
 
 					if (!res.data) {
-						return yield* Effect.fail(createUserProfileNotFoundError(user.id));
+						return yield* Effect.fail(new UserProfileNotFoundError(user.id));
 					}
 
 					return res.data;

@@ -1,11 +1,4 @@
-import {
-	mapPostgrestError,
-	SupabasePostgrestError,
-	createActiveFocusSessionExistsError,
-	createFocusSessionNotFoundError,
-	createFocusSessionAlreadyEndedError,
-	type DomainError
-} from '$lib/shared/errors';
+import { mapPostgrestError, SupabasePostgrestError, type DomainError } from '$lib/shared/errors';
 import { Context, Effect, Layer } from 'effect';
 import { SupabaseService } from '$lib/infra/supabase/layer.server';
 import { TaskService } from '$lib/modules/task/service.server';
@@ -21,6 +14,11 @@ import {
 	type ReorderSessionTasksInput
 } from './schema';
 import type { Tables, TablesInsert, TablesUpdate } from '$lib/infra/supabase/types';
+import {
+	ActiveFocusSessionExistsError,
+	FocusSessionAlreadyEndedError,
+	FocusSessionNotFoundError
+} from './errors';
 
 export type FocusSession = Tables<'focus_sessions'>;
 export type SessionTaskDB = Tables<'session_tasks'>;
@@ -458,7 +456,7 @@ export const FocusSessionLive = Layer.effect(
 					);
 
 					if (activeSession) {
-						return yield* Effect.fail(createActiveFocusSessionExistsError());
+						return yield* Effect.fail(new ActiveFocusSessionExistsError());
 					}
 
 					// Calculate scheduled end time
@@ -528,11 +526,11 @@ export const FocusSessionLive = Layer.effect(
 					);
 
 					if (!session) {
-						return yield* Effect.fail(createFocusSessionNotFoundError(sessionId));
+						return yield* Effect.fail(new FocusSessionNotFoundError(sessionId));
 					}
 
 					if (session.closed_at) {
-						return yield* Effect.fail(createFocusSessionAlreadyEndedError(sessionId));
+						return yield* Effect.fail(new FocusSessionAlreadyEndedError(sessionId));
 					}
 
 					// Get session tasks

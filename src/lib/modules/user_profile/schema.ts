@@ -31,16 +31,14 @@ export type UserAndProfile = {
 export class UserProfileNotFoundError extends Data.TaggedError('UserProfileNotFound')<{
 	readonly message: string;
 	readonly userId: string;
-}> {}
-
-/**
- * Helper function to create user profile error
- */
-export const createUserProfileNotFoundError = (userId: string) =>
-	new UserProfileNotFoundError({
-		message: `User profile not found for user ${userId}`,
-		userId
-	});
+}> {
+	constructor(userId: string) {
+		super({
+			message: `User profile not found for user ${userId}`,
+			userId
+		});
+	}
+}
 
 // Type exports
 export type CreateUserProfileInput = typeof CreateUserProfileSchema.Type;

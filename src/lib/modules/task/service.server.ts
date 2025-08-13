@@ -1,5 +1,4 @@
 import { mapPostgrestError, SupabasePostgrestError, type DomainError } from '$lib/shared/errors';
-import { createInvalidTaskStatusTransitionError } from './errors';
 import { Context, Effect, Layer } from 'effect';
 import { SupabaseService } from '$lib/infra/supabase/layer.server';
 import {
@@ -9,6 +8,7 @@ import {
 	type MoveTaskToProjectInput
 } from './schema';
 import type { Tables, TablesInsert, TablesUpdate } from '$lib/infra/supabase/types';
+import { InvalidTaskStatusTransitionError } from './errors';
 
 export type Task = Tables<'tasks'>;
 
@@ -262,7 +262,7 @@ function validateTaskStatusTransition(
 	const allowedTargets = allowedTransitions[currentStatus];
 
 	if (!allowedTargets.includes(newStatus)) {
-		return Effect.fail(createInvalidTaskStatusTransitionError(currentStatus, newStatus));
+		return Effect.fail(new InvalidTaskStatusTransitionError(currentStatus, newStatus));
 	}
 
 	return Effect.void;
