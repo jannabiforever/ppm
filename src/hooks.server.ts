@@ -4,8 +4,13 @@ import { SupabaseLive, SupabaseService } from '$lib/infra/supabase/layer.server'
 import { makeCookiesLayer } from '$lib/infra/cookies';
 import { sequence } from '@sveltejs/kit/hooks';
 import { error, type Handle, redirect } from '@sveltejs/kit';
-import type { Session, User } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 import { toObj } from '$lib/shared/errors';
+import {
+	UserProfileLive,
+	UserProfileService,
+	type UserAndProfile
+} from '$lib/modules/user_profile';
 
 const supabase: Handle = async ({ event, resolve }) => {
 	const cookiesLayer = makeCookiesLayer(event.cookies);
@@ -27,13 +32,21 @@ const supabase: Handle = async ({ event, resolve }) => {
 const authGuard: Handle = async ({ event, resolve }) => {
 	const clientData = await Effect.gen(function* () {
 		const supabaseService = yield* SupabaseService;
+		const profileService = yield* UserProfileService;
+
 		const session = yield* supabaseService.safeGetSessionAsync();
 		const user = yield* supabaseService.safeGetUserAsync();
-		return Option.some({ session, user });
+		const profile = yield* profileService.getCurrentUserProfileAsync();
+
+		return Option.some({ session, userAndProfile: { user, profile } });
 	}).pipe(
+		Effect.provide(UserProfileLive),
 		Effect.provide(event.locals.supabase),
 		Effect.catchTag('NoSessionOrUser', () =>
-			Effect.succeed(Option.none<{ session: Session; user: User }>())
+			Effect.succeed(Option.none<{ session: Session; userAndProfile: UserAndProfile }>())
+		),
+		Effect.catchTag('UserProfileNotFound', () =>
+			Effect.succeed(Option.none<{ session: Session; userAndProfile: UserAndProfile }>())
 		),
 		Effect.tapError(Console.error),
 		Effect.either,
@@ -42,12 +55,14 @@ const authGuard: Handle = async ({ event, resolve }) => {
 
 	if (clientData._tag === 'Left') {
 		// TODO: What could go wrong when fetching user data?
-		error(clientData.left.status, toObj(clientData.left));
+		const err = clientData.left;
+		const status = 'status' in err ? err.status : 500;
+		error(status, toObj(err));
 	}
 
 	Option.match(clientData.right, {
-		onSome: ({ session, user }) => {
-			event.locals.user = user;
+		onSome: ({ session, userAndProfile }) => {
+			event.locals.userAndProfile = userAndProfile;
 			event.locals.session = session;
 
 			if (shouldBeRedirectedToApp(event.url.pathname)) {
