@@ -1,9 +1,11 @@
-import HttpStatusCodes from 'http-status-codes';
-import { Effect, Layer, Console } from 'effect';
+import { StatusCodes } from 'http-status-codes';
+import { Effect, Layer, Console, Option } from 'effect';
 import { SupabaseLive, SupabaseService } from '$lib/infra/supabase/layer.server';
 import { makeCookiesLayer } from '$lib/infra/cookies';
 import { sequence } from '@sveltejs/kit/hooks';
-import { type Handle, redirect } from '@sveltejs/kit';
+import { error, type Handle, redirect } from '@sveltejs/kit';
+import type { Session, User } from '@supabase/supabase-js';
+import { toObj } from '$lib/shared/errors';
 
 const supabase: Handle = async ({ event, resolve }) => {
 	const cookiesLayer = makeCookiesLayer(event.cookies);
@@ -23,39 +25,48 @@ const supabase: Handle = async ({ event, resolve }) => {
 };
 
 const authGuard: Handle = async ({ event, resolve }) => {
-	const safeGetSessionAsync = Effect.gen(function* () {
+	const clientData = await Effect.gen(function* () {
 		const supabaseService = yield* SupabaseService;
-		const result = yield* supabaseService.safeGetSessionAsync();
-		return result;
+		const session = yield* supabaseService.safeGetSessionAsync();
+		const user = yield* supabaseService.safeGetUserAsync();
+		return Option.some({ session, user });
 	}).pipe(
 		Effect.provide(event.locals.supabase),
-		Effect.catchAll((error) => {
-			Console.error(error);
-			return Effect.succeed({ session: null, user: null });
-		})
+		Effect.catchTag('NoSessionOrUser', () =>
+			Effect.succeed(Option.none<{ session: Session; user: User }>())
+		),
+		Effect.tapError(Console.error),
+		Effect.either,
+		Effect.runPromise
 	);
 
-	const { session, user } = await Effect.runPromise(safeGetSessionAsync);
-
-	event.locals.user = user;
-	event.locals.session = session;
-
-	if (!session && isProtectedRoute(event.url.pathname)) {
-		throw redirect(HttpStatusCodes.SEE_OTHER, '/auth/sign-in');
+	if (clientData._tag === 'Left') {
+		// TODO: What could go wrong when fetching user data?
+		error(clientData.left.status, toObj(clientData.left));
 	}
 
-	if (session && isPublicRoute(event.url.pathname)) {
-		throw redirect(HttpStatusCodes.SEE_OTHER, '/app');
-	}
+	Option.match(clientData.right, {
+		onSome: ({ session, user }) => {
+			event.locals.user = user;
+			event.locals.session = session;
+
+			if (shouldBeRedirectedToApp(event.url.pathname)) {
+				redirect(StatusCodes.SEE_OTHER, '/app');
+			}
+		},
+		onNone: () => {
+			if (shouldBeGuarded(event.url.pathname)) redirect(StatusCodes.SEE_OTHER, '/auth/sign-in');
+		}
+	});
 
 	return resolve(event);
 };
 
-const isProtectedRoute = (pathname: string) => {
+const shouldBeGuarded = (pathname: string) => {
 	return pathname.startsWith('/app');
 };
 
-const isPublicRoute = (pathname: string) => {
+const shouldBeRedirectedToApp = (pathname: string) => {
 	return pathname.startsWith('/auth');
 };
 

@@ -10,8 +10,8 @@ declare global {
 		}
 		interface Locals {
 			supabase: Layer.Layer<SupabaseService, never, never>;
-			session: Session | null;
-			user: User | null;
+			session: Session;
+			user: User;
 		}
 		// interface PageData {}
 		// interface PageState {}
