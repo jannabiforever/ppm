@@ -147,7 +147,9 @@ export const FocusSessionLive = Layer.effect(
 						client.from('focus_sessions').insert(insertData).select().single()
 					).pipe(
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 
@@ -163,7 +165,7 @@ export const FocusSessionLive = Layer.effect(
 							client.from('session_tasks').insert(sessionTaskInserts)
 						).pipe(
 							Effect.flatMap((res) =>
-								res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.void
+								res.error ? Effect.fail(mapPostgrestError(res.error, res.status)) : Effect.void
 							)
 						);
 					}
@@ -177,7 +179,9 @@ export const FocusSessionLive = Layer.effect(
 						Effect.promise(() => client.from('focus_sessions').select().eq('id', id).maybeSingle())
 					),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -189,7 +193,9 @@ export const FocusSessionLive = Layer.effect(
 						client.from('focus_sessions').select().eq('id', id).maybeSingle()
 					).pipe(
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 
@@ -205,7 +211,9 @@ export const FocusSessionLive = Layer.effect(
 							.order('order_index', { ascending: true })
 					).pipe(
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 
@@ -255,7 +263,9 @@ export const FocusSessionLive = Layer.effect(
 						return Effect.promise(() => queryBuilder);
 					}),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -297,7 +307,9 @@ export const FocusSessionLive = Layer.effect(
 
 					const sessions = yield* Effect.promise(() => queryBuilder).pipe(
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 
@@ -315,7 +327,9 @@ export const FocusSessionLive = Layer.effect(
 							.order('order_index', { ascending: true })
 					).pipe(
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 
@@ -360,7 +374,9 @@ export const FocusSessionLive = Layer.effect(
 						)
 					),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -377,7 +393,9 @@ export const FocusSessionLive = Layer.effect(
 							.maybeSingle()
 					).pipe(
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 
@@ -393,7 +411,9 @@ export const FocusSessionLive = Layer.effect(
 							.order('order_index', { ascending: true })
 					).pipe(
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 
@@ -416,7 +436,9 @@ export const FocusSessionLive = Layer.effect(
 						);
 					}),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -429,7 +451,9 @@ export const FocusSessionLive = Layer.effect(
 						client.from('focus_sessions').select().is('closed_at', null).maybeSingle()
 					).pipe(
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 
@@ -453,7 +477,9 @@ export const FocusSessionLive = Layer.effect(
 						client.from('focus_sessions').insert(insertData).select().single()
 					).pipe(
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 
@@ -469,7 +495,7 @@ export const FocusSessionLive = Layer.effect(
 							client.from('session_tasks').insert(sessionTaskInserts)
 						).pipe(
 							Effect.flatMap((res) =>
-								res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.void
+								res.error ? Effect.fail(mapPostgrestError(res.error, res.status)) : Effect.void
 							)
 						);
 
@@ -495,7 +521,9 @@ export const FocusSessionLive = Layer.effect(
 						client.from('focus_sessions').select().eq('id', sessionId).maybeSingle()
 					).pipe(
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 
@@ -516,7 +544,9 @@ export const FocusSessionLive = Layer.effect(
 							.order('order_index', { ascending: true })
 					).pipe(
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 
@@ -535,7 +565,9 @@ export const FocusSessionLive = Layer.effect(
 												.eq('task_id', update.task_id)
 										).pipe(
 											Effect.flatMap((res) =>
-												res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.void
+												res.error
+													? Effect.fail(mapPostgrestError(res.error, res.status))
+													: Effect.void
 											)
 										);
 									}
@@ -565,7 +597,9 @@ export const FocusSessionLive = Layer.effect(
 							.single()
 					).pipe(
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 				}),
@@ -576,7 +610,7 @@ export const FocusSessionLive = Layer.effect(
 						Effect.promise(() => client.from('focus_sessions').delete().eq('id', id))
 					),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.void
+						res.error ? Effect.fail(mapPostgrestError(res.error, res.status)) : Effect.void
 					)
 				),
 
@@ -598,7 +632,7 @@ export const FocusSessionLive = Layer.effect(
 						).pipe(
 							Effect.flatMap((res) =>
 								res.error
-									? Effect.fail(mapPostgrestError(res.error))
+									? Effect.fail(mapPostgrestError(res.error, res.status))
 									: Effect.succeed(res.data?.order_index || 0)
 							)
 						);
@@ -615,7 +649,9 @@ export const FocusSessionLive = Layer.effect(
 						client.from('session_tasks').insert(insertData).select().single()
 					).pipe(
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 				}),
@@ -632,7 +668,7 @@ export const FocusSessionLive = Layer.effect(
 						)
 					),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.void
+						res.error ? Effect.fail(mapPostgrestError(res.error, res.status)) : Effect.void
 					)
 				),
 
@@ -654,7 +690,9 @@ export const FocusSessionLive = Layer.effect(
 						);
 					}),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -672,7 +710,7 @@ export const FocusSessionLive = Layer.effect(
 									.eq('task_id', taskOrder.task_id)
 							).pipe(
 								Effect.flatMap((res) =>
-									res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.void
+									res.error ? Effect.fail(mapPostgrestError(res.error, res.status)) : Effect.void
 								)
 							)
 						),
@@ -692,7 +730,9 @@ export const FocusSessionLive = Layer.effect(
 						)
 					),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -705,7 +745,7 @@ export const FocusSessionLive = Layer.effect(
 					).pipe(
 						Effect.flatMap((res) =>
 							res.error
-								? Effect.fail(mapPostgrestError(res.error))
+								? Effect.fail(mapPostgrestError(res.error, res.status))
 								: Effect.succeed(res.data.map((st) => st.session_id))
 						)
 					);
@@ -722,7 +762,9 @@ export const FocusSessionLive = Layer.effect(
 							.order('started_at', { ascending: false })
 					).pipe(
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 				}),

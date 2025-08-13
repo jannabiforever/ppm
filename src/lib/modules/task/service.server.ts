@@ -67,7 +67,9 @@ export const TaskLive = Layer.effect(
 						return Effect.promise(() => client.from('tasks').insert(insertData).select().single());
 					}),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -77,7 +79,9 @@ export const TaskLive = Layer.effect(
 						Effect.promise(() => client.from('tasks').select().eq('id', id).maybeSingle())
 					),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -124,7 +128,9 @@ export const TaskLive = Layer.effect(
 						return Effect.promise(() => queryBuilder);
 					}),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -140,7 +146,9 @@ export const TaskLive = Layer.effect(
 						)
 					),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -161,7 +169,9 @@ export const TaskLive = Layer.effect(
 						);
 					}),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -178,7 +188,9 @@ export const TaskLive = Layer.effect(
 						)
 					),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -188,7 +200,7 @@ export const TaskLive = Layer.effect(
 						Effect.promise(() => client.from('tasks').delete().eq('id', id))
 					),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.void
+						res.error ? Effect.fail(mapPostgrestError(res.error, res.status)) : Effect.void
 					)
 				),
 
@@ -200,7 +212,9 @@ export const TaskLive = Layer.effect(
 							Effect.promise(() => client.from('tasks').select().eq('id', id).single())
 						),
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 
@@ -215,7 +229,9 @@ export const TaskLive = Layer.effect(
 							)
 						),
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.data)
 						)
 					);
 				}),

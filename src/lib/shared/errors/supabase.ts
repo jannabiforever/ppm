@@ -1,6 +1,7 @@
 import { AuthError, PostgrestError } from '@supabase/supabase-js';
 import { Data } from 'effect';
-import { StorageError } from '@supabase/storage-js';
+import { StorageApiError } from '@supabase/storage-js';
+import { StatusCodes } from 'http-status-codes';
 
 /**
  * An auth error's wrapper class that helps implementing error tags introduced from 'effect'.
@@ -9,6 +10,7 @@ import { StorageError } from '@supabase/storage-js';
  */
 export class SupabaseAuthError extends Data.TaggedError('SupabaseAuth')<{
 	readonly message: string;
+	readonly status: number;
 }> {}
 
 /**
@@ -19,7 +21,10 @@ export class SupabaseAuthError extends Data.TaggedError('SupabaseAuth')<{
  * @returns A new SupabaseAuthError instance containing the original error
  */
 export function mapAuthError(error: AuthError): SupabaseAuthError {
-	return new SupabaseAuthError({ message: error.message });
+	return new SupabaseAuthError({
+		message: error.message,
+		status: error.status ?? StatusCodes.INTERNAL_SERVER_ERROR
+	});
 }
 
 /**
@@ -27,8 +32,9 @@ export function mapAuthError(error: AuthError): SupabaseAuthError {
  * This class extends the TaggedError class from 'effect' library to create a tagged
  * error specific to Supabase storage operations.
  */
-export class SupabaseStorageError extends Data.TaggedError('SupabaseStorage')<{
+export class SupabaseStorageError extends Data.TaggedError('SupabaseStorageApi')<{
 	readonly message: string;
+	readonly status: number;
 }> {}
 
 /**
@@ -38,8 +44,19 @@ export class SupabaseStorageError extends Data.TaggedError('SupabaseStorage')<{
  * @param error - The original Supabase StorageError to wrap
  * @returns A new SupabaseStorageError instance containing the original error
  */
-export function mapStorageError(error: StorageError): SupabaseStorageError {
-	return new SupabaseStorageError({ message: error.message });
+export function mapStorageError(error: StorageApiError): SupabaseStorageError {
+	let status: number;
+
+	try {
+		status = Number(error.statusCode);
+	} catch {
+		status = 500;
+	}
+
+	return new SupabaseStorageError({
+		message: error.message,
+		status
+	});
 }
 
 /**
@@ -49,17 +66,30 @@ export function mapStorageError(error: StorageError): SupabaseStorageError {
  */
 export class SupabasePostgrestError extends Data.TaggedError('SupabasePostgrest')<{
 	readonly message: string;
+	readonly status: number;
+	readonly code: string;
 }> {}
 
 /**
  * Converts a native Supabase PostgrestError into a SupabasePostgrestError.
- * This function is useful for standardizing error handling in an Effect-based application.
+ *
+ * Note: PostgrestError objects don't include HTTP status codes by design.
+ * To capture the full context, pass the status from PostgrestResponse:
+ *
+ * @example
+ * ```ts
+ * const result = await supabase.from('table').select();
+ * if (result.error) {
+ *   throw mapPostgrestError(result.error, result.status);
+ * }
+ * ```
  *
  * @param error - The original Supabase PostgrestError to wrap
- * @returns A new SupabasePostgrestError instance containing the original error
+ * @param status - Optional HTTP status code from PostgrestResponse
+ * @returns A new SupabasePostgrestError instance with standardized error handling
  */
-export function mapPostgrestError(error: PostgrestError): SupabasePostgrestError {
-	return new SupabasePostgrestError({ message: error.message });
+export function mapPostgrestError(error: PostgrestError, status: number): SupabasePostgrestError {
+	return new SupabasePostgrestError({ message: error.message, code: error.code, status });
 }
 
 /**
@@ -67,23 +97,10 @@ export function mapPostgrestError(error: PostgrestError): SupabasePostgrestError
  */
 export type SupabaseError = SupabaseAuthError | SupabaseStorageError | SupabasePostgrestError;
 
-/**
- * General mapper function that handles any Supabase error type
- */
-export function mapSupabaseError(
-	error: PostgrestError | AuthError | StorageError | { message: string }
-): SupabaseError {
-	if ('code' in error && 'details' in error) {
-		// PostgrestError
-		return mapPostgrestError(error as PostgrestError);
-	} else if ('status' in error && 'statusText' in error) {
-		// AuthError
-		return mapAuthError(error as AuthError);
-	} else if ('statusCode' in error) {
-		// StorageError
-		return mapStorageError(error as StorageError);
-	} else {
-		// Generic error - default to Postgrest
-		return new SupabasePostgrestError({ message: error.message });
+export class NoSessionOrUserError extends Data.TaggedError('NoSessionOrUser')<{
+	readonly message: string;
+}> {
+	constructor() {
+		super({ message: 'No session or user were found' });
 	}
 }

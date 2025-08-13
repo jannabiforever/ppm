@@ -56,7 +56,9 @@ export const ProjectLive = Layer.effect(
 						);
 					}),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -66,7 +68,9 @@ export const ProjectLive = Layer.effect(
 						Effect.promise(() => client.from('projects').select().eq('id', id).maybeSingle())
 					),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -98,7 +102,9 @@ export const ProjectLive = Layer.effect(
 						return Effect.promise(() => queryBuilder);
 					}),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -122,7 +128,9 @@ export const ProjectLive = Layer.effect(
 						);
 					}),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -136,7 +144,9 @@ export const ProjectLive = Layer.effect(
 							)
 						),
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.count ?? 0)
+							res.error
+								? Effect.fail(mapPostgrestError(res.error, res.status))
+								: Effect.succeed(res.count ?? 0)
 						)
 					);
 
@@ -150,7 +160,7 @@ export const ProjectLive = Layer.effect(
 							Effect.promise(() => client.from('projects').update({ active: false }).eq('id', id))
 						),
 						Effect.flatMap((res) =>
-							res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.void
+							res.error ? Effect.fail(mapPostgrestError(res.error, res.status)) : Effect.void
 						)
 					);
 				}),
@@ -167,7 +177,9 @@ export const ProjectLive = Layer.effect(
 						return Effect.promise(() => queryBuilder);
 					}),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -179,7 +191,9 @@ export const ProjectLive = Layer.effect(
 						)
 					),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				),
 
@@ -191,7 +205,9 @@ export const ProjectLive = Layer.effect(
 						)
 					),
 					Effect.flatMap((res) =>
-						res.error ? Effect.fail(mapPostgrestError(res.error)) : Effect.succeed(res.data)
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
 					)
 				)
 		};
