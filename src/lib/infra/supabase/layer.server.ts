@@ -1,6 +1,6 @@
 import type { Database } from './types';
 import { Context, Effect, Layer } from 'effect';
-import { mapAuthError, type SupabaseAuthError } from '$lib/shared/errors';
+import { mapAuthError, NoSessionOrUserError, type SupabaseAuthError } from '$lib/shared/errors';
 import { type Session, type SupabaseClient, type User } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from './client.server';
 
@@ -9,9 +9,10 @@ export class SupabaseService extends Context.Tag('Supabase')<
 	{
 		readonly getClientSync: () => Effect.Effect<SupabaseClient<Database>>;
 		readonly safeGetSessionAsync: () => Effect.Effect<
-			{ session: Session | null; user: User | null },
-			SupabaseAuthError
+			Session,
+			SupabaseAuthError | NoSessionOrUserError
 		>;
+		readonly safeGetUserAsync: () => Effect.Effect<User, SupabaseAuthError | NoSessionOrUserError>;
 	}
 >() {}
 
@@ -22,23 +23,28 @@ export const SupabaseLive = Layer.effect(
 
 		return {
 			getClientSync: () => Effect.succeed(client),
-			safeGetSessionAsync: () => {
-				const sessionResult = Effect.promise(() => client.auth.getSession()).pipe(
-					Effect.flatMap(({ data: { session }, error }) => {
-						return error === null ? Effect.succeed(session) : Effect.fail(mapAuthError(error));
-					})
-				);
+			safeGetSessionAsync: () =>
+				Effect.gen(function* () {
+					const {
+						data: { session },
+						error
+					} = yield* Effect.promise(() => client.auth.getSession());
 
-				const userResult = Effect.promise(() => client.auth.getUser()).pipe(
-					Effect.flatMap(({ data: { user }, error }) => {
-						return error === null ? Effect.succeed(user) : Effect.fail(mapAuthError(error));
-					})
-				);
+					if (error) return yield* Effect.fail(mapAuthError(error));
+					if (!session) return yield* Effect.fail(new NoSessionOrUserError());
+					return yield* Effect.succeed(session);
+				}),
+			safeGetUserAsync: () =>
+				Effect.gen(function* () {
+					const {
+						data: { user },
+						error
+					} = yield* Effect.promise(() => client.auth.getUser());
 
-				return Effect.all([sessionResult, userResult]).pipe(
-					Effect.map(([session, user]) => ({ session, user }))
-				);
-			}
+					if (error) return yield* Effect.fail(mapAuthError(error));
+					if (!user) return yield* Effect.fail(new NoSessionOrUserError());
+					return yield* Effect.succeed(user);
+				})
 		};
 	})
 );
