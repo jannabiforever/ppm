@@ -1,8 +1,16 @@
-# typescript 관련 코드 룰
+# Type rules
 
 ## No any
 
-타입 추론 시, `any`를 그 어떤 경우에도 사용하지 않는다.
+Don't ever use `any` type to infer types.
+
+## No null or undefined
+
+It is anti-pattern to use null or undefined in `Effect.ts`,
+because it doesn't provide any information about the context.
+
+`Effect.ts` provides a way to handle null / undefined values, using `Option` type.
+In this project, we use `Option` type to handle null / undefined values.
 
 # Effect.ts 관련 코드 룰
 
