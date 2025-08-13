@@ -20,6 +20,7 @@ export const mockRegularProject: Tables<'projects'> = {
 	name: 'Test Project',
 	owner_id: mockUser.id,
 	description: 'A test project for focus sessions',
+	active: true,
 	created_at: baseTestTime,
 	updated_at: baseTestTime
 };
@@ -129,18 +130,12 @@ export const mockSessionTasks = {
 		{
 			session_id: mockSessions.standardSession.id,
 			task_id: mockTasks.backlogTask.id,
-			order_index: 1,
-			seconds_spent: 1800, // 30 minutes
-			created_at: baseTestTime,
-			updated_at: baseTestTime
+			added_at: baseTestTime
 		},
 		{
 			session_id: mockSessions.standardSession.id,
 			task_id: mockTasks.plannedTask.id,
-			order_index: 2,
-			seconds_spent: 900, // 15 minutes
-			created_at: baseTestTime,
-			updated_at: baseTestTime
+			added_at: baseTestTime
 		}
 	],
 
@@ -149,10 +144,7 @@ export const mockSessionTasks = {
 		{
 			session_id: mockSessions.earlyClosedSession.id,
 			task_id: mockTasks.inboxTask.id,
-			order_index: 1,
-			seconds_spent: 2700, // 45 minutes (full session time)
-			created_at: baseTestTime,
-			updated_at: actualEndTime
+			added_at: baseTestTime
 		}
 	]
 };
@@ -188,10 +180,7 @@ export const createSessionTask = (
 ): Tables<'session_tasks'> => ({
 	session_id: mockSessions.standardSession.id,
 	task_id: mockTasks.backlogTask.id,
-	order_index: 1,
-	seconds_spent: 0,
-	created_at: baseTestTime,
-	updated_at: baseTestTime,
+	added_at: baseTestTime,
 	...overrides
 });
 
@@ -234,18 +223,15 @@ export const businessScenarios = {
 			task_completion_updates: [
 				{
 					task_id: mockTasks.backlogTask.id,
-					completed: true,
-					seconds_spent: 1800 // 30 minutes
+					completed: true
 				},
 				{
 					task_id: mockTasks.plannedTask.id,
-					completed: false,
-					seconds_spent: 900 // 15 minutes, but not completed
+					completed: false
 				},
 				{
 					task_id: mockTasks.taskToBlock.id,
-					completed: false,
-					seconds_spent: 300 // 5 minutes before blocking issue found
+					completed: false
 				}
 			]
 		} satisfies EndFocusSessionInput,
@@ -268,8 +254,7 @@ export const businessScenarios = {
 			task_completion_updates: [
 				{
 					task_id: mockTasks.inboxTask.id,
-					completed: true,
-					seconds_spent: 2700 // Full 45 minutes
+					completed: true
 				}
 			]
 		} satisfies EndFocusSessionInput,
@@ -291,8 +276,7 @@ export const businessScenarios = {
 			task_completion_updates: [
 				{
 					task_id: mockTasks.plannedTask.id,
-					completed: false,
-					seconds_spent: 2700 // 45 minutes
+					completed: false
 				}
 			]
 		} satisfies EndFocusSessionInput,
@@ -325,13 +309,11 @@ export const businessScenarios = {
 			task_completion_updates: [
 				{
 					task_id: mockTasks.backlogTask.id,
-					completed: false,
-					seconds_spent: 600 // 10 minutes
+					completed: false
 				},
 				{
 					task_id: mockTasks.plannedTask.id,
-					completed: false,
-					seconds_spent: 900 // 15 minutes
+					completed: false
 				}
 			]
 		} satisfies EndFocusSessionInput,

@@ -1,7 +1,7 @@
 import {
 	mapPostgrestError,
 	SupabasePostgrestError,
-	createProjectHasTasksError,
+	ProjectHasTasksError,
 	type DomainError
 } from '$lib/shared/errors';
 import { Context, Effect, Layer } from 'effect';
@@ -151,7 +151,7 @@ export const ProjectLive = Layer.effect(
 					);
 
 					if (taskCount > 0) {
-						return yield* Effect.fail(createProjectHasTasksError(taskCount));
+						return yield* Effect.fail(new ProjectHasTasksError(taskCount));
 					}
 
 					// Perform soft delete by setting active to false instead of hard delete

@@ -9,11 +9,9 @@ import {
 	type EndFocusSessionInput,
 	type FocusSessionQueryInput,
 	type AddTaskToSessionInput,
-	type RemoveTaskFromSessionInput,
-	type UpdateSessionTaskInput,
-	type ReorderSessionTasksInput
+	type RemoveTaskFromSessionInput
 } from './schema';
-import type { Tables, TablesInsert, TablesUpdate } from '$lib/infra/supabase/types';
+import type { Tables, TablesInsert, TablesUpdate, Database } from '$lib/infra/supabase/types';
 import {
 	ActiveFocusSessionExistsError,
 	FocusSessionAlreadyEndedError,
@@ -22,8 +20,11 @@ import {
 
 export type FocusSession = Tables<'focus_sessions'>;
 export type SessionTaskDB = Tables<'session_tasks'>;
+export type Task = Tables<'tasks'>;
+
+// Enhanced type that includes full task information with deduplicated fields
 export type FocusSessionWithTasks = FocusSession & {
-	session_tasks: SessionTaskDB[];
+	tasks: Array<Omit<SessionTaskDB, 'task_id' | 'session_id'> & Omit<Task, 'project_id'>>;
 };
 
 export class FocusSessionService extends Context.Tag('FocusSession')<
@@ -107,12 +108,7 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 		readonly removeTaskFromSessionAsync: (
 			input: RemoveTaskFromSessionInput
 		) => Effect.Effect<void, SupabasePostgrestError>;
-		readonly updateSessionTaskAsync: (
-			input: UpdateSessionTaskInput
-		) => Effect.Effect<SessionTaskDB, SupabasePostgrestError>;
-		readonly reorderSessionTasksAsync: (
-			input: ReorderSessionTasksInput
-		) => Effect.Effect<void, SupabasePostgrestError>;
+
 		readonly getSessionTasksAsync: (
 			sessionId: string
 		) => Effect.Effect<SessionTaskDB[], SupabasePostgrestError>;
@@ -153,10 +149,9 @@ export const FocusSessionLive = Layer.effect(
 
 					// Associate tasks if provided
 					if (input.task_ids && input.task_ids.length > 0) {
-						const sessionTaskInserts = input.task_ids.map((taskId, index) => ({
+						const sessionTaskInserts = input.task_ids.map((taskId) => ({
 							session_id: session.id,
-							task_id: taskId,
-							order_index: index + 1
+							task_id: taskId
 						}));
 
 						yield* Effect.promise(() =>
@@ -201,12 +196,28 @@ export const FocusSessionLive = Layer.effect(
 						return null;
 					}
 
-					const sessionTasks = yield* Effect.promise(() =>
+					const sessionTasksWithDetails = yield* Effect.promise(() =>
 						client
 							.from('session_tasks')
-							.select()
+							.select(
+								`
+								session_id,
+								added_at,
+								tasks!inner(
+									id,
+									title,
+									description,
+									status,
+									owner_id,
+									blocked_note,
+									planned_for,
+									created_at,
+									updated_at
+								)
+							`
+							)
 							.eq('session_id', id)
-							.order('order_index', { ascending: true })
+							.order('added_at', { ascending: true })
 					).pipe(
 						Effect.flatMap((res) =>
 							res.error
@@ -215,7 +226,37 @@ export const FocusSessionLive = Layer.effect(
 						)
 					);
 
-					return { ...session, session_tasks: sessionTasks };
+					// Transform the data to match our FocusSessionWithTasks type
+					const tasks = sessionTasksWithDetails.map(
+						(item: {
+							session_id: string;
+							added_at: string;
+							tasks: {
+								id: string;
+								title: string;
+								description: string | null;
+								status: Database['public']['Enums']['task_status'];
+								owner_id: string;
+								blocked_note: string | null;
+								planned_for: string | null;
+								created_at: string;
+								updated_at: string;
+							};
+						}) => ({
+							added_at: item.added_at,
+							id: item.tasks.id,
+							title: item.tasks.title,
+							description: item.tasks.description,
+							status: item.tasks.status,
+							owner_id: item.tasks.owner_id,
+							blocked_note: item.tasks.blocked_note,
+							planned_for: item.tasks.planned_for,
+							created_at: item.tasks.created_at,
+							updated_at: item.tasks.updated_at
+						})
+					);
+
+					return { ...session, tasks };
 				}),
 
 			getFocusSessionsAsync: (query?: FocusSessionQueryInput) =>
@@ -269,7 +310,6 @@ export const FocusSessionLive = Layer.effect(
 
 			getFocusSessionsWithTasksAsync: (query?: FocusSessionQueryInput) =>
 				Effect.gen(function* () {
-					// Get sessions first (avoiding circular dependency)
 					const client = yield* supabase.getClientSync();
 					let queryBuilder = client.from('focus_sessions').select();
 
@@ -317,12 +357,28 @@ export const FocusSessionLive = Layer.effect(
 
 					const sessionIds = sessions.map((s) => s.id);
 
-					const allSessionTasks = yield* Effect.promise(() =>
+					const allSessionTasksWithDetails = yield* Effect.promise(() =>
 						client
 							.from('session_tasks')
-							.select()
+							.select(
+								`
+								session_id,
+								added_at,
+								tasks!inner(
+									id,
+									title,
+									description,
+									status,
+									owner_id,
+									blocked_note,
+									planned_for,
+									created_at,
+									updated_at
+								)
+							`
+							)
 							.in('session_id', sessionIds)
-							.order('order_index', { ascending: true })
+							.order('added_at', { ascending: true })
 					).pipe(
 						Effect.flatMap((res) =>
 							res.error
@@ -334,27 +390,63 @@ export const FocusSessionLive = Layer.effect(
 					// Filter by task_id if provided
 					let filteredSessions = sessions;
 					if (query?.task_id) {
-						const sessionIdsWithTask = allSessionTasks
-							.filter((st) => st.task_id === query.task_id)
-							.map((st) => st.session_id);
+						const sessionIdsWithTask = allSessionTasksWithDetails
+							.filter(
+								(item: { session_id: string; tasks: { id: string } }) =>
+									item.tasks.id === query.task_id
+							)
+							.map((item: { session_id: string }) => item.session_id);
 						filteredSessions = sessions.filter((s) => sessionIdsWithTask.includes(s.id));
 					}
 
-					// Group session tasks by session_id
-					const sessionTasksMap = allSessionTasks.reduce(
-						(acc, st) => {
-							if (!acc[st.session_id]) {
-								acc[st.session_id] = [];
+					// Transform and group session tasks by session_id
+					const sessionTasksMap = allSessionTasksWithDetails.reduce(
+						(
+							acc,
+							item: {
+								session_id: string;
+								added_at: string;
+								tasks: {
+									id: string;
+									title: string;
+									description: string | null;
+									status: Database['public']['Enums']['task_status'];
+									owner_id: string;
+									blocked_note: string | null;
+									planned_for: string | null;
+									created_at: string;
+									updated_at: string;
+								};
 							}
-							acc[st.session_id].push(st);
+						) => {
+							const transformedTask = {
+								added_at: item.added_at,
+								id: item.tasks.id,
+								title: item.tasks.title,
+								description: item.tasks.description,
+								status: item.tasks.status,
+								owner_id: item.tasks.owner_id,
+								blocked_note: item.tasks.blocked_note,
+								planned_for: item.tasks.planned_for,
+								created_at: item.tasks.created_at,
+								updated_at: item.tasks.updated_at
+							};
+
+							if (!acc[item.session_id]) {
+								acc[item.session_id] = [];
+							}
+							acc[item.session_id].push(transformedTask);
 							return acc;
 						},
-						{} as Record<string, SessionTaskDB[]>
+						{} as Record<
+							string,
+							Array<Omit<SessionTaskDB, 'task_id' | 'session_id'> & Omit<Task, 'project_id'>>
+						>
 					);
 
 					return filteredSessions.map((session) => ({
 						...session,
-						session_tasks: sessionTasksMap[session.id] || []
+						tasks: sessionTasksMap[session.id] || []
 					}));
 				}),
 
@@ -401,12 +493,28 @@ export const FocusSessionLive = Layer.effect(
 						return null;
 					}
 
-					const sessionTasks = yield* Effect.promise(() =>
+					const sessionTasksWithDetails = yield* Effect.promise(() =>
 						client
 							.from('session_tasks')
-							.select()
+							.select(
+								`
+								session_id,
+								added_at,
+								tasks!inner(
+									id,
+									title,
+									description,
+									status,
+									owner_id,
+									blocked_note,
+									planned_for,
+									created_at,
+									updated_at
+								)
+							`
+							)
 							.eq('session_id', activeSession.id)
-							.order('order_index', { ascending: true })
+							.order('added_at', { ascending: true })
 					).pipe(
 						Effect.flatMap((res) =>
 							res.error
@@ -415,7 +523,37 @@ export const FocusSessionLive = Layer.effect(
 						)
 					);
 
-					return { ...activeSession, session_tasks: sessionTasks };
+					// Transform the data to match our FocusSessionWithTasks type
+					const tasks = sessionTasksWithDetails.map(
+						(item: {
+							session_id: string;
+							added_at: string;
+							tasks: {
+								id: string;
+								title: string;
+								description: string | null;
+								status: Database['public']['Enums']['task_status'];
+								owner_id: string;
+								blocked_note: string | null;
+								planned_for: string | null;
+								created_at: string;
+								updated_at: string;
+							};
+						}) => ({
+							added_at: item.added_at,
+							id: item.tasks.id,
+							title: item.tasks.title,
+							description: item.tasks.description,
+							status: item.tasks.status,
+							owner_id: item.tasks.owner_id,
+							blocked_note: item.tasks.blocked_note,
+							planned_for: item.tasks.planned_for,
+							created_at: item.tasks.created_at,
+							updated_at: item.tasks.updated_at
+						})
+					);
+
+					return { ...activeSession, tasks };
 				}),
 
 			updateFocusSessionAsync: (id: string, input: UpdateFocusSessionInput) =>
@@ -483,10 +621,9 @@ export const FocusSessionLive = Layer.effect(
 
 					// Associate tasks if provided
 					if (input.task_ids && input.task_ids.length > 0) {
-						const sessionTaskInserts = input.task_ids.map((taskId, index) => ({
+						const sessionTaskInserts = input.task_ids.map((taskId) => ({
 							session_id: session.id,
-							task_id: taskId,
-							order_index: index + 1
+							task_id: taskId
 						}));
 
 						yield* Effect.promise(() =>
@@ -539,7 +676,7 @@ export const FocusSessionLive = Layer.effect(
 							.from('session_tasks')
 							.select()
 							.eq('session_id', sessionId)
-							.order('order_index', { ascending: true })
+							.order('added_at', { ascending: true })
 					).pipe(
 						Effect.flatMap((res) =>
 							res.error
@@ -548,28 +685,11 @@ export const FocusSessionLive = Layer.effect(
 						)
 					);
 
-					// Update session task time tracking and completion updates
+					// Update task completion status
 					if (input.task_completion_updates && input.task_completion_updates.length > 0) {
 						yield* Effect.all(
 							input.task_completion_updates.map((update) =>
 								Effect.gen(function* () {
-									// Update session task time if provided
-									if (update.seconds_spent !== undefined) {
-										yield* Effect.promise(() =>
-											client
-												.from('session_tasks')
-												.update({ seconds_spent: update.seconds_spent })
-												.eq('session_id', sessionId)
-												.eq('task_id', update.task_id)
-										).pipe(
-											Effect.flatMap((res) =>
-												res.error
-													? Effect.fail(mapPostgrestError(res.error, res.status))
-													: Effect.void
-											)
-										);
-									}
-
 									// Update task status based on completion
 									const newStatus = update.completed ? 'completed' : 'planned';
 									yield* taskService.updateTaskStatusAsync(update.task_id, newStatus);
@@ -616,31 +736,9 @@ export const FocusSessionLive = Layer.effect(
 				Effect.gen(function* () {
 					const client = yield* supabase.getClientSync();
 
-					// If no order_index provided, set it to the last position
-					let orderIndex = input.order_index;
-					if (orderIndex === undefined) {
-						const maxOrder = yield* Effect.promise(() =>
-							client
-								.from('session_tasks')
-								.select('order_index')
-								.eq('session_id', input.session_id)
-								.order('order_index', { ascending: false })
-								.limit(1)
-								.maybeSingle()
-						).pipe(
-							Effect.flatMap((res) =>
-								res.error
-									? Effect.fail(mapPostgrestError(res.error, res.status))
-									: Effect.succeed(res.data?.order_index || 0)
-							)
-						);
-						orderIndex = maxOrder + 1;
-					}
-
 					const insertData = {
 						session_id: input.session_id,
-						task_id: input.task_id,
-						order_index: orderIndex
+						task_id: input.task_id
 					};
 
 					return yield* Effect.promise(() =>
@@ -670,52 +768,6 @@ export const FocusSessionLive = Layer.effect(
 					)
 				),
 
-			updateSessionTaskAsync: (input: UpdateSessionTaskInput) =>
-				supabase.getClientSync().pipe(
-					Effect.flatMap((client) => {
-						const updateData: Partial<Tables<'session_tasks'>> = {};
-						if (input.order_index !== undefined) updateData.order_index = input.order_index;
-						if (input.seconds_spent !== undefined) updateData.seconds_spent = input.seconds_spent;
-
-						return Effect.promise(() =>
-							client
-								.from('session_tasks')
-								.update(updateData)
-								.eq('session_id', input.session_id)
-								.eq('task_id', input.task_id)
-								.select()
-								.single()
-						);
-					}),
-					Effect.flatMap((res) =>
-						res.error
-							? Effect.fail(mapPostgrestError(res.error, res.status))
-							: Effect.succeed(res.data)
-					)
-				),
-
-			reorderSessionTasksAsync: (input: ReorderSessionTasksInput) =>
-				Effect.gen(function* () {
-					const client = yield* supabase.getClientSync();
-
-					yield* Effect.all(
-						input.task_order.map((taskOrder) =>
-							Effect.promise(() =>
-								client
-									.from('session_tasks')
-									.update({ order_index: taskOrder.order_index })
-									.eq('session_id', input.session_id)
-									.eq('task_id', taskOrder.task_id)
-							).pipe(
-								Effect.flatMap((res) =>
-									res.error ? Effect.fail(mapPostgrestError(res.error, res.status)) : Effect.void
-								)
-							)
-						),
-						{ concurrency: 'unbounded' }
-					);
-				}),
-
 			getSessionTasksAsync: (sessionId: string) =>
 				supabase.getClientSync().pipe(
 					Effect.flatMap((client) =>
@@ -724,7 +776,7 @@ export const FocusSessionLive = Layer.effect(
 								.from('session_tasks')
 								.select()
 								.eq('session_id', sessionId)
-								.order('order_index', { ascending: true })
+								.order('added_at', { ascending: true })
 						)
 					),
 					Effect.flatMap((res) =>

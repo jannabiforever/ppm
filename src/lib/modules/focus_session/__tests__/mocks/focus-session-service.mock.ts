@@ -4,12 +4,13 @@ import {
 	FocusSessionService,
 	type FocusSession,
 	type SessionTaskDB,
-	type FocusSessionWithTasks
+	type FocusSessionWithTasks,
+	type Task
 } from '../../service.server';
 import {
-	createActiveFocusSessionExistsError,
-	createFocusSessionNotFoundError,
-	createFocusSessionAlreadyEndedError,
+	ActiveFocusSessionExistsError,
+	FocusSessionNotFoundError,
+	FocusSessionAlreadyEndedError,
 	type DomainError,
 	type SupabasePostgrestError
 } from '$lib/shared/errors';
@@ -20,10 +21,11 @@ import type {
 	EndFocusSessionInput,
 	FocusSessionQueryInput,
 	AddTaskToSessionInput,
-	RemoveTaskFromSessionInput,
-	UpdateSessionTaskInput,
-	ReorderSessionTasksInput
+	RemoveTaskFromSessionInput
 } from '../../schema';
+
+// Type for tasks in FocusSessionWithTasks
+type FocusSessionTask = Omit<SessionTaskDB, 'task_id' | 'session_id'> & Omit<Task, 'project_id'>;
 
 // Default mock data
 export const mockFocusSession: FocusSession = {
@@ -40,15 +42,25 @@ export const mockFocusSession: FocusSession = {
 export const mockSessionTask: SessionTaskDB = {
 	session_id: 'session_123',
 	task_id: 'task_123',
-	order_index: 1,
-	seconds_spent: 0,
-	created_at: '2024-01-01T10:00:00Z',
-	updated_at: '2024-01-01T10:00:00Z'
+	added_at: '2024-01-01T10:00:00Z'
 };
 
 export const mockFocusSessionWithTasks: FocusSessionWithTasks = {
 	...mockFocusSession,
-	session_tasks: [mockSessionTask]
+	tasks: [
+		{
+			added_at: mockSessionTask.added_at,
+			id: 'task_123',
+			title: 'Mock Task',
+			description: 'Mock task description',
+			status: 'planned' as const,
+			owner_id: 'user_123',
+			blocked_note: null,
+			planned_for: null,
+			created_at: '2024-01-01T09:00:00Z',
+			updated_at: '2024-01-01T09:00:00Z'
+		}
+	]
 };
 
 // Mock configurations
@@ -73,7 +85,7 @@ export const createMockFocusSessionService = (config: MockFocusSessionConfig = {
 				return Effect.fail(config.shouldFailWith);
 			}
 			if (config.hasActiveSession) {
-				return Effect.fail(createActiveFocusSessionExistsError());
+				return Effect.fail(new ActiveFocusSessionExistsError());
 			}
 			const session: FocusSession = {
 				...mockFocusSession,
@@ -162,7 +174,7 @@ export const createMockFocusSessionService = (config: MockFocusSessionConfig = {
 				return Effect.fail(config.shouldFailWith);
 			}
 			if (config.hasActiveSession) {
-				return Effect.fail(createActiveFocusSessionExistsError());
+				return Effect.fail(new ActiveFocusSessionExistsError());
 			}
 
 			const newSession: FocusSession = {
@@ -184,10 +196,10 @@ export const createMockFocusSessionService = (config: MockFocusSessionConfig = {
 				return Effect.fail(config.shouldFailWith);
 			}
 			if (config.sessionNotFound) {
-				return Effect.fail(createFocusSessionNotFoundError(sessionId));
+				return Effect.fail(new FocusSessionNotFoundError(sessionId));
 			}
 			if (config.sessionAlreadyEnded) {
-				return Effect.fail(createFocusSessionAlreadyEndedError(sessionId));
+				return Effect.fail(new FocusSessionAlreadyEndedError(sessionId));
 			}
 
 			const endedSession: FocusSession = {
@@ -213,35 +225,12 @@ export const createMockFocusSessionService = (config: MockFocusSessionConfig = {
 			const sessionTask: SessionTaskDB = {
 				...mockSessionTask,
 				session_id: input.session_id,
-				task_id: input.task_id,
-				order_index: input.order_index || 1,
-				seconds_spent: 0
+				task_id: input.task_id
 			};
 			return Effect.succeed(config.returnedSessionTask || sessionTask);
 		},
 
 		removeTaskFromSessionAsync: (input: RemoveTaskFromSessionInput) => {
-			if (config.shouldFailWith && config.shouldFailWith._tag === 'SupabasePostgrest') {
-				return Effect.fail(config.shouldFailWith as SupabasePostgrestError);
-			}
-			return Effect.void;
-		},
-
-		updateSessionTaskAsync: (input: UpdateSessionTaskInput) => {
-			if (config.shouldFailWith && config.shouldFailWith._tag === 'SupabasePostgrest') {
-				return Effect.fail(config.shouldFailWith as SupabasePostgrestError);
-			}
-			const updatedSessionTask: SessionTaskDB = {
-				...mockSessionTask,
-				session_id: input.session_id,
-				task_id: input.task_id,
-				seconds_spent: input.seconds_spent || mockSessionTask.seconds_spent,
-				updated_at: '2024-01-01T10:00:00Z'
-			};
-			return Effect.succeed(config.returnedSessionTask || updatedSessionTask);
-		},
-
-		reorderSessionTasksAsync: (input: ReorderSessionTasksInput) => {
 			if (config.shouldFailWith && config.shouldFailWith._tag === 'SupabasePostgrest') {
 				return Effect.fail(config.shouldFailWith as SupabasePostgrestError);
 			}
@@ -312,12 +301,12 @@ export const mockConfigs = {
 	}),
 
 	// Session with tasks
-	sessionWithTasks: (tasks?: SessionTaskDB[]): MockFocusSessionConfig => ({
+	sessionWithTasks: (tasks?: FocusSessionTask[]): MockFocusSessionConfig => ({
 		returnedSessionWithTasks: {
 			...mockFocusSession,
-			session_tasks: tasks || [mockSessionTask]
+			tasks: tasks || [mockFocusSessionWithTasks.tasks[0]]
 		},
-		returnedSessionTasks: tasks || [mockSessionTask]
+		returnedSessionTasks: [mockSessionTask]
 	}),
 
 	// Multiple sessions
@@ -339,11 +328,11 @@ export const createMockSessionTask = (overrides: Partial<SessionTaskDB> = {}): S
 
 export const createMockSessionWithTasks = (
 	sessionOverrides: Partial<FocusSession> = {},
-	tasks: SessionTaskDB[] = [mockSessionTask]
+	tasks: FocusSessionTask[] = [mockFocusSessionWithTasks.tasks[0]]
 ): FocusSessionWithTasks => ({
 	...mockFocusSession,
 	...sessionOverrides,
-	session_tasks: tasks
+	tasks: tasks
 });
 
 // Error simulation helpers

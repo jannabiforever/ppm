@@ -107,28 +107,19 @@ export type Database = {
       }
       session_tasks: {
         Row: {
-          created_at: string
-          order_index: number | null
-          seconds_spent: number
+          added_at: string
           session_id: string
           task_id: string
-          updated_at: string
         }
         Insert: {
-          created_at?: string
-          order_index?: number | null
-          seconds_spent?: number
+          added_at?: string
           session_id: string
           task_id: string
-          updated_at?: string
         }
         Update: {
-          created_at?: string
-          order_index?: number | null
-          seconds_spent?: number
+          added_at?: string
           session_id?: string
           task_id?: string
-          updated_at?: string
         }
         Relationships: [
           {

@@ -39,10 +39,10 @@
 			<span>남음</span>
 		</div>
 	</div>
-	{#if currentFocusSessionWithTasks.session_tasks.length > 0}
+	{#if currentFocusSessionWithTasks.tasks.length > 0}
 		<NavItemSeparator />
 		<div class="flex w-full flex-col gap-2.5 px-1">
-			{#each currentFocusSessionWithTasks.session_tasks as task (task.task_id)}{/each}
+			{#each currentFocusSessionWithTasks.tasks as task (task.id)}{/each}
 		</div>
 	{/if}
 </div>

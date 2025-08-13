@@ -6,8 +6,7 @@ import { Schema } from 'effect';
 export const SessionTaskSchema = Schema.Struct({
 	session_id: Schema.String.pipe(Schema.minLength(1)),
 	task_id: Schema.String.pipe(Schema.minLength(1)),
-	order_index: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.nonNegative())),
-	seconds_spent: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.nonNegative()))
+	added_at: Schema.String.pipe(Schema.minLength(1)) // ISO datetime string
 });
 
 /**
@@ -47,8 +46,7 @@ export const EndFocusSessionSchema = Schema.Struct({
 		Schema.Array(
 			Schema.Struct({
 				task_id: Schema.String.pipe(Schema.minLength(1)),
-				completed: Schema.Boolean,
-				seconds_spent: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.nonNegative()))
+				completed: Schema.Boolean
 			})
 		)
 	)
@@ -59,8 +57,7 @@ export const EndFocusSessionSchema = Schema.Struct({
  */
 export const AddTaskToSessionSchema = Schema.Struct({
 	session_id: Schema.String.pipe(Schema.minLength(1)),
-	task_id: Schema.String.pipe(Schema.minLength(1)),
-	order_index: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.nonNegative()))
+	task_id: Schema.String.pipe(Schema.minLength(1))
 });
 
 /**
@@ -69,29 +66,6 @@ export const AddTaskToSessionSchema = Schema.Struct({
 export const RemoveTaskFromSessionSchema = Schema.Struct({
 	session_id: Schema.String.pipe(Schema.minLength(1)),
 	task_id: Schema.String.pipe(Schema.minLength(1))
-});
-
-/**
- * Update session task schema
- */
-export const UpdateSessionTaskSchema = Schema.Struct({
-	session_id: Schema.String.pipe(Schema.minLength(1)),
-	task_id: Schema.String.pipe(Schema.minLength(1)),
-	order_index: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.nonNegative())),
-	seconds_spent: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.nonNegative()))
-});
-
-/**
- * Reorder session tasks schema
- */
-export const ReorderSessionTasksSchema = Schema.Struct({
-	session_id: Schema.String.pipe(Schema.minLength(1)),
-	task_order: Schema.Array(
-		Schema.Struct({
-			task_id: Schema.String.pipe(Schema.minLength(1)),
-			order_index: Schema.Number.pipe(Schema.int(), Schema.nonNegative())
-		})
-	)
 });
 
 /**
@@ -126,7 +100,6 @@ export type StartFocusSessionInput = typeof StartFocusSessionSchema.Type;
 export type EndFocusSessionInput = typeof EndFocusSessionSchema.Type;
 export type AddTaskToSessionInput = typeof AddTaskToSessionSchema.Type;
 export type RemoveTaskFromSessionInput = typeof RemoveTaskFromSessionSchema.Type;
-export type UpdateSessionTaskInput = typeof UpdateSessionTaskSchema.Type;
-export type ReorderSessionTasksInput = typeof ReorderSessionTasksSchema.Type;
+
 export type FocusSessionQueryInput = typeof FocusSessionQuerySchema.Type;
 export type SessionTaskQueryInput = typeof SessionTaskQuerySchema.Type;

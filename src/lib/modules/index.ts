@@ -8,7 +8,12 @@ export * from './project';
 export * from './task';
 
 // Focus session module
-export * from './focus_session';
+export {
+	FocusSessionService,
+	type FocusSession,
+	type FocusSessionWithTasks,
+	type SessionTaskDB
+} from './focus_session';
 
 // User profile module
 export * from './user_profile';
