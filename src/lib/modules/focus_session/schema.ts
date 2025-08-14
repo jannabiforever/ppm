@@ -1,4 +1,21 @@
-import { Schema } from 'effect';
+import { Schema, DateTime } from 'effect';
+
+/**
+ * DateTime schema that transforms between database string and DateTime.Utc
+ */
+const DateTimeUtcSchema = Schema.transform(
+	Schema.String.pipe(Schema.minLength(1)),
+	Schema.DateTimeUtcFromSelf,
+	{
+		decode: (str) => DateTime.unsafeMake(str),
+		encode: (dt) => DateTime.formatIso(dt)
+	}
+);
+
+/**
+ * Optional DateTime schema for nullable database fields
+ */
+const OptionalDateTimeUtcSchema = Schema.optional(DateTimeUtcSchema);
 
 /**
  * Session task schema for managing task associations within a session
@@ -6,7 +23,7 @@ import { Schema } from 'effect';
 export const SessionTaskSchema = Schema.Struct({
 	session_id: Schema.String.pipe(Schema.minLength(1)),
 	task_id: Schema.String.pipe(Schema.minLength(1)),
-	added_at: Schema.String.pipe(Schema.minLength(1)) // ISO datetime string
+	added_at: DateTimeUtcSchema
 });
 
 /**
@@ -14,8 +31,8 @@ export const SessionTaskSchema = Schema.Struct({
  */
 export const CreateFocusSessionSchema = Schema.Struct({
 	project_id: Schema.optional(Schema.String.pipe(Schema.minLength(1))),
-	started_at: Schema.String.pipe(Schema.minLength(1)), // ISO datetime string
-	scheduled_end_at: Schema.String.pipe(Schema.minLength(1)), // ISO datetime string (required)
+	started_at: DateTimeUtcSchema,
+	scheduled_end_at: DateTimeUtcSchema,
 	task_ids: Schema.optional(Schema.Array(Schema.String.pipe(Schema.minLength(1)))) // tasks to associate with session
 });
 
@@ -24,9 +41,9 @@ export const CreateFocusSessionSchema = Schema.Struct({
  */
 export const UpdateFocusSessionSchema = Schema.Struct({
 	project_id: Schema.optional(Schema.String.pipe(Schema.minLength(1))),
-	started_at: Schema.optional(Schema.String.pipe(Schema.minLength(1))),
-	scheduled_end_at: Schema.optional(Schema.String.pipe(Schema.minLength(1))),
-	closed_at: Schema.optional(Schema.String.pipe(Schema.minLength(1)))
+	started_at: OptionalDateTimeUtcSchema,
+	scheduled_end_at: OptionalDateTimeUtcSchema,
+	closed_at: OptionalDateTimeUtcSchema
 });
 
 /**
@@ -35,7 +52,8 @@ export const UpdateFocusSessionSchema = Schema.Struct({
 export const StartFocusSessionSchema = Schema.Struct({
 	task_ids: Schema.optional(Schema.Array(Schema.String.pipe(Schema.minLength(1)))), // tasks to work on during session
 	scheduled_duration_minutes: Schema.optional(Schema.Number.pipe(Schema.positive(), Schema.int())), // defaults to 50 minutes
-	project_id: Schema.optional(Schema.String.pipe(Schema.minLength(1)))
+	project_id: Schema.optional(Schema.String.pipe(Schema.minLength(1))),
+	started_at: Schema.optional(DateTimeUtcSchema) // Allow manual start time override
 });
 
 /**
@@ -74,8 +92,8 @@ export const RemoveTaskFromSessionSchema = Schema.Struct({
 export const FocusSessionQuerySchema = Schema.Struct({
 	project_id: Schema.optional(Schema.String.pipe(Schema.minLength(1))),
 	task_id: Schema.optional(Schema.String.pipe(Schema.minLength(1))), // filter sessions that include this task
-	date_from: Schema.optional(Schema.String.pipe(Schema.minLength(1))), // ISO date string
-	date_to: Schema.optional(Schema.String.pipe(Schema.minLength(1))), // ISO date string
+	date_from: Schema.optional(DateTimeUtcSchema), // DateTime for precise filtering
+	date_to: Schema.optional(DateTimeUtcSchema), // DateTime for precise filtering
 	include_tasks: Schema.optional(Schema.Boolean), // whether to include associated tasks in response
 	is_active: Schema.optional(Schema.Boolean), // filter for active (not closed) sessions
 	limit: Schema.optional(Schema.Number.pipe(Schema.positive(), Schema.int())),

@@ -1,5 +1,5 @@
 import { mapPostgrestError, SupabasePostgrestError, type DomainError } from '$lib/shared/errors';
-import { Context, Effect, Layer } from 'effect';
+import { Context, Effect, Layer, DateTime, Duration } from 'effect';
 import { SupabaseService } from '$lib/infra/supabase/layer.server';
 import { TaskService } from '$lib/modules/task/service.server';
 import {
@@ -116,6 +116,18 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 			taskId: string
 		) => Effect.Effect<FocusSession[], SupabasePostgrestError>;
 		readonly calculateSessionDurationSync: (session: FocusSession) => Effect.Effect<number, never>; // returns duration in minutes
+
+		// DateTime-powered utility methods
+		readonly isSessionActiveSync: (session: FocusSession) => Effect.Effect<boolean, never>;
+		readonly getSessionRemainingTimeSync: (
+			session: FocusSession
+		) => Effect.Effect<Duration.Duration, never>;
+		readonly isSessionOverdueSync: (session: FocusSession) => Effect.Effect<boolean, never>;
+		readonly formatSessionTimeRangeSync: (session: FocusSession) => Effect.Effect<string, never>;
+		readonly extendSessionAsync: (
+			sessionId: string,
+			additionalMinutes: number
+		) => Effect.Effect<FocusSession, SupabasePostgrestError>;
 	}
 >() {}
 
@@ -123,21 +135,20 @@ export const FocusSessionLive = Layer.effect(
 	FocusSessionService,
 	Effect.gen(function* () {
 		const supabase = yield* SupabaseService;
+		const client = yield* supabase.getClientSync();
 		const taskService = yield* TaskService;
 
 		return {
 			createFocusSessionAsync: (input: CreateFocusSessionInput) =>
 				Effect.gen(function* () {
-					const client = yield* supabase.getClientSync();
-
 					// Create the focus session
 					const insertData: TablesInsert<'focus_sessions'> = {
 						project_id: input.project_id,
-						started_at: input.started_at,
-						scheduled_end_at: input.scheduled_end_at
+						started_at: input.started_at.toString(),
+						scheduled_end_at: input.scheduled_end_at.toString()
 					};
 
-					const session = yield* Effect.promise(() =>
+					const focusSession = yield* Effect.promise(() =>
 						client.from('focus_sessions').insert(insertData).select().single()
 					).pipe(
 						Effect.flatMap((res) =>
@@ -150,7 +161,7 @@ export const FocusSessionLive = Layer.effect(
 					// Associate tasks if provided
 					if (input.task_ids && input.task_ids.length > 0) {
 						const sessionTaskInserts = input.task_ids.map((taskId) => ({
-							session_id: session.id,
+							session_id: focusSession.id,
 							task_id: taskId
 						}));
 
@@ -163,7 +174,7 @@ export const FocusSessionLive = Layer.effect(
 						);
 					}
 
-					return session;
+					return focusSession;
 				}),
 
 			getFocusSessionByIdAsync: (id: string) =>
@@ -180,9 +191,7 @@ export const FocusSessionLive = Layer.effect(
 
 			getFocusSessionWithTasksByIdAsync: (id: string) =>
 				Effect.gen(function* () {
-					const client = yield* supabase.getClientSync();
-
-					const session = yield* Effect.promise(() =>
+					const focusSession = yield* Effect.promise(() =>
 						client.from('focus_sessions').select().eq('id', id).maybeSingle()
 					).pipe(
 						Effect.flatMap((res) =>
@@ -192,9 +201,7 @@ export const FocusSessionLive = Layer.effect(
 						)
 					);
 
-					if (!session) {
-						return null;
-					}
+					if (!focusSession) return null;
 
 					const sessionTasksWithDetails = yield* Effect.promise(() =>
 						client
@@ -256,7 +263,7 @@ export const FocusSessionLive = Layer.effect(
 						})
 					);
 
-					return { ...session, tasks };
+					return { ...focusSession, tasks };
 				}),
 
 			getFocusSessionsAsync: (query?: FocusSessionQueryInput) =>
@@ -271,11 +278,11 @@ export const FocusSessionLive = Layer.effect(
 						// Note: task_id filtering will be handled post-query due to Supabase limitations
 
 						if (query?.date_from) {
-							queryBuilder = queryBuilder.gte('started_at', query.date_from);
+							queryBuilder = queryBuilder.gte('started_at', DateTime.formatIso(query.date_from));
 						}
 
 						if (query?.date_to) {
-							queryBuilder = queryBuilder.lte('started_at', query.date_to);
+							queryBuilder = queryBuilder.lte('started_at', DateTime.formatIso(query.date_to));
 						}
 
 						if (query?.is_active !== undefined) {
@@ -489,9 +496,7 @@ export const FocusSessionLive = Layer.effect(
 						)
 					);
 
-					if (!activeSession) {
-						return null;
-					}
+					if (!activeSession) return null;
 
 					const sessionTasksWithDetails = yield* Effect.promise(() =>
 						client
@@ -562,10 +567,12 @@ export const FocusSessionLive = Layer.effect(
 						const updateData: TablesUpdate<'focus_sessions'> = {};
 
 						if (input.project_id !== undefined) updateData.project_id = input.project_id;
-						if (input.started_at !== undefined) updateData.started_at = input.started_at;
+						if (input.started_at !== undefined)
+							updateData.started_at = DateTime.formatIso(input.started_at);
 						if (input.scheduled_end_at !== undefined)
-							updateData.scheduled_end_at = input.scheduled_end_at;
-						if (input.closed_at !== undefined) updateData.closed_at = input.closed_at;
+							updateData.scheduled_end_at = DateTime.formatIso(input.scheduled_end_at);
+						if (input.closed_at !== undefined)
+							updateData.closed_at = DateTime.formatIso(input.closed_at);
 
 						return Effect.promise(() =>
 							client.from('focus_sessions').update(updateData).eq('id', id).select().single()
@@ -822,10 +829,90 @@ export const FocusSessionLive = Layer.effect(
 			calculateSessionDurationSync: (session: FocusSession) =>
 				Effect.succeed(
 					(() => {
-						const startTime = new Date(session.started_at);
-						const endTime = session.closed_at ? new Date(session.closed_at) : new Date();
-						return Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60)); // minutes
+						const startTime = DateTime.unsafeMake(session.started_at);
+						const endTime = session.closed_at
+							? DateTime.unsafeMake(session.closed_at)
+							: DateTime.unsafeNow();
+						return Math.floor(DateTime.distance(startTime, endTime) / (1000 * 60)); // minutes
 					})()
+				),
+
+			// DateTime-powered utility methods
+			isSessionActiveSync: (session: FocusSession) => Effect.succeed(session.closed_at === null),
+
+			getSessionRemainingTimeSync: (session: FocusSession) =>
+				Effect.succeed(
+					(() => {
+						const now = DateTime.unsafeNow();
+						const scheduledEnd = DateTime.unsafeMake(session.scheduled_end_at);
+						const remainingMs = DateTime.distance(now, scheduledEnd);
+
+						return remainingMs > 0 ? Duration.millis(remainingMs) : Duration.zero;
+					})()
+				),
+
+			isSessionOverdueSync: (session: FocusSession) =>
+				Effect.succeed(
+					(() => {
+						if (session.closed_at !== null) return false; // closed sessions can't be overdue
+
+						const now = DateTime.unsafeNow();
+						const scheduledEnd = DateTime.unsafeMake(session.scheduled_end_at);
+						return DateTime.greaterThan(now, scheduledEnd);
+					})()
+				),
+
+			formatSessionTimeRangeSync: (session: FocusSession) =>
+				Effect.succeed(
+					(() => {
+						const start = DateTime.unsafeMake(session.started_at);
+						const end = session.closed_at
+							? DateTime.unsafeMake(session.closed_at)
+							: DateTime.unsafeMake(session.scheduled_end_at);
+
+						const formatter = new Intl.DateTimeFormat('ko-KR', {
+							hour: '2-digit',
+							minute: '2-digit',
+							timeZone: 'Asia/Seoul'
+						});
+
+						const startFormatted = DateTime.formatIntl(start, formatter);
+						const endFormatted = DateTime.formatIntl(end, formatter);
+
+						return `${startFormatted} - ${endFormatted}`;
+					})()
+				),
+
+			extendSessionAsync: (sessionId: string, additionalMinutes: number) =>
+				supabase.getClientSync().pipe(
+					Effect.flatMap((client) =>
+						Effect.promise(() =>
+							client.from('focus_sessions').select('scheduled_end_at').eq('id', sessionId).single()
+						)
+					),
+					Effect.flatMap((res) => {
+						if (res.error) {
+							return Effect.fail(mapPostgrestError(res.error, res.status));
+						}
+
+						const currentEnd = DateTime.unsafeMake(res.data.scheduled_end_at);
+						const newEnd = DateTime.add(currentEnd, { minutes: additionalMinutes });
+						const newEndIso = DateTime.formatIso(newEnd);
+
+						return Effect.promise(() =>
+							client
+								.from('focus_sessions')
+								.update({ scheduled_end_at: newEndIso })
+								.eq('id', sessionId)
+								.select()
+								.single()
+						);
+					}),
+					Effect.flatMap((res) =>
+						res.error
+							? Effect.fail(mapPostgrestError(res.error, res.status))
+							: Effect.succeed(res.data)
+					)
 				)
 		};
 	})

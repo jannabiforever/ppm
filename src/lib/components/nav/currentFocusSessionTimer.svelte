@@ -4,6 +4,7 @@
 	import { DEFAULT_ICON_PROPS } from '../constants';
 	import NavItemSeparator from './NavItemSeparator.svelte';
 	import { currentTime } from '$lib/infra/time.svelte';
+	import Checkbox from '../ui/Checkbox.svelte';
 
 	interface Props {
 		currentFocusSessionWithTasks: FocusSessionWithTasks;
@@ -42,7 +43,20 @@
 	{#if currentFocusSessionWithTasks.tasks.length > 0}
 		<NavItemSeparator />
 		<div class="flex w-full flex-col gap-2.5 px-1">
-			{#each currentFocusSessionWithTasks.tasks as task (task.id)}{/each}
+			{#each currentFocusSessionWithTasks.tasks as task (task.id)}
+				<Checkbox
+					checked={false}
+					name={task.id}
+					label={task.title}
+					onCheckedChange={() => {
+						console.log('Checkbox checked:', task.id);
+					}}
+					class="w-full"
+				/>
+			{/each}
 		</div>
 	{/if}
+
+	<!-- Reflection -->
+	<div class="flex items-end justify-end"></div>
 </div>
