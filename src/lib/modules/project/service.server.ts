@@ -4,7 +4,7 @@ import {
 	ProjectHasTasksError,
 	type DomainError
 } from '$lib/shared/errors';
-import { Context, Effect, Layer } from 'effect';
+import { Context, Effect, Layer, Option } from 'effect';
 import { SupabaseService } from '$lib/infra/supabase/layer.server';
 import { type CreateProjectInput, type UpdateProjectInput, type ProjectQueryInput } from './schema';
 import type { Tables, TablesInsert, TablesUpdate } from '$lib/infra/supabase/types';
@@ -19,7 +19,7 @@ export class ProjectService extends Context.Tag('Project')<
 		) => Effect.Effect<Project, SupabasePostgrestError>;
 		readonly getProjectByIdAsync: (
 			id: string
-		) => Effect.Effect<Project | null, SupabasePostgrestError>;
+		) => Effect.Effect<Option.Option<Project>, SupabasePostgrestError>;
 		readonly getProjectsAsync: (
 			query?: ProjectQueryInput
 		) => Effect.Effect<Project[], SupabasePostgrestError>;
@@ -40,21 +40,19 @@ export const ProjectLive = Layer.effect(
 	ProjectService,
 	Effect.gen(function* () {
 		const supabase = yield* SupabaseService;
+		const client = yield* supabase.getClientSync();
 
 		return {
 			createProjectAsync: (input: CreateProjectInput) =>
-				supabase.getClientSync().pipe(
-					Effect.flatMap((client) => {
-						const insertData: TablesInsert<'projects'> = {
-							name: input.name,
-							description: input.description,
-							active: input.active ?? true
-						};
+				Effect.promise(() => {
+					const insertData: TablesInsert<'projects'> = {
+						name: input.name,
+						description: input.description,
+						active: input.active ?? true
+					};
 
-						return Effect.promise(() =>
-							client.from('projects').insert(insertData).select().single()
-						);
-					}),
+					return client.from('projects').insert(insertData).select().single();
+				}).pipe(
 					Effect.flatMap((res) =>
 						res.error
 							? Effect.fail(mapPostgrestError(res.error, res.status))
@@ -63,14 +61,11 @@ export const ProjectLive = Layer.effect(
 				),
 
 			getProjectByIdAsync: (id: string) =>
-				supabase.getClientSync().pipe(
-					Effect.flatMap((client) =>
-						Effect.promise(() => client.from('projects').select().eq('id', id).maybeSingle())
-					),
+				Effect.promise(() => client.from('projects').select().eq('id', id).maybeSingle()).pipe(
 					Effect.flatMap((res) =>
 						res.error
 							? Effect.fail(mapPostgrestError(res.error, res.status))
-							: Effect.succeed(res.data)
+							: Effect.succeed(Option.fromNullable(res.data))
 					)
 				),
 

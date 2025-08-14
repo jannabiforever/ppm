@@ -1,4 +1,4 @@
-import { Layer, Effect } from 'effect';
+import { Layer, Effect, Option } from 'effect';
 import { TaskService } from '../../service.server';
 import { type DomainError } from '$lib/shared/errors';
 import type { Tables } from '$lib/infra/supabase/types';
@@ -14,7 +14,7 @@ import { InvalidTaskStatusTransitionError } from '../../errors';
 export const createMockTaskService = (
 	overrides: Partial<{
 		createTaskAsync: (input: CreateTaskInput) => Effect.Effect<Tables<'tasks'>, never>;
-		getTaskByIdAsync: (id: string) => Effect.Effect<Tables<'tasks'> | null, never>;
+		getTaskByIdAsync: (id: string) => Effect.Effect<Option.Option<Tables<'tasks'>>, never>;
 		getTasksAsync: (query?: TaskQueryInput) => Effect.Effect<Tables<'tasks'>[], never>;
 		getInboxTasksAsync: () => Effect.Effect<Tables<'tasks'>[], never>;
 		updateTaskAsync: (id: string, input: UpdateTaskInput) => Effect.Effect<Tables<'tasks'>, never>;
@@ -48,18 +48,20 @@ export const createMockTaskService = (
 			} as Tables<'tasks'>),
 
 		getTaskByIdAsync: (id: string) =>
-			Effect.succeed({
-				id,
-				owner_id: 'user_123',
-				title: 'Mock Task',
-				description: null,
-				project_id: 'project_123',
-				status: 'backlog' as const,
-				planned_for: null,
-				blocked_note: null,
-				created_at: '2024-01-01T10:00:00Z',
-				updated_at: '2024-01-01T10:00:00Z'
-			} as Tables<'tasks'>),
+			Effect.succeed(
+				Option.some({
+					id,
+					owner_id: 'user_123',
+					title: 'Mock Task',
+					description: null,
+					project_id: 'project_123',
+					status: 'backlog' as const,
+					planned_for: null,
+					blocked_note: null,
+					created_at: '2024-01-01T10:00:00Z',
+					updated_at: '2024-01-01T10:00:00Z'
+				} as Tables<'tasks'>)
+			),
 
 		getTasksAsync: () => Effect.succeed([]),
 

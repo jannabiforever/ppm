@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Layer, Effect } from 'effect';
+import { Layer, Effect, Option, DateTime, Duration } from 'effect';
 import {
 	FocusSessionService,
 	type FocusSession,
@@ -91,8 +91,8 @@ export const createMockFocusSessionService = (config: MockFocusSessionConfig = {
 				...mockFocusSession,
 				id: `session_${Date.now()}`,
 				project_id: input.project_id || null,
-				scheduled_end_at: input.scheduled_end_at,
-				started_at: input.started_at || '2024-01-01T10:00:00Z'
+				scheduled_end_at: DateTime.formatIso(input.scheduled_end_at),
+				started_at: input.started_at ? DateTime.formatIso(input.started_at) : '2024-01-01T10:00:00Z'
 			};
 			return Effect.succeed(config.returnedSession || session);
 		},
@@ -102,10 +102,10 @@ export const createMockFocusSessionService = (config: MockFocusSessionConfig = {
 				return Effect.fail(config.shouldFailWith as SupabasePostgrestError);
 			}
 			if (config.sessionNotFound) {
-				return Effect.succeed(null);
+				return Effect.succeed(Option.none());
 			}
 			const session = config.returnedSession || { ...mockFocusSession, id };
-			return Effect.succeed(session);
+			return Effect.succeed(Option.some(session));
 		},
 
 		getFocusSessionWithTasksByIdAsync: (id: string) => {
@@ -113,13 +113,13 @@ export const createMockFocusSessionService = (config: MockFocusSessionConfig = {
 				return Effect.fail(config.shouldFailWith as SupabasePostgrestError);
 			}
 			if (config.sessionNotFound) {
-				return Effect.succeed(null);
+				return Effect.succeed(Option.none());
 			}
 			const sessionWithTasks = config.returnedSessionWithTasks || {
 				...mockFocusSessionWithTasks,
 				id
 			};
-			return Effect.succeed(sessionWithTasks);
+			return Effect.succeed(Option.some(sessionWithTasks));
 		},
 
 		getFocusSessionsAsync: (query?: FocusSessionQueryInput) => {
@@ -141,9 +141,9 @@ export const createMockFocusSessionService = (config: MockFocusSessionConfig = {
 				return Effect.fail(config.shouldFailWith as SupabasePostgrestError);
 			}
 			if (config.hasActiveSession) {
-				return Effect.succeed(config.activeSession || mockFocusSession);
+				return Effect.succeed(Option.some(config.activeSession || mockFocusSession));
 			}
-			return Effect.succeed(null);
+			return Effect.succeed(Option.none());
 		},
 
 		getActiveFocusSessionWithTasksAsync: () => {
@@ -151,9 +151,11 @@ export const createMockFocusSessionService = (config: MockFocusSessionConfig = {
 				return Effect.fail(config.shouldFailWith as SupabasePostgrestError);
 			}
 			if (config.hasActiveSession) {
-				return Effect.succeed(config.returnedSessionWithTasks || mockFocusSessionWithTasks);
+				return Effect.succeed(
+					Option.some(config.returnedSessionWithTasks || mockFocusSessionWithTasks)
+				);
 			}
-			return Effect.succeed(null);
+			return Effect.succeed(Option.none());
 		},
 
 		updateFocusSessionAsync: (id: string, input: UpdateFocusSessionInput) => {
@@ -163,7 +165,21 @@ export const createMockFocusSessionService = (config: MockFocusSessionConfig = {
 			const updatedSession = {
 				...mockFocusSession,
 				id,
-				...input,
+				project_id: input.project_id !== undefined ? input.project_id : mockFocusSession.project_id,
+				started_at:
+					input.started_at !== undefined
+						? DateTime.formatIso(input.started_at)
+						: mockFocusSession.started_at,
+				scheduled_end_at:
+					input.scheduled_end_at !== undefined
+						? DateTime.formatIso(input.scheduled_end_at)
+						: mockFocusSession.scheduled_end_at,
+				closed_at:
+					input.closed_at !== undefined
+						? input.closed_at
+							? DateTime.formatIso(input.closed_at)
+							: null
+						: mockFocusSession.closed_at,
 				updated_at: '2024-01-01T10:00:00Z'
 			};
 			return Effect.succeed(config.returnedSession || updatedSession);
@@ -257,6 +273,66 @@ export const createMockFocusSessionService = (config: MockFocusSessionConfig = {
 			const end = session.closed_at ? new Date(session.closed_at) : new Date();
 			const durationMinutes = Math.floor((end.getTime() - start.getTime()) / (1000 * 60));
 			return Effect.succeed(durationMinutes);
+		},
+
+		// DateTime-powered utility methods
+		isSessionActiveSync: (session: FocusSession) => Effect.succeed(session.closed_at === null),
+
+		getSessionRemainingTimeSync: (session: FocusSession) =>
+			Effect.succeed(
+				(() => {
+					const now = DateTime.unsafeNow();
+					const scheduledEnd = DateTime.unsafeMake(session.scheduled_end_at);
+					const remainingMs = DateTime.distance(now, scheduledEnd);
+					return remainingMs > 0 ? Duration.millis(remainingMs) : Duration.zero;
+				})()
+			),
+
+		isSessionOverdueSync: (session: FocusSession) =>
+			Effect.succeed(
+				(() => {
+					if (session.closed_at !== null) return false;
+					const now = DateTime.unsafeNow();
+					const scheduledEnd = DateTime.unsafeMake(session.scheduled_end_at);
+					return DateTime.greaterThan(now, scheduledEnd);
+				})()
+			),
+
+		formatSessionTimeRangeSync: (session: FocusSession) =>
+			Effect.succeed(
+				(() => {
+					const start = DateTime.unsafeMake(session.started_at);
+					const end = session.closed_at
+						? DateTime.unsafeMake(session.closed_at)
+						: DateTime.unsafeMake(session.scheduled_end_at);
+
+					const formatter = new Intl.DateTimeFormat('ko-KR', {
+						hour: '2-digit',
+						minute: '2-digit',
+						timeZone: 'Asia/Seoul'
+					});
+
+					const startFormatted = DateTime.formatIntl(start, formatter);
+					const endFormatted = DateTime.formatIntl(end, formatter);
+
+					return `${startFormatted} - ${endFormatted}`;
+				})()
+			),
+
+		extendSessionAsync: (sessionId: string, additionalMinutes: number) => {
+			if (config.shouldFailWith && config.shouldFailWith._tag === 'SupabasePostgrest') {
+				return Effect.fail(config.shouldFailWith as SupabasePostgrestError);
+			}
+			const extendedSession = {
+				...mockFocusSession,
+				id: sessionId,
+				scheduled_end_at: DateTime.formatIso(
+					DateTime.add(DateTime.unsafeMake(mockFocusSession.scheduled_end_at), {
+						minutes: additionalMinutes
+					})
+				)
+			};
+			return Effect.succeed(config.returnedSession || extendedSession);
 		}
 	};
 
@@ -302,6 +378,7 @@ export const mockConfigs = {
 
 	// Session with tasks
 	sessionWithTasks: (tasks?: FocusSessionTask[]): MockFocusSessionConfig => ({
+		hasActiveSession: true,
 		returnedSessionWithTasks: {
 			...mockFocusSession,
 			tasks: tasks || [mockFocusSessionWithTasks.tasks[0]]

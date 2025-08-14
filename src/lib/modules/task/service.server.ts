@@ -1,5 +1,5 @@
 import { mapPostgrestError, SupabasePostgrestError, type DomainError } from '$lib/shared/errors';
-import { Context, Effect, Layer } from 'effect';
+import { Context, Effect, Layer, Option } from 'effect';
 import { SupabaseService } from '$lib/infra/supabase/layer.server';
 import {
 	type CreateTaskInput,
@@ -18,7 +18,9 @@ export class TaskService extends Context.Tag('Task')<
 		readonly createTaskAsync: (
 			input: CreateTaskInput
 		) => Effect.Effect<Task, SupabasePostgrestError>;
-		readonly getTaskByIdAsync: (id: string) => Effect.Effect<Task | null, SupabasePostgrestError>;
+		readonly getTaskByIdAsync: (
+			id: string
+		) => Effect.Effect<Option.Option<Task>, SupabasePostgrestError>;
 		readonly getTasksAsync: (
 			query?: TaskQueryInput
 		) => Effect.Effect<Task[], SupabasePostgrestError>;
@@ -77,7 +79,7 @@ export const TaskLive = Layer.effect(
 					Effect.flatMap((res) =>
 						res.error
 							? Effect.fail(mapPostgrestError(res.error, res.status))
-							: Effect.succeed(res.data)
+							: Effect.succeed(Option.fromNullable(res.data))
 					)
 				),
 

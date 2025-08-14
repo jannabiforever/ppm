@@ -1,5 +1,5 @@
 import { mapPostgrestError, SupabasePostgrestError, type DomainError } from '$lib/shared/errors';
-import { Context, Effect, Layer, DateTime, Duration } from 'effect';
+import { Context, Effect, Layer, DateTime, Duration, Option } from 'effect';
 import { SupabaseService } from '$lib/infra/supabase/layer.server';
 import { TaskService } from '$lib/modules/task/service.server';
 import {
@@ -47,10 +47,10 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 		) => Effect.Effect<FocusSession, SupabasePostgrestError | DomainError>;
 		readonly getFocusSessionByIdAsync: (
 			id: string
-		) => Effect.Effect<FocusSession | null, SupabasePostgrestError>;
+		) => Effect.Effect<Option.Option<FocusSession>, SupabasePostgrestError>;
 		readonly getFocusSessionWithTasksByIdAsync: (
 			id: string
-		) => Effect.Effect<FocusSessionWithTasks | null, SupabasePostgrestError>;
+		) => Effect.Effect<Option.Option<FocusSessionWithTasks>, SupabasePostgrestError>;
 		readonly getFocusSessionsAsync: (
 			query?: FocusSessionQueryInput
 		) => Effect.Effect<FocusSession[], SupabasePostgrestError>;
@@ -58,11 +58,11 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 			query?: FocusSessionQueryInput
 		) => Effect.Effect<FocusSessionWithTasks[], SupabasePostgrestError>;
 		readonly getActiveFocusSessionAsync: () => Effect.Effect<
-			FocusSession | null,
+			Option.Option<FocusSession>,
 			SupabasePostgrestError
 		>;
 		readonly getActiveFocusSessionWithTasksAsync: () => Effect.Effect<
-			FocusSessionWithTasks | null,
+			Option.Option<FocusSessionWithTasks>,
 			SupabasePostgrestError
 		>;
 		readonly updateFocusSessionAsync: (
@@ -185,7 +185,7 @@ export const FocusSessionLive = Layer.effect(
 					Effect.flatMap((res) =>
 						res.error
 							? Effect.fail(mapPostgrestError(res.error, res.status))
-							: Effect.succeed(res.data)
+							: Effect.succeed(Option.fromNullable(res.data))
 					)
 				),
 
@@ -197,11 +197,11 @@ export const FocusSessionLive = Layer.effect(
 						Effect.flatMap((res) =>
 							res.error
 								? Effect.fail(mapPostgrestError(res.error, res.status))
-								: Effect.succeed(res.data)
+								: Effect.succeed(Option.fromNullable(res.data))
 						)
 					);
 
-					if (!focusSession) return null;
+					if (Option.isNone(focusSession)) return Option.none();
 
 					const sessionTasksWithDetails = yield* Effect.promise(() =>
 						client
@@ -263,7 +263,9 @@ export const FocusSessionLive = Layer.effect(
 						})
 					);
 
-					return { ...focusSession, tasks };
+					return Option.map(focusSession, (focusSession) => {
+						return { ...focusSession, tasks };
+					});
 				}),
 
 			getFocusSessionsAsync: (query?: FocusSessionQueryInput) =>
@@ -473,13 +475,12 @@ export const FocusSessionLive = Layer.effect(
 					Effect.flatMap((res) =>
 						res.error
 							? Effect.fail(mapPostgrestError(res.error, res.status))
-							: Effect.succeed(res.data)
+							: Effect.succeed(Option.fromNullable(res.data))
 					)
 				),
 
 			getActiveFocusSessionWithTasksAsync: () =>
 				Effect.gen(function* () {
-					const client = yield* supabase.getClientSync();
 					const activeSession = yield* Effect.promise(() =>
 						client
 							.from('focus_sessions')
@@ -492,11 +493,11 @@ export const FocusSessionLive = Layer.effect(
 						Effect.flatMap((res) =>
 							res.error
 								? Effect.fail(mapPostgrestError(res.error, res.status))
-								: Effect.succeed(res.data)
+								: Effect.succeed(Option.fromNullable(res.data))
 						)
 					);
 
-					if (!activeSession) return null;
+					if (Option.isNone(activeSession)) return Option.none();
 
 					const sessionTasksWithDetails = yield* Effect.promise(() =>
 						client
@@ -518,7 +519,7 @@ export const FocusSessionLive = Layer.effect(
 								)
 							`
 							)
-							.eq('session_id', activeSession.id)
+							.eq('session_id', activeSession.value.id)
 							.order('added_at', { ascending: true })
 					).pipe(
 						Effect.flatMap((res) =>
@@ -558,7 +559,9 @@ export const FocusSessionLive = Layer.effect(
 						})
 					);
 
-					return { ...activeSession, tasks };
+					return Option.map(activeSession, (activeSession) => {
+						return { ...activeSession, tasks };
+					});
 				}),
 
 			updateFocusSessionAsync: (id: string, input: UpdateFocusSessionInput) =>

@@ -1,4 +1,4 @@
-import { Layer, Effect } from 'effect';
+import { Layer, Effect, Option } from 'effect';
 import { ProjectService } from '../../service.server';
 import type { Tables } from '$lib/infra/supabase/types';
 import type { CreateProjectInput, UpdateProjectInput, ProjectQueryInput } from '../../schema';
@@ -7,7 +7,7 @@ import type { CreateProjectInput, UpdateProjectInput, ProjectQueryInput } from '
 export const createMockProjectService = (
 	overrides: Partial<{
 		createProjectAsync: (input: CreateProjectInput) => Effect.Effect<Tables<'projects'>, never>;
-		getProjectByIdAsync: (id: string) => Effect.Effect<Tables<'projects'> | null, never>;
+		getProjectByIdAsync: (id: string) => Effect.Effect<Option.Option<Tables<'projects'>>, never>;
 		getProjectsAsync: (query?: ProjectQueryInput) => Effect.Effect<Tables<'projects'>[], never>;
 		updateProjectAsync: (
 			id: string,
@@ -32,15 +32,17 @@ export const createMockProjectService = (
 			} as Tables<'projects'>),
 
 		getProjectByIdAsync: (id: string) =>
-			Effect.succeed({
-				id,
-				owner_id: 'user_123',
-				name: 'Mock Project',
-				description: null,
-				active: true,
-				created_at: '2024-01-01T10:00:00Z',
-				updated_at: '2024-01-01T10:00:00Z'
-			} as Tables<'projects'>),
+			Effect.succeed(
+				Option.some({
+					id,
+					owner_id: 'user_123',
+					name: 'Mock Project',
+					description: null,
+					active: true,
+					created_at: '2024-01-01T10:00:00Z',
+					updated_at: '2024-01-01T10:00:00Z'
+				} as Tables<'projects'>)
+			),
 
 		getProjectsAsync: () => Effect.succeed([]),
 
@@ -108,7 +110,7 @@ export const createMockProjectService = (
 // Error simulation helpers
 export const createFailingProjectService = () => {
 	return createMockProjectService({
-		getProjectByIdAsync: () => Effect.succeed(null),
+		getProjectByIdAsync: () => Effect.succeed(Option.none()),
 		updateProjectAsync: () =>
 			Effect.succeed({
 				id: 'error_project',

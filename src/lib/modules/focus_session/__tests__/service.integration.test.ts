@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { Effect, Layer } from 'effect';
+import { Effect, Layer, Option } from 'effect';
 import { FocusSessionService } from '../service.server';
 import { InvalidTaskStatusTransitionError } from '$lib/shared/errors';
 import type { Tables } from '$lib/infra/supabase/types';
@@ -20,7 +20,7 @@ const createMockTaskServiceForSession = () => {
 	return createMockTaskService({
 		getTaskByIdAsync: (id: string) => {
 			const task = Object.values(mockTasks).find((t) => t.id === id);
-			return Effect.succeed(task ? createTestTask(task) : null);
+			return Effect.succeed(Option.fromNullable(task).pipe(Option.map(createTestTask)));
 		},
 		updateTaskStatusAsync: (id: string, status: Tables<'tasks'>['status']) => {
 			const task = Object.values(mockTasks).find((t) => t.id === id);
@@ -183,10 +183,12 @@ describe('FocusSessionService Integration Tests', () => {
 			const inboxTaskLayer = createMockTaskService({
 				getTaskByIdAsync: () =>
 					Effect.succeed(
-						createTestTask({
-							...mockTasks.inboxTask,
-							project_id: null // Inbox task
-						})
+						Option.some(
+							createTestTask({
+								...mockTasks.inboxTask,
+								project_id: null // Inbox task
+							})
+						)
 					)
 			});
 
@@ -420,9 +422,9 @@ describe('FocusSessionService Integration Tests', () => {
 			}).pipe(Effect.provide(testLayers), Effect.runPromise);
 
 			expect(sessionWithTasks).toBeDefined();
-			if (sessionWithTasks) {
-				expect(sessionWithTasks.id).toBe(mockSessions.standardSession.id);
-				expect(Array.isArray(sessionWithTasks.tasks)).toBe(true);
+			if (Option.isSome(sessionWithTasks)) {
+				expect(sessionWithTasks.value.id).toBe(mockSessions.standardSession.id);
+				expect(Array.isArray(sessionWithTasks.value.tasks)).toBe(true);
 			}
 		});
 
@@ -458,9 +460,9 @@ describe('FocusSessionService Integration Tests', () => {
 			}).pipe(Effect.provide(queryTestLayers), Effect.runPromise);
 
 			expect(activeSession).toBeDefined();
-			if (activeSession) {
-				expect(activeSession.closed_at).toBeNull();
-				expect(Array.isArray(activeSession.tasks)).toBe(true);
+			if (Option.isSome(activeSession)) {
+				expect(activeSession.value.closed_at).toBeNull();
+				expect(Array.isArray(activeSession.value.tasks)).toBe(true);
 			}
 		});
 	});
