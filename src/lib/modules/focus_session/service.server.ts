@@ -1,15 +1,15 @@
 import { mapPostgrestError, SupabasePostgrestError, type DomainError } from '$lib/shared/errors';
-import { Context, Effect, Layer, DateTime, Duration, Option } from 'effect';
+import { Context, Effect, Layer, DateTime, Duration, Option, Schema } from 'effect';
 import { SupabaseService } from '$lib/infra/supabase/layer.server';
 import { TaskService } from '$lib/modules/task/service.server';
 import {
-	type CreateFocusSessionInput,
-	type UpdateFocusSessionInput,
-	type StartFocusSessionInput,
-	type EndFocusSessionInput,
-	type FocusSessionQueryInput,
-	type AddTaskToSessionInput,
-	type RemoveTaskFromSessionInput
+	CreateFocusSessionSchema,
+	UpdateFocusSessionSchema,
+	StartFocusSessionSchema,
+	EndFocusSessionSchema,
+	FocusSessionQuerySchema,
+	AddTaskToSessionSchema,
+	RemoveTaskFromSessionSchema
 } from './schema';
 import type { Tables, TablesInsert, TablesUpdate, Database } from '$lib/infra/supabase/types';
 import {
@@ -43,7 +43,7 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 		 * @throws {InvalidTaskStatusTransitionError} When tasks are not in a valid state for focus session
 		 */
 		readonly createFocusSessionAsync: (
-			input: CreateFocusSessionInput
+			input: Schema.Schema.Type<typeof CreateFocusSessionSchema>
 		) => Effect.Effect<FocusSession, SupabasePostgrestError | DomainError>;
 		/**
 		 * Retrieves a focus session by its unique identifier.
@@ -110,7 +110,7 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 		 * ```
 		 */
 		readonly getFocusSessionsAsync: (
-			query?: FocusSessionQueryInput
+			query?: Schema.Schema.Type<typeof FocusSessionQuerySchema>
 		) => Effect.Effect<FocusSession[], SupabasePostgrestError>;
 		/**
 		 * Retrieves a list of focus sessions with their associated tasks based on query filters.
@@ -132,7 +132,7 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 		 * ```
 		 */
 		readonly getFocusSessionsWithTasksAsync: (
-			query?: FocusSessionQueryInput
+			query?: Schema.Schema.Type<typeof FocusSessionQuerySchema>
 		) => Effect.Effect<FocusSessionWithTasks[], SupabasePostgrestError>;
 		/**
 		 * Retrieves the currently active focus session for the authenticated user.
@@ -211,7 +211,7 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 		 */
 		readonly updateFocusSessionAsync: (
 			id: string,
-			input: UpdateFocusSessionInput
+			input: Schema.Schema.Type<typeof UpdateFocusSessionSchema>
 		) => Effect.Effect<FocusSession, SupabasePostgrestError>;
 		/**
 		 * Starts a new focus session with specified tasks and duration.
@@ -226,7 +226,7 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 		 * @throws {ProjectNotFoundError} When specified project_id doesn't exist or user lacks access
 		 */
 		readonly startFocusSessionAsync: (
-			input: StartFocusSessionInput
+			input: Schema.Schema.Type<typeof StartFocusSessionSchema>
 		) => Effect.Effect<FocusSession, SupabasePostgrestError | DomainError>;
 		/**
 		 * Ends an active focus session and updates task completion states.
@@ -243,7 +243,7 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 		 */
 		readonly endFocusSessionAsync: (
 			sessionId: string,
-			input: EndFocusSessionInput
+			input: Schema.Schema.Type<typeof EndFocusSessionSchema>
 		) => Effect.Effect<FocusSession, SupabasePostgrestError | DomainError>;
 		/**
 		 * Permanently deletes a focus session and all its associated data.
@@ -284,7 +284,7 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 		 * ```
 		 */
 		readonly addTaskToSessionAsync: (
-			input: AddTaskToSessionInput
+			input: Schema.Schema.Type<typeof AddTaskToSessionSchema>
 		) => Effect.Effect<SessionTaskDB, SupabasePostgrestError>;
 		/**
 		 * Removes a task from a focus session.
@@ -307,7 +307,7 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 		 * ```
 		 */
 		readonly removeTaskFromSessionAsync: (
-			input: RemoveTaskFromSessionInput
+			input: Schema.Schema.Type<typeof RemoveTaskFromSessionSchema>
 		) => Effect.Effect<void, SupabasePostgrestError>;
 
 		/**
@@ -480,7 +480,7 @@ export const FocusSessionLive = Layer.effect(
 		const taskService = yield* TaskService;
 
 		return {
-			createFocusSessionAsync: (input: CreateFocusSessionInput) =>
+			createFocusSessionAsync: (input: Schema.Schema.Type<typeof CreateFocusSessionSchema>) =>
 				Effect.gen(function* () {
 					// Create the focus session
 					const insertData: TablesInsert<'focus_sessions'> = {
@@ -609,7 +609,7 @@ export const FocusSessionLive = Layer.effect(
 					});
 				}),
 
-			getFocusSessionsAsync: (query?: FocusSessionQueryInput) =>
+			getFocusSessionsAsync: (query?: Schema.Schema.Type<typeof FocusSessionQuerySchema>) =>
 				supabase.getClientSync().pipe(
 					Effect.flatMap((client) => {
 						let queryBuilder = client.from('focus_sessions').select();
@@ -658,7 +658,9 @@ export const FocusSessionLive = Layer.effect(
 					)
 				),
 
-			getFocusSessionsWithTasksAsync: (query?: FocusSessionQueryInput) =>
+			getFocusSessionsWithTasksAsync: (
+				query?: Schema.Schema.Type<typeof FocusSessionQuerySchema>
+			) =>
 				Effect.gen(function* () {
 					const client = yield* supabase.getClientSync();
 					let queryBuilder = client.from('focus_sessions').select();
@@ -905,7 +907,10 @@ export const FocusSessionLive = Layer.effect(
 					});
 				}),
 
-			updateFocusSessionAsync: (id: string, input: UpdateFocusSessionInput) =>
+			updateFocusSessionAsync: (
+				id: string,
+				input: Schema.Schema.Type<typeof UpdateFocusSessionSchema>
+			) =>
 				supabase.getClientSync().pipe(
 					Effect.flatMap((client) => {
 						const updateData: TablesUpdate<'focus_sessions'> = {};
@@ -929,7 +934,7 @@ export const FocusSessionLive = Layer.effect(
 					)
 				),
 
-			startFocusSessionAsync: (input: StartFocusSessionInput) =>
+			startFocusSessionAsync: (input: Schema.Schema.Type<typeof StartFocusSessionSchema>) =>
 				Effect.gen(function* () {
 					const client = yield* supabase.getClientSync();
 
@@ -997,7 +1002,10 @@ export const FocusSessionLive = Layer.effect(
 					return session;
 				}),
 
-			endFocusSessionAsync: (sessionId: string, input: EndFocusSessionInput) =>
+			endFocusSessionAsync: (
+				sessionId: string,
+				input: Schema.Schema.Type<typeof EndFocusSessionSchema>
+			) =>
 				Effect.gen(function* () {
 					const client = yield* supabase.getClientSync();
 					const now = new Date().toISOString();
@@ -1083,7 +1091,7 @@ export const FocusSessionLive = Layer.effect(
 					)
 				),
 
-			addTaskToSessionAsync: (input: AddTaskToSessionInput) =>
+			addTaskToSessionAsync: (input: Schema.Schema.Type<typeof AddTaskToSessionSchema>) =>
 				Effect.gen(function* () {
 					const client = yield* supabase.getClientSync();
 
@@ -1103,7 +1111,7 @@ export const FocusSessionLive = Layer.effect(
 					);
 				}),
 
-			removeTaskFromSessionAsync: (input: RemoveTaskFromSessionInput) =>
+			removeTaskFromSessionAsync: (input: Schema.Schema.Type<typeof RemoveTaskFromSessionSchema>) =>
 				supabase.getClientSync().pipe(
 					Effect.flatMap((client) =>
 						Effect.promise(() =>

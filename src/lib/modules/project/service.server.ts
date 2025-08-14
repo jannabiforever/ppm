@@ -4,9 +4,9 @@ import {
 	ProjectHasTasksError,
 	type DomainError
 } from '$lib/shared/errors';
-import { Context, Effect, Layer, Option } from 'effect';
+import { Context, Effect, Layer, Option, Schema } from 'effect';
 import { SupabaseService } from '$lib/infra/supabase/layer.server';
-import { type CreateProjectInput, type UpdateProjectInput, type ProjectQueryInput } from './schema';
+import { CreateProjectSchema, UpdateProjectSchema, ProjectQuerySchema } from './schema';
 import type { Tables, TablesInsert, TablesUpdate } from '$lib/infra/supabase/types';
 
 export type Project = Tables<'projects'>;
@@ -36,7 +36,7 @@ export class ProjectService extends Context.Tag('Project')<
 		 * ```
 		 */
 		readonly createProjectAsync: (
-			input: CreateProjectInput
+			input: Schema.Schema.Type<typeof CreateProjectSchema>
 		) => Effect.Effect<Project, SupabasePostgrestError>;
 
 		/**
@@ -92,7 +92,7 @@ export class ProjectService extends Context.Tag('Project')<
 		 * ```
 		 */
 		readonly getProjectsAsync: (
-			query?: ProjectQueryInput
+			query?: Schema.Schema.Type<typeof ProjectQuerySchema>
 		) => Effect.Effect<Project[], SupabasePostgrestError>;
 
 		/**
@@ -122,7 +122,7 @@ export class ProjectService extends Context.Tag('Project')<
 		 */
 		readonly updateProjectAsync: (
 			id: string,
-			input: UpdateProjectInput
+			input: Schema.Schema.Type<typeof UpdateProjectSchema>
 		) => Effect.Effect<Project, SupabasePostgrestError>;
 
 		/**
@@ -223,7 +223,7 @@ export const ProjectLive = Layer.effect(
 		const client = yield* supabase.getClientSync();
 
 		return {
-			createProjectAsync: (input: CreateProjectInput) =>
+			createProjectAsync: (input: Schema.Schema.Type<typeof CreateProjectSchema>) =>
 				Effect.promise(() => {
 					const insertData: TablesInsert<'projects'> = {
 						name: input.name,
@@ -249,7 +249,7 @@ export const ProjectLive = Layer.effect(
 					)
 				),
 
-			getProjectsAsync: (query?: ProjectQueryInput) =>
+			getProjectsAsync: (query?: Schema.Schema.Type<typeof ProjectQuerySchema>) =>
 				supabase.getClientSync().pipe(
 					Effect.flatMap((client) => {
 						let queryBuilder = client.from('projects').select();
@@ -283,7 +283,7 @@ export const ProjectLive = Layer.effect(
 					)
 				),
 
-			updateProjectAsync: (id: string, input: UpdateProjectInput) =>
+			updateProjectAsync: (id: string, input: Schema.Schema.Type<typeof UpdateProjectSchema>) =>
 				supabase.getClientSync().pipe(
 					Effect.flatMap((client) => {
 						const updateData: TablesUpdate<'projects'> = {};

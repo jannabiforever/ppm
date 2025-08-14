@@ -4,12 +4,12 @@ import {
 	SupabaseAuthError,
 	NoSessionOrUserError
 } from '$lib/shared/errors';
-import { Context, Effect, Layer } from 'effect';
+import { Context, Effect, Layer, Schema } from 'effect';
 import { SupabaseService } from '$lib/infra/supabase/layer.server';
 import {
 	UserProfileNotFoundError,
-	type CreateUserProfileInput,
-	type UpdateUserProfileInput
+	CreateUserProfileSchema,
+	UpdateUserProfileSchema
 } from './schema';
 import type { Tables, TablesInsert, TablesUpdate } from '$lib/infra/supabase/types';
 
@@ -42,7 +42,7 @@ export class UserProfileService extends Context.Tag('UserProfile')<
 		 * ```
 		 */
 		readonly createUserProfileAsync: (
-			input: CreateUserProfileInput
+			input: Schema.Schema.Type<typeof CreateUserProfileSchema>
 		) => Effect.Effect<
 			UserProfile,
 			SupabasePostgrestError | SupabaseAuthError | NoSessionOrUserError
@@ -98,7 +98,7 @@ export class UserProfileService extends Context.Tag('UserProfile')<
 		 */
 		readonly updateUserProfileAsync: (
 			id: string,
-			input: UpdateUserProfileInput
+			input: Schema.Schema.Type<typeof UpdateUserProfileSchema>
 		) => Effect.Effect<UserProfile, SupabasePostgrestError>;
 	}
 >() {}
@@ -111,7 +111,7 @@ export const UserProfileLive = Layer.effect(
 		const user = yield* supabase.safeGetUserAsync();
 
 		return {
-			createUserProfileAsync: (input: CreateUserProfileInput) =>
+			createUserProfileAsync: (input: Schema.Schema.Type<typeof CreateUserProfileSchema>) =>
 				Effect.gen(function* () {
 					const insertData: TablesInsert<'user_profiles'> = {
 						id: user.id,
@@ -144,7 +144,10 @@ export const UserProfileLive = Layer.effect(
 					return res.data;
 				}),
 
-			updateUserProfileAsync: (id: string, input: UpdateUserProfileInput) =>
+			updateUserProfileAsync: (
+				id: string,
+				input: Schema.Schema.Type<typeof UpdateUserProfileSchema>
+			) =>
 				supabase.getClientSync().pipe(
 					Effect.flatMap((client) => {
 						const updateData: TablesUpdate<'user_profiles'> = {};

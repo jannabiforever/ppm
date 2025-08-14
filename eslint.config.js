@@ -23,7 +23,24 @@ export default ts.config(
 		rules: {
 			// typescript-eslint strongly recommend that you do not use the no-undef lint rule on TypeScript projects.
 			// see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
-			'no-undef': 'off'
+			'no-undef': 'off',
+
+			// Custom rules to prevent DateTime toString() usage
+			'no-restricted-syntax': [
+				'error',
+				{
+					selector:
+						"CallExpression[callee.type='MemberExpression'][callee.property.name='toString'][callee.object.type='Identifier'][callee.object.name=/.*[Dd]ate.*|.*[Tt]ime.*/]",
+					message:
+						'Avoid using toString() on DateTime objects. Use DateTime.formatIso() instead to prevent PostgreSQL conversion errors.'
+				},
+				{
+					selector:
+						"CallExpression[callee.type='MemberExpression'][callee.property.name='toString'][callee.object.type='CallExpression'][callee.object.callee.type='MemberExpression'][callee.object.callee.object.name='DateTime']",
+					message:
+						'Avoid using toString() on DateTime objects. Use DateTime.formatIso() instead to prevent PostgreSQL conversion errors.'
+				}
+			]
 		}
 	},
 	{

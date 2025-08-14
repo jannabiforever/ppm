@@ -9,6 +9,7 @@ import {
 } from '$lib/modules';
 import { toObj } from '$lib/shared/errors';
 import { error } from '@sveltejs/kit';
+import { optionToPojo } from '$lib/pojo';
 
 /**
  * Navigation needs following data:
@@ -43,6 +44,6 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	return {
 		userAndProfile: locals.userAndProfile,
 		activeProjects: res.right[0],
-		currentFocusSession: res.right[1]
+		currentFocusSession: optionToPojo(res.right[1])
 	};
 };

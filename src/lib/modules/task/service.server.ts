@@ -1,11 +1,11 @@
 import { mapPostgrestError, SupabasePostgrestError, type DomainError } from '$lib/shared/errors';
-import { Context, Effect, Layer, Option, DateTime } from 'effect';
+import { Context, Effect, Layer, Option, DateTime, Schema } from 'effect';
 import { SupabaseService } from '$lib/infra/supabase/layer.server';
 import {
-	type CreateTaskInput,
-	type UpdateTaskInput,
-	type TaskQueryInput,
-	type MoveTaskToProjectInput
+	CreateTaskSchema,
+	UpdateTaskSchema,
+	TaskQuerySchema,
+	MoveTaskToProjectSchema
 } from './schema';
 import type { Tables, TablesInsert, TablesUpdate } from '$lib/infra/supabase/types';
 import { InvalidTaskStatusTransitionError } from './errors';
@@ -44,7 +44,7 @@ export class TaskService extends Context.Tag('Task')<
 		 * ```
 		 */
 		readonly createTaskAsync: (
-			input: CreateTaskInput
+			input: Schema.Schema.Type<typeof CreateTaskSchema>
 		) => Effect.Effect<Task, SupabasePostgrestError>;
 
 		/**
@@ -104,7 +104,7 @@ export class TaskService extends Context.Tag('Task')<
 		 * ```
 		 */
 		readonly getTasksAsync: (
-			query?: TaskQueryInput
+			query?: Schema.Schema.Type<typeof TaskQuerySchema>
 		) => Effect.Effect<Task[], SupabasePostgrestError>;
 
 		/**
@@ -163,7 +163,7 @@ export class TaskService extends Context.Tag('Task')<
 		 */
 		readonly updateTaskAsync: (
 			id: string,
-			input: UpdateTaskInput
+			input: Schema.Schema.Type<typeof UpdateTaskSchema>
 		) => Effect.Effect<Task, SupabasePostgrestError>;
 
 		/**
@@ -193,7 +193,7 @@ export class TaskService extends Context.Tag('Task')<
 		 * ```
 		 */
 		readonly moveTaskToProjectAsync: (
-			input: MoveTaskToProjectInput
+			input: Schema.Schema.Type<typeof MoveTaskToProjectSchema>
 		) => Effect.Effect<Task, SupabasePostgrestError>;
 
 		/**
@@ -287,7 +287,7 @@ export const TaskLive = Layer.effect(
 		const supabase = yield* SupabaseService;
 
 		return {
-			createTaskAsync: (input: CreateTaskInput) =>
+			createTaskAsync: (input: Schema.Schema.Type<typeof CreateTaskSchema>) =>
 				supabase.getClientSync().pipe(
 					Effect.flatMap((client) => {
 						const insertData: TablesInsert<'tasks'> = {
@@ -322,7 +322,7 @@ export const TaskLive = Layer.effect(
 					)
 				),
 
-			getTasksAsync: (query?: TaskQueryInput) =>
+			getTasksAsync: (query?: Schema.Schema.Type<typeof TaskQuerySchema>) =>
 				supabase.getClientSync().pipe(
 					Effect.flatMap((client) => {
 						let queryBuilder = client.from('tasks').select();
@@ -392,7 +392,7 @@ export const TaskLive = Layer.effect(
 					)
 				),
 
-			updateTaskAsync: (id: string, input: UpdateTaskInput) =>
+			updateTaskAsync: (id: string, input: Schema.Schema.Type<typeof UpdateTaskSchema>) =>
 				supabase.getClientSync().pipe(
 					Effect.flatMap((client) => {
 						const updateData: TablesUpdate<'tasks'> = {};
@@ -418,7 +418,7 @@ export const TaskLive = Layer.effect(
 					)
 				),
 
-			moveTaskToProjectAsync: (input: MoveTaskToProjectInput) =>
+			moveTaskToProjectAsync: (input: Schema.Schema.Type<typeof MoveTaskToProjectSchema>) =>
 				supabase.getClientSync().pipe(
 					Effect.flatMap((client) =>
 						Effect.promise(() =>
