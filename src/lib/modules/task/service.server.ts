@@ -1,5 +1,5 @@
 import { mapPostgrestError, SupabasePostgrestError, type DomainError } from '$lib/shared/errors';
-import { Context, Effect, Layer, Option } from 'effect';
+import { Context, Effect, Layer, Option, DateTime } from 'effect';
 import { SupabaseService } from '$lib/infra/supabase/layer.server';
 import {
 	type CreateTaskInput,
@@ -295,7 +295,9 @@ export const TaskLive = Layer.effect(
 							description: input.description,
 							project_id: input.project_id,
 							status: input.status ?? 'backlog',
-							planned_for: input.planned_for,
+							planned_for: input.planned_for
+								? DateTime.formatIso(input.planned_for).split('T')[0]
+								: null,
 							blocked_note: input.blocked_note
 						};
 
@@ -338,7 +340,10 @@ export const TaskLive = Layer.effect(
 						}
 
 						if (query?.planned_for) {
-							queryBuilder = queryBuilder.eq('planned_for', query.planned_for);
+							queryBuilder = queryBuilder.eq(
+								'planned_for',
+								DateTime.formatIso(query.planned_for).split('T')[0]
+							);
 						}
 
 						if (query?.search) {
@@ -396,7 +401,10 @@ export const TaskLive = Layer.effect(
 						if (input.description !== undefined) updateData.description = input.description;
 						if (input.project_id !== undefined) updateData.project_id = input.project_id;
 						if (input.status !== undefined) updateData.status = input.status;
-						if (input.planned_for !== undefined) updateData.planned_for = input.planned_for;
+						if (input.planned_for !== undefined)
+							updateData.planned_for = input.planned_for
+								? DateTime.formatIso(input.planned_for).split('T')[0]
+								: null;
 						if (input.blocked_note !== undefined) updateData.blocked_note = input.blocked_note;
 
 						return Effect.promise(() =>

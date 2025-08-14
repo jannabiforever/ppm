@@ -1,21 +1,5 @@
-import { Schema, DateTime } from 'effect';
-
-/**
- * DateTime schema that transforms between database string and DateTime.Utc
- */
-const DateTimeUtcSchema = Schema.transform(
-	Schema.String.pipe(Schema.minLength(1)),
-	Schema.DateTimeUtcFromSelf,
-	{
-		decode: (str) => DateTime.unsafeMake(str),
-		encode: (dt) => DateTime.formatIso(dt)
-	}
-);
-
-/**
- * Optional DateTime schema for nullable database fields
- */
-const OptionalDateTimeUtcSchema = Schema.optional(DateTimeUtcSchema);
+import { Schema } from 'effect';
+import { DateTimeUtcSchema, OptionalDateTimeUtcSchema } from '$lib/shared/schema';
 
 /**
  * Session task schema for managing task associations within a session

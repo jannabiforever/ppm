@@ -1,6 +1,7 @@
 import { Layer, Effect } from 'effect';
 import { vi } from 'vitest';
 import { SupabaseService } from '$lib/infra/supabase/layer.server';
+import { NoSessionOrUserError } from '$lib/shared/errors';
 
 import type { Tables } from '$lib/infra/supabase/types';
 
@@ -13,6 +14,7 @@ export interface MockSupabaseConfig {
 	shouldFail?: boolean;
 	error?: Error;
 	customResponses?: Record<string, unknown>;
+	hasValidSession?: boolean;
 }
 
 // Create a mock Supabase client
@@ -92,10 +94,38 @@ export const createMockSupabaseService = (config: MockSupabaseConfig = {}) => {
 	return Layer.succeed(SupabaseService, {
 		getClientSync: () => Effect.succeed(mockClient as never),
 		safeGetSessionAsync: () => {
-			return Effect.succeed({
-				session: null,
-				user: null
-			});
+			if (config.hasValidSession) {
+				return Effect.succeed({
+					access_token: 'mock_access_token',
+					refresh_token: 'mock_refresh_token',
+					expires_in: 3600,
+					token_type: 'bearer',
+					user: {
+						id: 'mock_user_id',
+						email: 'test@example.com',
+						created_at: '2024-01-01T00:00:00Z',
+						updated_at: '2024-01-01T00:00:00Z',
+						app_metadata: {},
+						user_metadata: {},
+						aud: 'authenticated'
+					}
+				});
+			}
+			return Effect.fail(new NoSessionOrUserError());
+		},
+		safeGetUserAsync: () => {
+			if (config.hasValidSession) {
+				return Effect.succeed({
+					id: 'mock_user_id',
+					email: 'test@example.com',
+					created_at: '2024-01-01T00:00:00Z',
+					updated_at: '2024-01-01T00:00:00Z',
+					app_metadata: {},
+					user_metadata: {},
+					aud: 'authenticated'
+				});
+			}
+			return Effect.fail(new NoSessionOrUserError());
 		}
 	});
 };
@@ -207,11 +237,11 @@ export const mockConfigs = {
 export const createBatchMockSupabase = () => {
 	return Layer.succeed(SupabaseService, {
 		getClientSync: () => {
-			// Return a client that switches behavior based on the operation
 			const compositeClient = createMockSupabaseClient();
 			return Effect.succeed(compositeClient as never);
 		},
-		safeGetSessionAsync: () => Effect.succeed({ session: null, user: null })
+		safeGetSessionAsync: () => Effect.fail(new NoSessionOrUserError()),
+		safeGetUserAsync: () => Effect.fail(new NoSessionOrUserError())
 	});
 };
 

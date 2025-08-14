@@ -8,22 +8,70 @@ export const databaseErrors = {
 	serverError: new Error('Internal server error'),
 
 	// Supabase specific errors
-	supabaseConnectionTimeout: new SupabasePostgrestError({ message: 'Connection timeout' }),
-	supabaseNetworkError: new SupabasePostgrestError({ message: 'Network error' }),
-	supabaseServerError: new SupabasePostgrestError({ message: 'Internal server error' }),
-	supabaseRateLimited: new SupabasePostgrestError({ message: 'Rate limit exceeded' }),
+	supabaseConnectionTimeout: new SupabasePostgrestError({
+		message: 'Connection timeout',
+		status: 408,
+		code: 'CONNECTION_TIMEOUT'
+	}),
+	supabaseNetworkError: new SupabasePostgrestError({
+		message: 'Network error',
+		status: 503,
+		code: 'NETWORK_ERROR'
+	}),
+	supabaseServerError: new SupabasePostgrestError({
+		message: 'Internal server error',
+		status: 500,
+		code: 'INTERNAL_ERROR'
+	}),
+	supabaseRateLimited: new SupabasePostgrestError({
+		message: 'Rate limit exceeded',
+		status: 429,
+		code: 'RATE_LIMITED'
+	}),
 
 	// Constraint violations
-	uniqueConstraintViolation: new SupabasePostgrestError({ message: 'Unique constraint violation' }),
-	foreignKeyViolation: new SupabasePostgrestError({ message: 'Foreign key constraint violation' }),
-	checkConstraintViolation: new SupabasePostgrestError({ message: 'Check constraint violation' }),
-	notNullViolation: new SupabasePostgrestError({ message: 'Not null constraint violation' }),
+	uniqueConstraintViolation: new SupabasePostgrestError({
+		message: 'Unique constraint violation',
+		status: 409,
+		code: 'UNIQUE_VIOLATION'
+	}),
+	foreignKeyViolation: new SupabasePostgrestError({
+		message: 'Foreign key constraint violation',
+		status: 409,
+		code: 'FOREIGN_KEY_VIOLATION'
+	}),
+	checkConstraintViolation: new SupabasePostgrestError({
+		message: 'Check constraint violation',
+		status: 400,
+		code: 'CHECK_VIOLATION'
+	}),
+	notNullViolation: new SupabasePostgrestError({
+		message: 'Not null constraint violation',
+		status: 400,
+		code: 'NOT_NULL_VIOLATION'
+	}),
 
 	// Authentication errors
-	authenticationFailed: new SupabasePostgrestError({ message: 'Authentication failed' }),
-	insufficientPrivileges: new SupabasePostgrestError({ message: 'Insufficient privileges' }),
-	tokenExpired: new SupabasePostgrestError({ message: 'Token expired' }),
-	invalidCredentials: new SupabasePostgrestError({ message: 'Invalid credentials' })
+	authenticationFailed: new SupabasePostgrestError({
+		message: 'Authentication failed',
+		status: 401,
+		code: 'AUTH_FAILED'
+	}),
+	insufficientPrivileges: new SupabasePostgrestError({
+		message: 'Insufficient privileges',
+		status: 403,
+		code: 'INSUFFICIENT_PRIVILEGES'
+	}),
+	tokenExpired: new SupabasePostgrestError({
+		message: 'Token expired',
+		status: 401,
+		code: 'TOKEN_EXPIRED'
+	}),
+	invalidCredentials: new SupabasePostgrestError({
+		message: 'Invalid credentials',
+		status: 401,
+		code: 'INVALID_CREDENTIALS'
+	})
 };
 
 // Business logic errors for testing
@@ -146,7 +194,8 @@ export const validationErrors = {
 
 // Error factory functions for creating dynamic errors
 export const createError = {
-	databaseError: (message: string) => new SupabasePostgrestError({ message }),
+	databaseError: (message: string) =>
+		new SupabasePostgrestError({ message, status: 500, code: 'DATABASE_ERROR' }),
 
 	businessLogicError: (tag: string, message: string, details?: Record<string, unknown>) => ({
 		_tag: tag,
