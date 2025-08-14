@@ -45,26 +45,170 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 		readonly createFocusSessionAsync: (
 			input: CreateFocusSessionInput
 		) => Effect.Effect<FocusSession, SupabasePostgrestError | DomainError>;
+		/**
+		 * Retrieves a focus session by its unique identifier.
+		 *
+		 * @param id - The unique identifier of the focus session to retrieve
+		 * @returns Effect that succeeds with Some(FocusSession) if found, None if not found, or fails with database error
+		 *
+		 * @throws {SupabasePostgrestError} When database query fails or access is denied
+		 *
+		 * @example
+		 * ```typescript
+		 * const session = yield* focusSessionService.getFocusSessionByIdAsync('session_123');
+		 * if (Option.isSome(session)) {
+		 *   console.log('Found session:', session.value.id);
+		 * }
+		 * ```
+		 */
 		readonly getFocusSessionByIdAsync: (
 			id: string
 		) => Effect.Effect<Option.Option<FocusSession>, SupabasePostgrestError>;
+		/**
+		 * Retrieves a focus session with its associated tasks by session ID.
+		 *
+		 * This method performs a join query to fetch the session along with all tasks
+		 * that were added to the session, including their current status and metadata.
+		 *
+		 * @param id - The unique identifier of the focus session
+		 * @returns Effect that succeeds with Some(FocusSessionWithTasks) if found, None if not found, or fails with database error
+		 *
+		 * @throws {SupabasePostgrestError} When database operations fail or session access is denied
+		 *
+		 * @example
+		 * ```typescript
+		 * const sessionWithTasks = yield* focusSessionService.getFocusSessionWithTasksByIdAsync('session_123');
+		 * if (Option.isSome(sessionWithTasks)) {
+		 *   console.log('Session has', sessionWithTasks.value.tasks.length, 'tasks');
+		 * }
+		 * ```
+		 */
 		readonly getFocusSessionWithTasksByIdAsync: (
 			id: string
 		) => Effect.Effect<Option.Option<FocusSessionWithTasks>, SupabasePostgrestError>;
+		/**
+		 * Retrieves a list of focus sessions based on query filters.
+		 *
+		 * Supports filtering by date range, active status, and project association.
+		 * Results are ordered by start time in descending order (most recent first).
+		 *
+		 * @param query - Optional query filters including date range, active status, and project ID
+		 * @returns Effect that succeeds with an array of FocusSession objects or fails with database error
+		 *
+		 * @throws {SupabasePostgrestError} When database query fails or access is denied
+		 *
+		 * @example
+		 * ```typescript
+		 * // Get all sessions
+		 * const allSessions = yield* focusSessionService.getFocusSessionsAsync();
+		 *
+		 * // Get only active sessions
+		 * const activeSessions = yield* focusSessionService.getFocusSessionsAsync({ is_active: true });
+		 *
+		 * // Get sessions for specific project
+		 * const projectSessions = yield* focusSessionService.getFocusSessionsAsync({ project_id: 'proj_123' });
+		 * ```
+		 */
 		readonly getFocusSessionsAsync: (
 			query?: FocusSessionQueryInput
 		) => Effect.Effect<FocusSession[], SupabasePostgrestError>;
+		/**
+		 * Retrieves a list of focus sessions with their associated tasks based on query filters.
+		 *
+		 * This method performs join queries to fetch sessions along with all their tasks.
+		 * Useful for dashboard views and comprehensive session analysis.
+		 *
+		 * @param query - Optional query filters including date range, active status, and project ID
+		 * @returns Effect that succeeds with an array of FocusSessionWithTasks objects or fails with database error
+		 *
+		 * @throws {SupabasePostgrestError} When database operations fail or access is denied
+		 *
+		 * @example
+		 * ```typescript
+		 * // Get recent sessions with their tasks
+		 * const sessionsWithTasks = yield* focusSessionService.getFocusSessionsWithTasksAsync({
+		 *   date_from: DateTime.subtract(DateTime.unsafeNow(), { days: 7 })
+		 * });
+		 * ```
+		 */
 		readonly getFocusSessionsWithTasksAsync: (
 			query?: FocusSessionQueryInput
 		) => Effect.Effect<FocusSessionWithTasks[], SupabasePostgrestError>;
+		/**
+		 * Retrieves the currently active focus session for the authenticated user.
+		 *
+		 * An active session is one where closed_at is null. Only one session can be
+		 * active per user at any given time.
+		 *
+		 * @returns Effect that succeeds with Some(FocusSession) if an active session exists,
+		 *          None if no active session, or fails with database error
+		 *
+		 * @throws {SupabasePostgrestError} When database query fails or authentication is invalid
+		 *
+		 * @example
+		 * ```typescript
+		 * const activeSession = yield* focusSessionService.getActiveFocusSessionAsync();
+		 * if (Option.isSome(activeSession)) {
+		 *   console.log('Active session ends at:', activeSession.value.scheduled_end_at);
+		 * } else {
+		 *   console.log('No active session found');
+		 * }
+		 * ```
+		 */
 		readonly getActiveFocusSessionAsync: () => Effect.Effect<
 			Option.Option<FocusSession>,
 			SupabasePostgrestError
 		>;
+		/**
+		 * Retrieves the currently active focus session with all its associated tasks.
+		 *
+		 * This is the most commonly used method for focus session UI components,
+		 * as it provides complete information about the current session and its tasks.
+		 *
+		 * @returns Effect that succeeds with Some(FocusSessionWithTasks) if an active session exists,
+		 *          None if no active session, or fails with database error
+		 *
+		 * @throws {SupabasePostgrestError} When database operations fail or authentication is invalid
+		 *
+		 * @example
+		 * ```typescript
+		 * const activeSessionWithTasks = yield* focusSessionService.getActiveFocusSessionWithTasksAsync();
+		 * if (Option.isSome(activeSessionWithTasks)) {
+		 *   const session = activeSessionWithTasks.value;
+		 *   console.log(`Active session has ${session.tasks.length} tasks`);
+		 *   session.tasks.forEach(task => console.log(`- ${task.title} (${task.status})`));
+		 * }
+		 * ```
+		 */
 		readonly getActiveFocusSessionWithTasksAsync: () => Effect.Effect<
 			Option.Option<FocusSessionWithTasks>,
 			SupabasePostgrestError
 		>;
+		/**
+		 * Updates an existing focus session with new values.
+		 *
+		 * Allows partial updates of session properties including project association,
+		 * timing adjustments, and session closure. Only provided fields will be updated.
+		 *
+		 * @param id - The unique identifier of the session to update
+		 * @param input - Partial update data containing fields to modify
+		 * @returns Effect that succeeds with the updated FocusSession or fails with an error
+		 *
+		 * @throws {SupabasePostgrestError} When database operations fail, session not found, or access denied
+		 *
+		 * @example
+		 * ```typescript
+		 * // Close a session
+		 * const closedSession = yield* focusSessionService.updateFocusSessionAsync('session_123', {
+		 *   closed_at: DateTime.unsafeNow()
+		 * });
+		 *
+		 * // Change project association
+		 * const updatedSession = yield* focusSessionService.updateFocusSessionAsync('session_123', {
+		 *   project_id: 'new_project_id'
+		 * });
+		 * ```
+		 */
 		readonly updateFocusSessionAsync: (
 			id: string,
 			input: UpdateFocusSessionInput
@@ -101,29 +245,226 @@ export class FocusSessionService extends Context.Tag('FocusSession')<
 			sessionId: string,
 			input: EndFocusSessionInput
 		) => Effect.Effect<FocusSession, SupabasePostgrestError | DomainError>;
+		/**
+		 * Permanently deletes a focus session and all its associated data.
+		 *
+		 * This operation removes the session record and cascades to delete all
+		 * session_tasks entries. This action cannot be undone.
+		 *
+		 * @param id - The unique identifier of the session to delete
+		 * @returns Effect that succeeds with void or fails with database error
+		 *
+		 * @throws {SupabasePostgrestError} When database operations fail, session not found, or access denied
+		 *
+		 * @example
+		 * ```typescript
+		 * yield* focusSessionService.deleteFocusSessionAsync('session_123');
+		 * console.log('Session deleted successfully');
+		 * ```
+		 */
 		readonly deleteFocusSessionAsync: (id: string) => Effect.Effect<void, SupabasePostgrestError>;
+		/**
+		 * Adds a task to an existing focus session.
+		 *
+		 * Creates a session_tasks relationship record linking the task to the session.
+		 * The task's status may be updated to 'in_session' if specified in the input.
+		 *
+		 * @param input - Contains session_id, task_id, and optional status update
+		 * @returns Effect that succeeds with the created SessionTaskDB record or fails with an error
+		 *
+		 * @throws {SupabasePostgrestError} When database operations fail or relationships are invalid
+		 *
+		 * @example
+		 * ```typescript
+		 * const sessionTask = yield* focusSessionService.addTaskToSessionAsync({
+		 *   session_id: 'session_123',
+		 *   task_id: 'task_456'
+		 * });
+		 * console.log('Task added to session at:', sessionTask.added_at);
+		 * ```
+		 */
 		readonly addTaskToSessionAsync: (
 			input: AddTaskToSessionInput
 		) => Effect.Effect<SessionTaskDB, SupabasePostgrestError>;
+		/**
+		 * Removes a task from a focus session.
+		 *
+		 * Deletes the session_tasks relationship record. The task itself remains
+		 * in the system but is no longer associated with the session.
+		 *
+		 * @param input - Contains session_id and task_id to identify the relationship to remove
+		 * @returns Effect that succeeds with void or fails with database error
+		 *
+		 * @throws {SupabasePostgrestError} When database operations fail or relationship not found
+		 *
+		 * @example
+		 * ```typescript
+		 * yield* focusSessionService.removeTaskFromSessionAsync({
+		 *   session_id: 'session_123',
+		 *   task_id: 'task_456'
+		 * });
+		 * console.log('Task removed from session');
+		 * ```
+		 */
 		readonly removeTaskFromSessionAsync: (
 			input: RemoveTaskFromSessionInput
 		) => Effect.Effect<void, SupabasePostgrestError>;
 
+		/**
+		 * Retrieves all tasks associated with a specific focus session.
+		 *
+		 * Returns the raw session_tasks records without full task details.
+		 * For complete task information, use getFocusSessionWithTasksByIdAsync.
+		 *
+		 * @param sessionId - The unique identifier of the session
+		 * @returns Effect that succeeds with an array of SessionTaskDB records or fails with database error
+		 *
+		 * @throws {SupabasePostgrestError} When database query fails or session access is denied
+		 *
+		 * @example
+		 * ```typescript
+		 * const sessionTasks = yield* focusSessionService.getSessionTasksAsync('session_123');
+		 * console.log(`Session has ${sessionTasks.length} associated tasks`);
+		 * sessionTasks.forEach(st => console.log(`Task ${st.task_id} added at ${st.added_at}`));
+		 * ```
+		 */
 		readonly getSessionTasksAsync: (
 			sessionId: string
 		) => Effect.Effect<SessionTaskDB[], SupabasePostgrestError>;
+		/**
+		 * Retrieves all focus sessions that include a specific task.
+		 *
+		 * Finds all sessions (active and completed) that have the specified task
+		 * associated with them through session_tasks relationships.
+		 *
+		 * @param taskId - The unique identifier of the task
+		 * @returns Effect that succeeds with an array of FocusSession objects or fails with database error
+		 *
+		 * @throws {SupabasePostgrestError} When database query fails or task access is denied
+		 *
+		 * @example
+		 * ```typescript
+		 * const sessionsWithTask = yield* focusSessionService.getSessionsByTaskIdAsync('task_456');
+		 * console.log(`Task appears in ${sessionsWithTask.length} sessions`);
+		 * ```
+		 */
 		readonly getSessionsByTaskIdAsync: (
 			taskId: string
 		) => Effect.Effect<FocusSession[], SupabasePostgrestError>;
+		/**
+		 * Calculates the total duration of a focus session in minutes.
+		 *
+		 * For active sessions, calculates duration from start time to current time.
+		 * For completed sessions, calculates duration from start time to close time.
+		 * This is a synchronous utility method that performs no I/O.
+		 *
+		 * @param session - The focus session to calculate duration for
+		 * @returns Effect that succeeds with duration in minutes as a number (never fails)
+		 *
+		 * @example
+		 * ```typescript
+		 * const durationMinutes = yield* focusSessionService.calculateSessionDurationSync(session);
+		 * console.log(`Session lasted ${durationMinutes} minutes`);
+		 * ```
+		 */
 		readonly calculateSessionDurationSync: (session: FocusSession) => Effect.Effect<number, never>; // returns duration in minutes
 
 		// DateTime-powered utility methods
+
+		/**
+		 * Checks if a focus session is currently active (not yet closed).
+		 *
+		 * A session is considered active if its closed_at field is null.
+		 * This is a synchronous utility method that performs no I/O.
+		 *
+		 * @param session - The focus session to check
+		 * @returns Effect that succeeds with true if session is active, false if closed (never fails)
+		 *
+		 * @example
+		 * ```typescript
+		 * const isActive = yield* focusSessionService.isSessionActiveSync(session);
+		 * if (isActive) {
+		 *   console.log('Session is still running');
+		 * }
+		 * ```
+		 */
 		readonly isSessionActiveSync: (session: FocusSession) => Effect.Effect<boolean, never>;
+
+		/**
+		 * Calculates the remaining time until a session's scheduled end.
+		 *
+		 * For active sessions, calculates time remaining based on scheduled_end_at.
+		 * Returns zero duration if the session is overdue or already ended.
+		 *
+		 * @param session - The focus session to calculate remaining time for
+		 * @returns Effect that succeeds with a Duration object representing remaining time (never fails)
+		 *
+		 * @example
+		 * ```typescript
+		 * const remaining = yield* focusSessionService.getSessionRemainingTimeSync(session);
+		 * const minutes = Duration.toMillis(remaining) / (1000 * 60);
+		 * console.log(`${minutes} minutes remaining`);
+		 * ```
+		 */
 		readonly getSessionRemainingTimeSync: (
 			session: FocusSession
 		) => Effect.Effect<Duration.Duration, never>;
+
+		/**
+		 * Checks if a focus session has exceeded its scheduled end time.
+		 *
+		 * A session is overdue if the current time is past its scheduled_end_at
+		 * and the session is still active (closed_at is null).
+		 *
+		 * @param session - The focus session to check
+		 * @returns Effect that succeeds with true if session is overdue, false otherwise (never fails)
+		 *
+		 * @example
+		 * ```typescript
+		 * const isOverdue = yield* focusSessionService.isSessionOverdueSync(session);
+		 * if (isOverdue) {
+		 *   console.warn('Session is running overtime!');
+		 * }
+		 * ```
+		 */
 		readonly isSessionOverdueSync: (session: FocusSession) => Effect.Effect<boolean, never>;
+
+		/**
+		 * Formats a session's time range as a human-readable string in Korean format.
+		 *
+		 * Returns a formatted string showing start time to end time (or scheduled end time
+		 * for active sessions) in HH:MM format using Asia/Seoul timezone.
+		 *
+		 * @param session - The focus session to format
+		 * @returns Effect that succeeds with formatted time range string (never fails)
+		 *
+		 * @example
+		 * ```typescript
+		 * const timeRange = yield* focusSessionService.formatSessionTimeRangeSync(session);
+		 * console.log(`Session time: ${timeRange}`); // "10:00 - 11:30"
+		 * ```
+		 */
 		readonly formatSessionTimeRangeSync: (session: FocusSession) => Effect.Effect<string, never>;
+
+		/**
+		 * Extends an active focus session by adding additional minutes to its scheduled end time.
+		 *
+		 * This is useful when users need more time to complete their focus session.
+		 * Only active sessions can be extended.
+		 *
+		 * @param sessionId - The unique identifier of the session to extend
+		 * @param additionalMinutes - Number of minutes to add to the scheduled end time
+		 * @returns Effect that succeeds with the updated FocusSession or fails with an error
+		 *
+		 * @throws {SupabasePostgrestError} When database operations fail, session not found, or access denied
+		 *
+		 * @example
+		 * ```typescript
+		 * // Extend session by 15 minutes
+		 * const extendedSession = yield* focusSessionService.extendSessionAsync('session_123', 15);
+		 * console.log('New end time:', extendedSession.scheduled_end_at);
+		 * ```
+		 */
 		readonly extendSessionAsync: (
 			sessionId: string,
 			additionalMinutes: number
