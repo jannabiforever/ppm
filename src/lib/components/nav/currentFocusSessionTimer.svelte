@@ -1,10 +1,10 @@
 <script lang="ts">
+	import Checkbox from '../ui/Checkbox.svelte';
+	import NavItemSeparator from './NavItemSeparator.svelte';
 	import type { FocusSessionWithTasks } from '$lib/modules';
 	import { AlarmClock } from 'lucide-svelte';
 	import { DEFAULT_ICON_PROPS } from '../constants';
-	import NavItemSeparator from './NavItemSeparator.svelte';
 	import { currentTime } from '$lib/infra/time.svelte';
-	import Checkbox from '../ui/Checkbox.svelte';
 
 	interface Props {
 		currentFocusSessionWithTasks: FocusSessionWithTasks;
@@ -49,6 +49,7 @@
 					name={task.id}
 					label={task.title}
 					onCheckedChange={() => {
+						// TODO: api call to update task status
 						console.log('Checkbox checked:', task.id);
 					}}
 					class="w-full"
