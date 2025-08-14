@@ -485,8 +485,8 @@ export const FocusSessionLive = Layer.effect(
 					// Create the focus session
 					const insertData: TablesInsert<'focus_sessions'> = {
 						project_id: input.project_id,
-						started_at: input.started_at.toString(),
-						scheduled_end_at: input.scheduled_end_at.toString()
+						started_at: DateTime.formatIso(input.started_at),
+						scheduled_end_at: DateTime.formatIso(input.scheduled_end_at)
 					};
 
 					const focusSession = yield* Effect.promise(() =>
@@ -668,11 +668,11 @@ export const FocusSessionLive = Layer.effect(
 					}
 
 					if (query?.date_from) {
-						queryBuilder = queryBuilder.gte('started_at', query.date_from);
+						queryBuilder = queryBuilder.gte('started_at', DateTime.formatIso(query.date_from));
 					}
 
 					if (query?.date_to) {
-						queryBuilder = queryBuilder.lte('started_at', query.date_to);
+						queryBuilder = queryBuilder.lte('started_at', DateTime.formatIso(query.date_to));
 					}
 
 					if (query?.is_active !== undefined) {
