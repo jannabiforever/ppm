@@ -2,7 +2,6 @@ import { TaskLive, TaskService, FocusSessionService, FocusSessionLive } from '$l
 import { Console, DateTime, Effect, Either, Layer } from 'effect';
 import type { PageServerLoad, Actions } from './$types';
 import { error } from '@sveltejs/kit';
-import { toObj } from '$lib/shared/errors';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const todayTasksAndSessionsResult = await Effect.gen(function* () {
@@ -27,7 +26,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	if (Either.isLeft(todayTasksAndSessionsResult)) {
 		const err = todayTasksAndSessionsResult.left;
-		error(err.status, toObj(err));
+		error(err.status, err);
 	}
 
 	return {

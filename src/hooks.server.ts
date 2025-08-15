@@ -5,7 +5,7 @@ import { makeCookiesLayer } from '$lib/infra/cookies';
 import { sequence } from '@sveltejs/kit/hooks';
 import { error, type Handle, redirect } from '@sveltejs/kit';
 import type { Session } from '@supabase/supabase-js';
-import { toObj } from '$lib/shared/errors';
+
 import {
 	UserProfileLive,
 	UserProfileService,
@@ -57,7 +57,7 @@ const authGuard: Handle = async ({ event, resolve }) => {
 		// TODO: What could go wrong when fetching user data?
 		const err = clientData.left;
 		const status = 'status' in err ? err.status : 500;
-		error(status, toObj(err));
+		error(status, err);
 	}
 
 	Option.match(clientData.right, {

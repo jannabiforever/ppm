@@ -1,6 +1,5 @@
 import { AuthLive, AuthService, SignInSchema } from '$lib/modules/auth';
 import { decodeFormData } from '$lib/decode';
-import { toObj } from '$lib/shared/errors';
 import { fail, redirect, type Actions } from '@sveltejs/kit';
 import { Console, Effect, Layer } from 'effect';
 import HttpStatusCodes from 'http-status-codes';
@@ -10,13 +9,12 @@ export const actions = {
 		const formData = await request.formData();
 		const decodedFormData = decodeFormData(formData, SignInSchema).pipe(
 			Effect.tapError(Console.error),
-			Effect.mapError(toObj),
 			Effect.either,
 			Effect.runSync
 		);
 
 		if (decodedFormData._tag === 'Left') {
-			return fail(HttpStatusCodes.BAD_REQUEST, { error: decodedFormData.left });
+			return fail(HttpStatusCodes.BAD_REQUEST, decodedFormData.left);
 		}
 
 		const result = await Effect.gen(function* () {
@@ -25,7 +23,6 @@ export const actions = {
 		}).pipe(
 			Effect.provide(Layer.provide(AuthLive, locals.supabase)),
 			Effect.tapError(Console.error),
-			Effect.mapError(toObj),
 			Effect.either,
 			Effect.runPromise
 		);
@@ -44,7 +41,7 @@ export const actions = {
 				}
 				throw redirect(HttpStatusCodes.SEE_OTHER, '/app');
 			case 'Left':
-				return fail(HttpStatusCodes.UNAUTHORIZED, { error: result.left });
+				return fail(HttpStatusCodes.UNAUTHORIZED, result.left);
 		}
 	},
 
@@ -55,7 +52,6 @@ export const actions = {
 		}).pipe(
 			Effect.provide(Layer.provide(AuthLive, locals.supabase)),
 			Effect.tapError(Console.error),
-			Effect.mapError(toObj),
 			Effect.either,
 			Effect.runPromise
 		);
@@ -64,7 +60,7 @@ export const actions = {
 			case 'Right':
 				throw redirect(HttpStatusCodes.SEE_OTHER, result.right);
 			case 'Left':
-				return fail(HttpStatusCodes.UNAUTHORIZED, { error: result.left });
+				return fail(HttpStatusCodes.UNAUTHORIZED, result.left);
 		}
 	}
 } satisfies Actions;
