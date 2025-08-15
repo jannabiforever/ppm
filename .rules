@@ -335,3 +335,71 @@ message: "Error occurred"
 - 관련 ID나 상태 정보를 메시지에 포함
 - 사용자나 개발자가 다음 액션을 취할 수 있도록 안내
 - 일관된 문장 구조와 톤 유지 (영어 기준)
+
+## Transport Hook 업데이트 규칙
+
+### 새로운 도메인 에러 추가 시 필수 작업
+
+새로운 도메인 에러를 정의할 때는 반드시 `hooks.ts`의 transport hook을 업데이트해야 한다.
+
+```typescript
+// 1. 새 에러 클래스 정의 (예: modules/auth/errors.ts)
+export class InvalidCredentialsError extends Data.TaggedError('InvalidCredentials')<{
+	readonly message: string;
+	readonly email: string;
+}> {
+	constructor(email: string) {
+		super({
+			message: `Invalid credentials for email ${email}`,
+			email
+		});
+	}
+}
+```
+
+**필수 업데이트 사항:**
+
+1. **Import 추가**: `hooks.ts`에서 새 에러 클래스 import
+```typescript
+import {
+	// ... 기존 에러들
+	InvalidCredentialsError, // 새 에러 추가
+} from '$lib/shared/errors';
+```
+
+2. **validTags 배열 업데이트**: encode 함수에서 새 에러의 _tag 추가
+```typescript
+const validTags = [
+	// ... 기존 태그들
+	'InvalidCredentials', // 새 태그 추가
+];
+```
+
+3. **decode switch case 추가**: 역직렬화를 위한 case 추가
+```typescript
+switch (data._tag) {
+	// ... 기존 케이스들
+	case 'InvalidCredentials':
+		return new InvalidCredentialsError(data.email || '');
+	// ...
+}
+```
+
+4. **DomainError 유니온 타입 업데이트**: `shared/errors/domain.ts`에서 유니온 타입에 추가
+```typescript
+export type DomainError =
+	// ... 기존 에러들
+	| InvalidCredentialsError
+	// ...
+```
+
+**핵심 원칙:**
+- 새 도메인 에러 정의 시 transport hook 업데이트는 필수사항
+- 서버-클라이언트 간 에러 직렬화/역직렬화 타입 안전성 보장
+- 생성자 파라미터와 decode 로직이 일치해야 함
+- 업데이트 누락 시 runtime 에러 또는 타입 불일치 발생 가능
+
+**주의사항:**
+- 에러 생성자의 파라미터 순서와 decode 케이스의 인자 순서 일치 필요
+- Optional 파라미터는 기본값 처리 (`|| ''`, `|| 0` 등)
+- 에러 클래스명과 _tag 값의 일관성 유지
