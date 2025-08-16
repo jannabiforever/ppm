@@ -17,6 +17,7 @@
 </script>
 
 <div class="flex h-full w-full flex-row">
+	<!-- Navigation -->
 	<aside
 		class="fixed flex h-full w-[220px] flex-col gap-4.5 rounded-r-sm border border-surface-200-800 p-2.5"
 	>
@@ -58,7 +59,9 @@
 			{#if data.currentFocusSession}{/if}
 		</div>
 	</aside>
-	<main class="ml-[220px] flex flex-1">
-		{@render children?.()}
+	<main class="ml-[220px] flex w-full flex-1 justify-center p-5">
+		<div class="flex min-w-[1024px] flex-col gap-5">
+			{@render children?.()}
+		</div>
 	</main>
 </div>
