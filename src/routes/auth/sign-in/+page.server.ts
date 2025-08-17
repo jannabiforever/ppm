@@ -19,7 +19,7 @@ export const actions = {
 
 		const result = await Effect.gen(function* () {
 			const auth = yield* AuthService;
-			return yield* auth.signInWithPasswordAsync(decodedFormData.right);
+			return yield* auth.signInWithPassword(decodedFormData.right);
 		}).pipe(
 			Effect.provide(Layer.provide(AuthLive, locals.supabase)),
 			Effect.tapError(Console.error),
