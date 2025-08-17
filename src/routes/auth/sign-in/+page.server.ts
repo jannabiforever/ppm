@@ -48,7 +48,7 @@ export const actions = {
 	'sign-in-google': async ({ locals }) => {
 		const result = await Effect.gen(function* () {
 			const auth = yield* AuthService;
-			return yield* auth.signInWithGoogleOAuthAsync();
+			return yield* auth.signInWithGoogleOAuth();
 		}).pipe(
 			Effect.provide(Layer.provide(AuthLive, locals.supabase)),
 			Effect.tapError(Console.error),

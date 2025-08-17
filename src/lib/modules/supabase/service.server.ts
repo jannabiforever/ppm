@@ -1,29 +1,33 @@
-import type { Database } from './types';
+import type { Database } from '../../shared/types';
 import { Context, Effect, Layer } from 'effect';
 import { mapAuthError, NoSessionOrUserError, type SupabaseAuthError } from '$lib/shared/errors';
 import { type Session, type SupabaseClient, type User } from '@supabase/supabase-js';
-import { createSupabaseServerClient } from './client.server';
+import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { createServerClient } from '@supabase/ssr';
+import { CookiesService } from './cookies';
 
 export class SupabaseService extends Context.Tag('Supabase')<
 	SupabaseService,
 	{
-		readonly getClientSync: () => Effect.Effect<SupabaseClient<Database>>;
-		readonly safeGetSessionAsync: () => Effect.Effect<
-			Session,
-			SupabaseAuthError | NoSessionOrUserError
-		>;
-		readonly safeGetUserAsync: () => Effect.Effect<User, SupabaseAuthError | NoSessionOrUserError>;
+		readonly getClient: () => Effect.Effect<SupabaseClient<Database>>;
+		readonly getSession: () => Effect.Effect<Session, SupabaseAuthError | NoSessionOrUserError>;
+		readonly getUser: () => Effect.Effect<User, SupabaseAuthError | NoSessionOrUserError>;
 	}
 >() {}
 
 export const SupabaseLive = Layer.effect(
 	SupabaseService,
 	Effect.gen(function* () {
-		const client = yield* createSupabaseServerClient;
+		const client = yield* Effect.gen(function* () {
+			const cookies = yield* CookiesService;
+			return createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
+				cookies
+			});
+		});
 
 		return {
-			getClientSync: () => Effect.succeed(client),
-			safeGetSessionAsync: () =>
+			getClient: () => Effect.succeed(client),
+			getSession: () =>
 				Effect.gen(function* () {
 					const {
 						data: { session },
@@ -34,7 +38,7 @@ export const SupabaseLive = Layer.effect(
 					if (!session) return yield* Effect.fail(new NoSessionOrUserError());
 					return yield* Effect.succeed(session);
 				}),
-			safeGetUserAsync: () =>
+			getUser: () =>
 				Effect.gen(function* () {
 					const {
 						data: { user },

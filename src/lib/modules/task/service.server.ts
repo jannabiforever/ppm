@@ -1,13 +1,14 @@
 import { mapPostgrestError, SupabasePostgrestError, type DomainError } from '$lib/shared/errors';
 import { Context, Effect, Layer, Option, DateTime, Schema } from 'effect';
-import { SupabaseService } from '$lib/infra/supabase/layer.server';
+import { SupabaseService } from '$lib/modules/supabase';
 import {
 	CreateTaskSchema,
 	UpdateTaskSchema,
 	TaskQuerySchema,
-	MoveTaskToProjectSchema
+	MoveTaskToProjectSchema,
+	type TaskStatus
 } from './schema';
-import type { Tables, TablesInsert, TablesUpdate } from '$lib/infra/supabase/types';
+import type { Tables, TablesInsert, TablesUpdate } from '$lib/shared/types';
 import { InvalidTaskStatusTransitionError } from './errors';
 
 export type Task = Tables<'tasks'>;
@@ -285,10 +286,11 @@ export const TaskLive = Layer.effect(
 	TaskService,
 	Effect.gen(function* () {
 		const supabase = yield* SupabaseService;
+		const client = yield* supabase.getClient();
 
 		return {
 			createTaskAsync: (input: Schema.Schema.Type<typeof CreateTaskSchema>) =>
-				supabase.getClientSync().pipe(
+				supabase.getClient().pipe(
 					Effect.flatMap((client) => {
 						const insertData: TablesInsert<'tasks'> = {
 							title: input.title,
@@ -311,7 +313,7 @@ export const TaskLive = Layer.effect(
 				),
 
 			getTaskByIdAsync: (id: string) =>
-				supabase.getClientSync().pipe(
+				supabase.getClient().pipe(
 					Effect.flatMap((client) =>
 						Effect.promise(() => client.from('tasks').select().eq('id', id).maybeSingle())
 					),
@@ -323,7 +325,7 @@ export const TaskLive = Layer.effect(
 				),
 
 			getTasksAsync: (query?: Schema.Schema.Type<typeof TaskQuerySchema>) =>
-				supabase.getClientSync().pipe(
+				supabase.getClient().pipe(
 					Effect.flatMap((client) => {
 						let queryBuilder = client.from('tasks').select();
 
@@ -375,7 +377,7 @@ export const TaskLive = Layer.effect(
 				),
 
 			getInboxTasksAsync: () =>
-				supabase.getClientSync().pipe(
+				supabase.getClient().pipe(
 					Effect.flatMap((client) =>
 						Effect.promise(() =>
 							client
@@ -393,7 +395,7 @@ export const TaskLive = Layer.effect(
 				),
 
 			updateTaskAsync: (id: string, input: Schema.Schema.Type<typeof UpdateTaskSchema>) =>
-				supabase.getClientSync().pipe(
+				supabase.getClient().pipe(
 					Effect.flatMap((client) => {
 						const updateData: TablesUpdate<'tasks'> = {};
 
@@ -419,17 +421,14 @@ export const TaskLive = Layer.effect(
 				),
 
 			moveTaskToProjectAsync: (input: Schema.Schema.Type<typeof MoveTaskToProjectSchema>) =>
-				supabase.getClientSync().pipe(
-					Effect.flatMap((client) =>
-						Effect.promise(() =>
-							client
-								.from('tasks')
-								.update({ project_id: input.project_id })
-								.eq('id', input.task_id)
-								.select()
-								.single()
-						)
-					),
+				Effect.promise(() =>
+					client
+						.from('tasks')
+						.update({ project_id: input.project_id })
+						.eq('id', input.task_id)
+						.select()
+						.single()
+				).pipe(
 					Effect.flatMap((res) =>
 						res.error
 							? Effect.fail(mapPostgrestError(res.error, res.status))
@@ -438,22 +437,18 @@ export const TaskLive = Layer.effect(
 				),
 
 			deleteTaskAsync: (id: string) =>
-				supabase.getClientSync().pipe(
-					Effect.flatMap((client) =>
-						Effect.promise(() => client.from('tasks').delete().eq('id', id))
-					),
+				Effect.promise(() => client.from('tasks').delete().eq('id', id)).pipe(
 					Effect.flatMap((res) =>
 						res.error ? Effect.fail(mapPostgrestError(res.error, res.status)) : Effect.void
 					)
 				),
 
-			updateTaskStatusAsync: (id: string, status: Tables<'tasks'>['status']) =>
+			updateTaskStatusAsync: (id: string, status: TaskStatus) =>
 				Effect.gen(function* () {
 					// First get the current task to validate status transition
-					const currentTask = yield* supabase.getClientSync().pipe(
-						Effect.flatMap((client) =>
-							Effect.promise(() => client.from('tasks').select().eq('id', id).single())
-						),
+					const currentTask = yield* Effect.promise(() =>
+						client.from('tasks').select().eq('id', id).single()
+					).pipe(
 						Effect.flatMap((res) =>
 							res.error
 								? Effect.fail(mapPostgrestError(res.error, res.status))
@@ -465,12 +460,9 @@ export const TaskLive = Layer.effect(
 					yield* validateTaskStatusTransition(currentTask.status, status);
 
 					// Update task status
-					return yield* supabase.getClientSync().pipe(
-						Effect.flatMap((client) =>
-							Effect.promise(() =>
-								client.from('tasks').update({ status }).eq('id', id).select().single()
-							)
-						),
+					return yield* Effect.promise(() =>
+						client.from('tasks').update({ status }).eq('id', id).select().single()
+					).pipe(
 						Effect.flatMap((res) =>
 							res.error
 								? Effect.fail(mapPostgrestError(res.error, res.status))

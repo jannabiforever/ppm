@@ -1,5 +1,11 @@
 import { Schema } from 'effect';
 
+import type { Tables, TablesInsert, TablesUpdate } from '$lib/shared/types';
+
+export type Project = Tables<'projects'>;
+export type ProjectInsert = TablesInsert<'projects'>;
+export type ProjectUpdate = TablesUpdate<'projects'>;
+
 /**
  * Project creation schema
  */

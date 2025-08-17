@@ -1,6 +1,12 @@
 import { Schema } from 'effect';
 import { OptionalDateSchema } from '$lib/shared/schema';
 
+import type { Tables, TablesInsert, TablesUpdate } from '$lib/shared/types';
+
+export type UserProfile = Tables<'user_profiles'>;
+export type UserProfileInsert = TablesInsert<'user_profiles'>;
+export type UserProfileUpdate = TablesUpdate<'user_profiles'>;
+
 /**
  * Task status enum schema defining the workflow states of a task.
  *

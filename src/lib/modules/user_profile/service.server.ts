@@ -5,15 +5,15 @@ import {
 	NoSessionOrUserError
 } from '$lib/shared/errors';
 import { Context, Effect, Layer, Schema } from 'effect';
-import { SupabaseService } from '$lib/infra/supabase/layer.server';
+import { SupabaseService } from '$lib/modules/supabase';
 import {
 	UserProfileNotFoundError,
 	CreateUserProfileSchema,
-	UpdateUserProfileSchema
+	UpdateUserProfileSchema,
+	type UserProfile,
+	type UserProfileInsert,
+	type UserProfileUpdate
 } from './schema';
-import type { Tables, TablesInsert, TablesUpdate } from '$lib/infra/supabase/types';
-
-export type UserProfile = Tables<'user_profiles'>;
 
 export class UserProfileService extends Context.Tag('UserProfile')<
 	UserProfileService,
@@ -34,14 +34,14 @@ export class UserProfileService extends Context.Tag('UserProfile')<
 		 *
 		 * @example
 		 * ```typescript
-		 * const newProfile = yield* userProfileService.createUserProfileAsync({
+		 * const newProfile = yield* userProfileService.createUserProfile({
 		 *   name: 'John Doe'
 		 * });
 		 * console.log('Profile created for user:', newProfile.id);
 		 * console.log('Display name:', newProfile.name);
 		 * ```
 		 */
-		readonly createUserProfileAsync: (
+		readonly createUserProfile: (
 			input: Schema.Schema.Type<typeof CreateUserProfileSchema>
 		) => Effect.Effect<
 			UserProfile,
@@ -64,12 +64,12 @@ export class UserProfileService extends Context.Tag('UserProfile')<
 		 *
 		 * @example
 		 * ```typescript
-		 * const currentProfile = yield* userProfileService.getCurrentUserProfileAsync();
+		 * const currentProfile = yield* userProfileService.getCurrentUserProfile();
 		 * console.log('Welcome back,', currentProfile.name);
 		 * console.log('Profile created on:', currentProfile.created_at);
 		 * ```
 		 */
-		readonly getCurrentUserProfileAsync: () => Effect.Effect<
+		readonly getCurrentUserProfile: () => Effect.Effect<
 			UserProfile,
 			SupabasePostgrestError | SupabaseAuthError | NoSessionOrUserError | UserProfileNotFoundError
 		>;
@@ -90,13 +90,13 @@ export class UserProfileService extends Context.Tag('UserProfile')<
 		 * @example
 		 * ```typescript
 		 * // Update display name
-		 * const updatedProfile = yield* userProfileService.updateUserProfileAsync(userId, {
+		 * const updatedProfile = yield* userProfileService.updateUserProfile(userId, {
 		 *   name: 'Jane Smith'
 		 * });
 		 * console.log('Profile updated:', updatedProfile.name);
 		 * ```
 		 */
-		readonly updateUserProfileAsync: (
+		readonly updateUserProfile: (
 			id: string,
 			input: Schema.Schema.Type<typeof UpdateUserProfileSchema>
 		) => Effect.Effect<UserProfile, SupabasePostgrestError>;
@@ -107,13 +107,13 @@ export const UserProfileLive = Layer.effect(
 	UserProfileService,
 	Effect.gen(function* () {
 		const supabase = yield* SupabaseService;
-		const client = yield* supabase.getClientSync();
-		const user = yield* supabase.safeGetUserAsync();
+		const client = yield* supabase.getClient();
+		const user = yield* supabase.getUser();
 
 		return {
-			createUserProfileAsync: (input: Schema.Schema.Type<typeof CreateUserProfileSchema>) =>
+			createUserProfile: (input: Schema.Schema.Type<typeof CreateUserProfileSchema>) =>
 				Effect.gen(function* () {
-					const insertData: TablesInsert<'user_profiles'> = {
+					const insertData: UserProfileInsert = {
 						id: user.id,
 						name: input.name
 					};
@@ -127,7 +127,7 @@ export const UserProfileLive = Layer.effect(
 						: res.data;
 				}),
 
-			getCurrentUserProfileAsync: () =>
+			getCurrentUserProfile: () =>
 				Effect.gen(function* () {
 					const res = yield* Effect.promise(() =>
 						client.from('user_profiles').select().eq('id', user.id).maybeSingle()
@@ -144,13 +144,10 @@ export const UserProfileLive = Layer.effect(
 					return res.data;
 				}),
 
-			updateUserProfileAsync: (
-				id: string,
-				input: Schema.Schema.Type<typeof UpdateUserProfileSchema>
-			) =>
-				supabase.getClientSync().pipe(
+			updateUserProfile: (id: string, input: Schema.Schema.Type<typeof UpdateUserProfileSchema>) =>
+				supabase.getClient().pipe(
 					Effect.flatMap((client) => {
-						const updateData: TablesUpdate<'user_profiles'> = {};
+						const updateData: UserProfileUpdate = {};
 
 						if (input.name !== undefined) updateData.name = input.name;
 

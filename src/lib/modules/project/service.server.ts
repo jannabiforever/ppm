@@ -5,11 +5,15 @@ import {
 	type DomainError
 } from '$lib/shared/errors';
 import { Context, Effect, Layer, Option, Schema } from 'effect';
-import { SupabaseService } from '$lib/infra/supabase/layer.server';
-import { CreateProjectSchema, UpdateProjectSchema, ProjectQuerySchema } from './schema';
-import type { Tables, TablesInsert, TablesUpdate } from '$lib/infra/supabase/types';
-
-export type Project = Tables<'projects'>;
+import { SupabaseService } from '$lib/modules/supabase';
+import {
+	CreateProjectSchema,
+	UpdateProjectSchema,
+	ProjectQuerySchema,
+	type Project,
+	type ProjectInsert,
+	type ProjectUpdate
+} from './schema';
 
 export class ProjectService extends Context.Tag('Project')<
 	ProjectService,
@@ -27,7 +31,7 @@ export class ProjectService extends Context.Tag('Project')<
 		 *
 		 * @example
 		 * ```typescript
-		 * const newProject = yield* projectService.createProjectAsync({
+		 * const newProject = yield* projectService.createProject({
 		 *   name: 'My New Project',
 		 *   description: 'A project for organizing tasks',
 		 *   active: true
@@ -35,7 +39,7 @@ export class ProjectService extends Context.Tag('Project')<
 		 * console.log('Created project:', newProject.id);
 		 * ```
 		 */
-		readonly createProjectAsync: (
+		readonly createProject: (
 			input: Schema.Schema.Type<typeof CreateProjectSchema>
 		) => Effect.Effect<Project, SupabasePostgrestError>;
 
@@ -52,7 +56,7 @@ export class ProjectService extends Context.Tag('Project')<
 		 *
 		 * @example
 		 * ```typescript
-		 * const project = yield* projectService.getProjectByIdAsync('proj_123');
+		 * const project = yield* projectService.getProjectById('proj_123');
 		 * if (Option.isSome(project)) {
 		 *   console.log('Found project:', project.value.name);
 		 * } else {
@@ -60,7 +64,7 @@ export class ProjectService extends Context.Tag('Project')<
 		 * }
 		 * ```
 		 */
-		readonly getProjectByIdAsync: (
+		readonly getProjectById: (
 			id: string
 		) => Effect.Effect<Option.Option<Project>, SupabasePostgrestError>;
 
@@ -79,19 +83,19 @@ export class ProjectService extends Context.Tag('Project')<
 		 * @example
 		 * ```typescript
 		 * // Get all active projects
-		 * const activeProjects = yield* projectService.getProjectsAsync();
+		 * const activeProjects = yield* projectService.getProjects();
 		 *
 		 * // Search for projects by name
-		 * const searchResults = yield* projectService.getProjectsAsync({
+		 * const searchResults = yield* projectService.getProjects({
 		 *   name: 'work',
 		 *   limit: 10
 		 * });
 		 *
 		 * // Get archived projects
-		 * const archivedProjects = yield* projectService.getProjectsAsync({ active: false });
+		 * const archivedProjects = yield* projectService.getProjects({ active: false });
 		 * ```
 		 */
-		readonly getProjectsAsync: (
+		readonly getProjects: (
 			query?: Schema.Schema.Type<typeof ProjectQuerySchema>
 		) => Effect.Effect<Project[], SupabasePostgrestError>;
 
@@ -110,17 +114,17 @@ export class ProjectService extends Context.Tag('Project')<
 		 * @example
 		 * ```typescript
 		 * // Update project name
-		 * const updatedProject = yield* projectService.updateProjectAsync('proj_123', {
+		 * const updatedProject = yield* projectService.updateProject('proj_123', {
 		 *   name: 'Updated Project Name'
 		 * });
 		 *
 		 * // Update description only
-		 * const updatedProject = yield* projectService.updateProjectAsync('proj_123', {
+		 * const updatedProject = yield* projectService.updateProject('proj_123', {
 		 *   description: 'New description'
 		 * });
 		 * ```
 		 */
-		readonly updateProjectAsync: (
+		readonly updateProject: (
 			id: string,
 			input: Schema.Schema.Type<typeof UpdateProjectSchema>
 		) => Effect.Effect<Project, SupabasePostgrestError>;
@@ -141,7 +145,7 @@ export class ProjectService extends Context.Tag('Project')<
 		 * @example
 		 * ```typescript
 		 * try {
-		 *   yield* projectService.deleteProjectAsync('proj_123');
+		 *   yield* projectService.deleteProject('proj_123');
 		 *   console.log('Project deleted successfully');
 		 * } catch (error) {
 		 *   if (error instanceof ProjectHasTasksError) {
@@ -150,7 +154,7 @@ export class ProjectService extends Context.Tag('Project')<
 		 * }
 		 * ```
 		 */
-		readonly deleteProjectAsync: (
+		readonly deleteProject: (
 			id: string
 		) => Effect.Effect<void, SupabasePostgrestError | DomainError>;
 
@@ -166,19 +170,19 @@ export class ProjectService extends Context.Tag('Project')<
 		 *
 		 * @example
 		 * ```typescript
-		 * const activeProjects = yield* projectService.getAllActiveProjectsAsync();
+		 * const activeProjects = yield* projectService.getAllActiveProjects();
 		 * console.log(`User has ${activeProjects.length} active projects`);
 		 * activeProjects.forEach(p => console.log(`- ${p.name}`));
 		 * ```
 		 */
-		readonly getAllActiveProjectsAsync: () => Effect.Effect<Project[], SupabasePostgrestError>;
+		readonly getAllActiveProjects: () => Effect.Effect<Project[], SupabasePostgrestError>;
 
 		/**
 		 * Archives a project by setting its active status to false.
 		 *
 		 * Archived projects are hidden from default views but retain all their data.
 		 * Tasks associated with archived projects remain accessible. This is a soft
-		 * delete operation that can be reversed with restoreProjectAsync.
+		 * delete operation that can be reversed with restoreProject.
 		 *
 		 * @param id - The unique identifier of the project to archive
 		 * @returns Effect that succeeds with the archived Project or fails with database error
@@ -187,12 +191,12 @@ export class ProjectService extends Context.Tag('Project')<
 		 *
 		 * @example
 		 * ```typescript
-		 * const archivedProject = yield* projectService.archiveProjectAsync('proj_123');
+		 * const archivedProject = yield* projectService.archiveProject('proj_123');
 		 * console.log('Project archived:', archivedProject.name);
 		 * console.log('Active status:', archivedProject.active); // false
 		 * ```
 		 */
-		readonly archiveProjectAsync: (id: string) => Effect.Effect<Project, SupabasePostgrestError>;
+		readonly archiveProject: (id: string) => Effect.Effect<Project, SupabasePostgrestError>;
 
 		/**
 		 * Restores an archived project by setting its active status to true.
@@ -207,12 +211,12 @@ export class ProjectService extends Context.Tag('Project')<
 		 *
 		 * @example
 		 * ```typescript
-		 * const restoredProject = yield* projectService.restoreProjectAsync('proj_123');
+		 * const restoredProject = yield* projectService.restoreProject('proj_123');
 		 * console.log('Project restored:', restoredProject.name);
 		 * console.log('Active status:', restoredProject.active); // true
 		 * ```
 		 */
-		readonly restoreProjectAsync: (id: string) => Effect.Effect<Project, SupabasePostgrestError>;
+		readonly restoreProject: (id: string) => Effect.Effect<Project, SupabasePostgrestError>;
 	}
 >() {}
 
@@ -220,12 +224,12 @@ export const ProjectLive = Layer.effect(
 	ProjectService,
 	Effect.gen(function* () {
 		const supabase = yield* SupabaseService;
-		const client = yield* supabase.getClientSync();
+		const client = yield* supabase.getClient();
 
 		return {
-			createProjectAsync: (input: Schema.Schema.Type<typeof CreateProjectSchema>) =>
+			createProject: (input: Schema.Schema.Type<typeof CreateProjectSchema>) =>
 				Effect.promise(() => {
-					const insertData: TablesInsert<'projects'> = {
+					const insertData: ProjectInsert = {
 						name: input.name,
 						description: input.description,
 						active: input.active ?? true
@@ -240,7 +244,7 @@ export const ProjectLive = Layer.effect(
 					)
 				),
 
-			getProjectByIdAsync: (id: string) =>
+			getProjectById: (id: string) =>
 				Effect.promise(() => client.from('projects').select().eq('id', id).maybeSingle()).pipe(
 					Effect.flatMap((res) =>
 						res.error
@@ -249,8 +253,8 @@ export const ProjectLive = Layer.effect(
 					)
 				),
 
-			getProjectsAsync: (query?: Schema.Schema.Type<typeof ProjectQuerySchema>) =>
-				supabase.getClientSync().pipe(
+			getProjects: (query?: Schema.Schema.Type<typeof ProjectQuerySchema>) =>
+				supabase.getClient().pipe(
 					Effect.flatMap((client) => {
 						let queryBuilder = client.from('projects').select();
 
@@ -283,10 +287,10 @@ export const ProjectLive = Layer.effect(
 					)
 				),
 
-			updateProjectAsync: (id: string, input: Schema.Schema.Type<typeof UpdateProjectSchema>) =>
-				supabase.getClientSync().pipe(
+			updateProject: (id: string, input: Schema.Schema.Type<typeof UpdateProjectSchema>) =>
+				supabase.getClient().pipe(
 					Effect.flatMap((client) => {
-						const updateData: TablesUpdate<'projects'> = {};
+						const updateData: ProjectUpdate = {};
 
 						if (input.name !== undefined) {
 							updateData.name = input.name;
@@ -309,10 +313,10 @@ export const ProjectLive = Layer.effect(
 					)
 				),
 
-			deleteProjectAsync: (id: string) =>
+			deleteProject: (id: string) =>
 				Effect.gen(function* () {
 					// Check if project has tasks before deletion
-					const taskCount = yield* supabase.getClientSync().pipe(
+					const taskCount = yield* supabase.getClient().pipe(
 						Effect.flatMap((client) =>
 							Effect.promise(() =>
 								client.from('tasks').select('id', { count: 'exact' }).eq('project_id', id)
@@ -330,7 +334,7 @@ export const ProjectLive = Layer.effect(
 					}
 
 					// Perform soft delete by setting active to false instead of hard delete
-					return yield* supabase.getClientSync().pipe(
+					return yield* supabase.getClient().pipe(
 						Effect.flatMap((client) =>
 							Effect.promise(() => client.from('projects').update({ active: false }).eq('id', id))
 						),
@@ -340,8 +344,8 @@ export const ProjectLive = Layer.effect(
 					);
 				}),
 
-			getAllActiveProjectsAsync: () =>
-				supabase.getClientSync().pipe(
+			getAllActiveProjects: () =>
+				supabase.getClient().pipe(
 					Effect.flatMap((client) => {
 						const queryBuilder = client
 							.from('projects')
@@ -358,8 +362,8 @@ export const ProjectLive = Layer.effect(
 					)
 				),
 
-			archiveProjectAsync: (id: string) =>
-				supabase.getClientSync().pipe(
+			archiveProject: (id: string) =>
+				supabase.getClient().pipe(
 					Effect.flatMap((client) =>
 						Effect.promise(() =>
 							client.from('projects').update({ active: false }).eq('id', id).select().single()
@@ -372,8 +376,8 @@ export const ProjectLive = Layer.effect(
 					)
 				),
 
-			restoreProjectAsync: (id: string) =>
-				supabase.getClientSync().pipe(
+			restoreProject: (id: string) =>
+				supabase.getClient().pipe(
 					Effect.flatMap((client) =>
 						Effect.promise(() =>
 							client.from('projects').update({ active: true }).eq('id', id).select().single()

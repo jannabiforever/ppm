@@ -1,5 +1,9 @@
 import { Schema } from 'effect';
 import { DateTimeUtcSchema, OptionalDateTimeUtcSchema } from '$lib/shared/schema';
+import type { Tables } from '$lib/shared/types';
+
+export type FocusSession = Tables<'focus_sessions'>;
+export type Task = Tables<'tasks'>;
 
 /**
  * Session task schema for managing task associations within a session
