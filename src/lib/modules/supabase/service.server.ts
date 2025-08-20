@@ -1,4 +1,4 @@
-import type { Database } from '../../shared/types';
+import type { Database } from '$lib/shared/database.types';
 import { Effect } from 'effect';
 import { mapAuthError, NoSessionOrUserError } from '$lib/shared/errors';
 import { type SupabaseClient } from '@supabase/supabase-js';
