@@ -1,7 +1,7 @@
-import { Effect, Schema } from 'effect';
+import { Effect } from 'effect';
 import * as Supabase from '$lib/modules/supabase';
-import { CreateSchema, UpdateSchema, type UserProfile } from './types';
-import { NotFoundError } from './errors';
+import { type Profile, type ProfileInsert, type ProfileUpdate } from './types';
+import { AssociatedProfileNotFoundError } from './errors';
 
 export class Service extends Effect.Service<Service>()('UserProfileService', {
 	effect: Effect.gen(function* () {
@@ -11,8 +11,8 @@ export class Service extends Effect.Service<Service>()('UserProfileService', {
 
 		return {
 			createUserProfile: (
-				input: Schema.Schema.Type<typeof CreateSchema>
-			): Effect.Effect<UserProfile, Supabase.PostgrestError | NotFoundError> =>
+				input: ProfileInsert
+			): Effect.Effect<Profile, Supabase.PostgrestError | AssociatedProfileNotFoundError> =>
 				Effect.promise(() =>
 					client
 						.from('user_profiles')
@@ -25,23 +25,26 @@ export class Service extends Effect.Service<Service>()('UserProfileService', {
 				).pipe(Effect.flatMap(Supabase.mapPostgrestResponse)),
 
 			getCurrentUserProfile: (): Effect.Effect<
-				UserProfile,
-				Supabase.PostgrestError | NotFoundError
+				Profile,
+				Supabase.PostgrestError | AssociatedProfileNotFoundError
 			> =>
 				Effect.promise(() =>
 					client.from('user_profiles').select().eq('id', user.id).maybeSingle()
 				).pipe(
 					Effect.flatMap(Supabase.mapPostgrestResponse),
 					Effect.flatMap((res) => {
-						if (res === null) return Effect.fail(new NotFoundError(user.id));
+						if (res === null) return Effect.fail(new AssociatedProfileNotFoundError(user.id));
 						return Effect.succeed(res);
 					})
 				),
 
-			updateUserProfile: (id: string, input: Schema.Schema.Type<typeof UpdateSchema>) =>
-				Effect.promise(() =>
-					client.from('user_profiles').update(input).eq('id', id).select().single()
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseVoid))
+			updateUserProfile: (
+				id: string,
+				input: ProfileUpdate
+			): Effect.Effect<void, Supabase.PostgrestError> =>
+				Effect.promise(() => client.from('user_profiles').update(input).eq('id', id)).pipe(
+					Effect.flatMap(Supabase.mapPostgrestResponseVoid)
+				)
 		};
 	})
 }) {}

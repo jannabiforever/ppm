@@ -28,7 +28,7 @@ const supabase: Handle = async ({ event, resolve }) => {
 
 const authGuard: Handle = async ({ event, resolve }) => {
 	const clientData: Either.Either<
-		Option.Option<{ session: Session; userAndProfile: UserProfile.UserAndProfile }>,
+		Option.Option<{ session: Session; userAndProfile: UserProfile.UserProfile }>,
 		NoSuchElementException | Supabase.AuthError | Supabase.PostgrestError
 	> = await Effect.gen(function* () {
 		const supabaseService = yield* Supabase.Service;

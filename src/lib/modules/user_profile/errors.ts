@@ -2,8 +2,9 @@ import { Data } from 'effect';
 
 /**
  * 사용자 프로필 관련 도메인 오류.
+ * 모든 사용자는 프로필이 항상 있어야 함.
  */
-export class NotFoundError extends Data.TaggedError('UserProfileNotFound')<{
+export class AssociatedProfileNotFoundError extends Data.TaggedError('UserProfileNotFound')<{
 	readonly message: string;
 	readonly userId: string;
 }> {

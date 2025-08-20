@@ -1,10 +1,10 @@
 <script lang="ts">
 	import icon from '$lib/assets/favicon.svg';
-	import type { UserAndProfile } from '$lib/modules/user_profile';
+	import type { UserProfile } from '$lib/modules/user_profile';
 	import DarkModeHandler from './DarkModeHandler.svelte';
 
 	interface Props {
-		userAndProfile: UserAndProfile;
+		userAndProfile: UserProfile;
 	}
 
 	let { userAndProfile }: Props = $props();
