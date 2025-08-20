@@ -1,7 +1,7 @@
 import * as S from 'effect/Schema';
 import type { User } from '@supabase/supabase-js';
 
-import type { Tables, TablesInsert, TablesUpdate } from '$lib/shared/types';
+import type { Tables, TablesInsert, TablesUpdate } from '$lib/shared/database.types';
 
 export type UserProfile = Tables<'user_profiles'>;
 export type Insert = TablesInsert<'user_profiles'>;
