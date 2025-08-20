@@ -1,50 +1,30 @@
-import { Schema, Data } from 'effect';
+import * as S from 'effect/Schema';
 import type { User } from '@supabase/supabase-js';
 
 import type { Tables, TablesInsert, TablesUpdate } from '$lib/shared/types';
 
 export type UserProfile = Tables<'user_profiles'>;
-export type UserProfileInsert = TablesInsert<'user_profiles'>;
-export type UserProfileUpdate = TablesUpdate<'user_profiles'>;
+export type Insert = TablesInsert<'user_profiles'>;
+export type Update = TablesUpdate<'user_profiles'>;
 
 /**
- * User profile creation schema
+ * 사용자 프로필 생성 스키마.
  */
-export const CreateUserProfileSchema = Schema.Struct({
-	name: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(100))
+export const CreateSchema = S.Struct({
+	name: S.String.pipe(S.minLength(1), S.maxLength(100))
 });
 
 /**
- * User profile update schema
+ * 사용자 프로필 업데이트 스키마.
  */
-export const UpdateUserProfileSchema = Schema.Struct({
-	name: Schema.optional(Schema.String.pipe(Schema.minLength(1), Schema.maxLength(100)))
+export const UpdateSchema = S.Struct({
+	name: S.optional(S.String.pipe(S.minLength(1), S.maxLength(100)))
 });
 
 /**
- * Combined User and Profile type
- * Combines Supabase Auth User with user_profiles table data
+ * 사용자와 프로필 타입의 결합 타입.
  */
 export type UserAndProfile = {
 	user: User;
 	profile: Tables<'user_profiles'>;
 };
-
-/**
- * User profile related domain errors
- */
-export class UserProfileNotFoundError extends Data.TaggedError('UserProfileNotFound')<{
-	readonly message: string;
-	readonly userId: string;
-}> {
-	constructor(userId: string) {
-		super({
-			message: `User profile not found for user ${userId}`,
-			userId
-		});
-	}
-}
-
-// Type exports
-export type CreateUserProfileInput = typeof CreateUserProfileSchema.Type;
-export type UpdateUserProfileInput = typeof UpdateUserProfileSchema.Type;

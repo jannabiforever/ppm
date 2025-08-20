@@ -1,20 +1,18 @@
 import { StatusCodes } from 'http-status-codes';
-import { Effect, Layer, Console, Option } from 'effect';
-import { SupabaseLive, SupabaseService } from '$lib/infra/supabase/layer.server';
-import { makeCookiesLayer } from '$lib/infra/cookies';
+import { Effect, Layer, Console } from 'effect';
+import * as Option from 'effect/Option';
+import * as Either from 'effect/Either';
+import * as Supabase from '$lib/modules/supabase';
+import * as UserProfile from '$lib/modules/user_profile';
 import { sequence } from '@sveltejs/kit/hooks';
 import { error, type Handle, redirect } from '@sveltejs/kit';
 import type { Session } from '@supabase/supabase-js';
-
-import {
-	UserProfileLive,
-	UserProfileService,
-	type UserAndProfile
-} from '$lib/modules/user_profile';
+import type { SupabaseAuthError, SupabasePostgrestError } from '$lib/shared/errors';
+import type { NoSuchElementException } from 'effect/Cause';
 
 const supabase: Handle = async ({ event, resolve }) => {
-	const cookiesLayer = makeCookiesLayer(event.cookies);
-	const supabaseLayer = Layer.provide(SupabaseLive, cookiesLayer);
+	const cookiesLayer = Supabase.makeCookiesLayer(event.cookies);
+	const supabaseLayer = Layer.provide(Supabase.Service.Default, cookiesLayer);
 
 	event.locals.supabase = supabaseLayer;
 
@@ -30,31 +28,34 @@ const supabase: Handle = async ({ event, resolve }) => {
 };
 
 const authGuard: Handle = async ({ event, resolve }) => {
-	const clientData = await Effect.gen(function* () {
-		const supabaseService = yield* SupabaseService;
-		const profileService = yield* UserProfileService;
+	const clientData: Either.Either<
+		Option.Option<{ session: Session; userAndProfile: UserProfile.UserAndProfile }>,
+		SupabasePostgrestError | NoSuchElementException | SupabaseAuthError
+	> = await Effect.gen(function* () {
+		const supabaseService = yield* Supabase.Service;
+		const profileService = yield* UserProfile.Service;
 
-		const session = yield* supabaseService.safeGetSessionAsync();
-		const user = yield* supabaseService.safeGetUserAsync();
-		const profile = yield* profileService.getCurrentUserProfileAsync();
+		const session = yield* supabaseService.getSession();
+		const user = yield* supabaseService.getUser();
+		const profile = yield* profileService.getCurrentUserProfile();
 
 		return Option.some({ session, userAndProfile: { user, profile } });
 	}).pipe(
-		Effect.provide(UserProfileLive),
+		Effect.provide(UserProfile.Service.Default),
 		Effect.provide(event.locals.supabase),
-		Effect.catchTag('NoSessionOrUser', () =>
-			Effect.succeed(Option.none<{ session: Session; userAndProfile: UserAndProfile }>())
-		),
-		Effect.catchTag('UserProfileNotFound', () =>
-			Effect.succeed(Option.none<{ session: Session; userAndProfile: UserAndProfile }>())
-		),
-		Effect.tapError(Console.error),
+		Effect.catchTags({
+			NoSessionOrUser: () => Option.none(),
+			UserProfileNotFound: (err) => {
+				Console.error(err);
+				return Option.none();
+			}
+		}),
 		Effect.either,
 		Effect.runPromise
 	);
 
 	if (clientData._tag === 'Left') {
-		// TODO: What could go wrong when fetching user data?
+		// TODO: 에러 일어나는 컨텍스트 확인하기
 		const err = clientData.left;
 		const status = 'status' in err ? err.status : 500;
 		error(status, err);

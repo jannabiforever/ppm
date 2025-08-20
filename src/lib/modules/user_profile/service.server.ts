@@ -1,119 +1,19 @@
-import {
-	mapPostgrestError,
-	SupabasePostgrestError,
-	SupabaseAuthError,
-	NoSessionOrUserError
-} from '$lib/shared/errors';
-import { Context, Effect, Layer, Schema } from 'effect';
-import { SupabaseService } from '$lib/modules/supabase';
-import {
-	UserProfileNotFoundError,
-	CreateUserProfileSchema,
-	UpdateUserProfileSchema,
-	type UserProfile,
-	type UserProfileInsert,
-	type UserProfileUpdate
-} from './schema';
+import { Effect, Schema } from 'effect';
+import * as Supabase from '$lib/modules/supabase';
+import { CreateSchema, UpdateSchema, type Insert, type Update, type UserProfile } from './schema';
+import { mapPostgrestError, SupabasePostgrestError } from '$lib/shared/errors';
+import { NotFoundError } from './errors';
 
-export class UserProfileService extends Context.Tag('UserProfile')<
-	UserProfileService,
-	{
-		/**
-		 * Creates a new user profile for the authenticated user.
-		 *
-		 * This method is typically called during user onboarding or first login.
-		 * The profile ID matches the authenticated user's ID from Supabase Auth.
-		 * Only one profile per user is allowed.
-		 *
-		 * @param input - The user profile creation parameters including display name
-		 * @returns Effect that succeeds with the created UserProfile or fails with authentication or database error
-		 *
-		 * @throws {SupabasePostgrestError} When database operations fail (connection issues, unique constraint violations, access denied)
-		 * @throws {SupabaseAuthError} When user authentication is invalid or expired
-		 * @throws {NoSessionOrUserError} When no authenticated user session exists
-		 *
-		 * @example
-		 * ```typescript
-		 * const newProfile = yield* userProfileService.createUserProfile({
-		 *   name: 'John Doe'
-		 * });
-		 * console.log('Profile created for user:', newProfile.id);
-		 * console.log('Display name:', newProfile.name);
-		 * ```
-		 */
-		readonly createUserProfile: (
-			input: Schema.Schema.Type<typeof CreateUserProfileSchema>
-		) => Effect.Effect<
-			UserProfile,
-			SupabasePostgrestError | SupabaseAuthError | NoSessionOrUserError
-		>;
-
-		/**
-		 * Retrieves the user profile for the currently authenticated user.
-		 *
-		 * This method fetches the profile associated with the current user session.
-		 * It's commonly used to display user information in the UI and for
-		 * personalizing the user experience.
-		 *
-		 * @returns Effect that succeeds with the current user's UserProfile or fails with authentication or database error
-		 *
-		 * @throws {SupabasePostgrestError} When database query fails or access is denied
-		 * @throws {SupabaseAuthError} When user authentication is invalid or expired
-		 * @throws {NoSessionOrUserError} When no authenticated user session exists
-		 * @throws {UserProfileNotFoundError} When the authenticated user doesn't have a profile yet
-		 *
-		 * @example
-		 * ```typescript
-		 * const currentProfile = yield* userProfileService.getCurrentUserProfile();
-		 * console.log('Welcome back,', currentProfile.name);
-		 * console.log('Profile created on:', currentProfile.created_at);
-		 * ```
-		 */
-		readonly getCurrentUserProfile: () => Effect.Effect<
-			UserProfile,
-			SupabasePostgrestError | SupabaseAuthError | NoSessionOrUserError | UserProfileNotFoundError
-		>;
-
-		/**
-		 * Updates an existing user profile with new values.
-		 *
-		 * Allows partial updates of profile properties. Only provided fields will be updated,
-		 * leaving other properties unchanged. The profile ID cannot be changed as it's
-		 * tied to the user's authentication identity.
-		 *
-		 * @param id - The unique identifier of the user profile to update (must match authenticated user's ID)
-		 * @param input - Partial update data containing fields to modify
-		 * @returns Effect that succeeds with the updated UserProfile or fails with database error
-		 *
-		 * @throws {SupabasePostgrestError} When database operations fail, profile not found, or access denied
-		 *
-		 * @example
-		 * ```typescript
-		 * // Update display name
-		 * const updatedProfile = yield* userProfileService.updateUserProfile(userId, {
-		 *   name: 'Jane Smith'
-		 * });
-		 * console.log('Profile updated:', updatedProfile.name);
-		 * ```
-		 */
-		readonly updateUserProfile: (
-			id: string,
-			input: Schema.Schema.Type<typeof UpdateUserProfileSchema>
-		) => Effect.Effect<UserProfile, SupabasePostgrestError>;
-	}
->() {}
-
-export const UserProfileLive = Layer.effect(
-	UserProfileService,
-	Effect.gen(function* () {
-		const supabase = yield* SupabaseService;
+export class Service extends Effect.Service<Service>()('UserProfileService', {
+	effect: Effect.gen(function* () {
+		const supabase = yield* Supabase.Service;
 		const client = yield* supabase.getClient();
 		const user = yield* supabase.getUser();
 
 		return {
-			createUserProfile: (input: Schema.Schema.Type<typeof CreateUserProfileSchema>) =>
+			createUserProfile: (input: Schema.Schema.Type<typeof CreateSchema>) =>
 				Effect.gen(function* () {
-					const insertData: UserProfileInsert = {
+					const insertData: Insert = {
 						id: user.id,
 						name: input.name
 					};
@@ -127,7 +27,10 @@ export const UserProfileLive = Layer.effect(
 						: res.data;
 				}),
 
-			getCurrentUserProfile: () =>
+			getCurrentUserProfile: (): Effect.Effect<
+				UserProfile,
+				SupabasePostgrestError | NotFoundError
+			> =>
 				Effect.gen(function* () {
 					const res = yield* Effect.promise(() =>
 						client.from('user_profiles').select().eq('id', user.id).maybeSingle()
@@ -138,16 +41,16 @@ export const UserProfileLive = Layer.effect(
 					}
 
 					if (!res.data) {
-						return yield* Effect.fail(new UserProfileNotFoundError(user.id));
+						return yield* Effect.fail(new NotFoundError(user.id));
 					}
 
 					return res.data;
 				}),
 
-			updateUserProfile: (id: string, input: Schema.Schema.Type<typeof UpdateUserProfileSchema>) =>
+			updateUserProfile: (id: string, input: Schema.Schema.Type<typeof UpdateSchema>) =>
 				supabase.getClient().pipe(
 					Effect.flatMap((client) => {
-						const updateData: UserProfileUpdate = {};
+						const updateData: Update = {};
 
 						if (input.name !== undefined) updateData.name = input.name;
 
@@ -163,4 +66,4 @@ export const UserProfileLive = Layer.effect(
 				)
 		};
 	})
-);
+}) {}

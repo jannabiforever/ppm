@@ -1,8 +1,8 @@
 import type { Cookies } from '@sveltejs/kit';
 import { Context, Layer } from 'effect';
 
-export class CookiesService extends Context.Tag('Cookies')<
-	CookiesService,
+export class Service extends Context.Tag('Cookies')<
+	Service,
 	{
 		getAll: () => Array<{ name: string; value: string }>;
 		setAll: (cookiesToSet: Array<{ name: string; value: string }>) => void;
@@ -11,8 +11,8 @@ export class CookiesService extends Context.Tag('Cookies')<
 
 export const makeCookiesLayer = (cookies: Cookies) =>
 	Layer.succeed(
-		CookiesService,
-		CookiesService.of({
+		Service,
+		Service.of({
 			getAll: cookies.getAll,
 			setAll: (cookiesToSet) =>
 				cookiesToSet.forEach((cookie) => cookies.set(cookie.name, cookie.value, { path: '/' }))
