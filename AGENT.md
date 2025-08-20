@@ -1,5 +1,5 @@
-# Don't make up some files/folders without confirmation.
+# 확인 없이 파일/폴더를 임의로 만들지 말 것.
 
-To persist consistency, we need to ensure that all files and folders are properly managed and tracked. This includes creating, updating, and deleting files and folders in a controlled manner.
+일관성을 유지하기 위해, 모든 파일과 폴더가 적절하게 관리되고 추적되도록 해야 한다. 여기에는 통제된 방식으로 파일과 폴더를 생성, 업데이트, 삭제하는 것이 포함된다.
 
-Every time we need to create a new file at some non-legacy location, we have to ensure that we can easily locate it and manage it sustainably, so those kinds of action requires a new **rule** to be created. Before that, we don't create any new files which are not followed by a rule.
+새로운 위치에 새 파일을 생성할 필요가 있을 때마다, 쉽게 찾고 지속 가능하게 관리할 수 있도록 해야 하므로 이러한 작업에는 새로운 **규칙**이 생성되어야 한다. 그 전에는 규칙을 따르지 않는 새 파일을 생성하지 않는다.
