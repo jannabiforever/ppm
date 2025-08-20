@@ -1,14 +1,13 @@
-import { StatusCodes } from 'http-status-codes';
-import { Effect, Layer, Console } from 'effect';
-import * as Option from 'effect/Option';
 import * as Either from 'effect/Either';
+import * as Option from 'effect/Option';
 import * as Supabase from '$lib/modules/supabase';
 import * as UserProfile from '$lib/modules/user_profile';
-import { sequence } from '@sveltejs/kit/hooks';
-import { error, type Handle, redirect } from '@sveltejs/kit';
-import type { Session } from '@supabase/supabase-js';
-import type { SupabaseAuthError, SupabasePostgrestError } from '$lib/shared/errors';
 import type { NoSuchElementException } from 'effect/Cause';
+import type { Session } from '@supabase/supabase-js';
+import { Effect, Layer, Console } from 'effect';
+import { StatusCodes } from 'http-status-codes';
+import { error, type Handle, redirect } from '@sveltejs/kit';
+import { sequence } from '@sveltejs/kit/hooks';
 
 const supabase: Handle = async ({ event, resolve }) => {
 	const cookiesLayer = Supabase.makeCookiesLayer(event.cookies);
@@ -30,7 +29,7 @@ const supabase: Handle = async ({ event, resolve }) => {
 const authGuard: Handle = async ({ event, resolve }) => {
 	const clientData: Either.Either<
 		Option.Option<{ session: Session; userAndProfile: UserProfile.UserAndProfile }>,
-		SupabasePostgrestError | NoSuchElementException | SupabaseAuthError
+		NoSuchElementException | Supabase.AuthError | Supabase.PostgrestError
 	> = await Effect.gen(function* () {
 		const supabaseService = yield* Supabase.Service;
 		const profileService = yield* UserProfile.Service;
@@ -54,7 +53,7 @@ const authGuard: Handle = async ({ event, resolve }) => {
 		Effect.runPromise
 	);
 
-	if (clientData._tag === 'Left') {
+	if (Either.isLeft(clientData)) {
 		// TODO: 에러 일어나는 컨텍스트 확인하기
 		const err = clientData.left;
 		const status = 'status' in err ? err.status : 500;
