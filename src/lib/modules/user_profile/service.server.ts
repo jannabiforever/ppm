@@ -1,6 +1,6 @@
 import { Effect, Schema } from 'effect';
 import * as Supabase from '$lib/modules/supabase';
-import { CreateSchema, UpdateSchema, type Insert, type Update, type UserProfile } from './schema';
+import { CreateSchema, UpdateSchema, type Insert, type Update, type UserProfile } from './types';
 import { mapPostgrestError, SupabasePostgrestError } from '$lib/shared/errors';
 import { NotFoundError } from './errors';
 
