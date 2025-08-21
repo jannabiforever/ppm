@@ -1,48 +1,51 @@
-import { Effect, Layer } from 'effect';
-import type { LayoutServerLoad } from './$types';
-import {
-	FocusSessionLive,
-	FocusSessionService,
-	ProjectLive,
-	ProjectService,
-	TaskLive
-} from '$lib/modules';
+// import { Effect } from 'effect';
+// import * as Layer from 'effect/Layer';
+// import * as Option from 'effect/Option';
+// import type { LayoutServerLoad } from './$types';
 
-import { error } from '@sveltejs/kit';
+// import * as FocusSession from '$lib/modules/focus_sessions';
+// import * as Project from '$lib/modules/projects';
+// import * as Task from '$lib/modules/tasks';
 
-/**
- * Navigation needs following data:
- * - user
- * - current focus session if exists
- * - current active projects
- */
-export const load: LayoutServerLoad = async ({ locals }) => {
-	const activeProjectsAsync = Effect.gen(function* () {
-		const project = yield* ProjectService;
-		return yield* project.getAllActiveProjectsAsync();
-	}).pipe(Effect.provide(Layer.provide(ProjectLive, locals.supabase)));
+// /**
+//  * 네비게이션에는 다음 데이터가 필요함:
+//  * - 유저와 프로필 정보
+//  * - 현재 진행 중인 세션 (존재하는 경우에만)
+//  * - 현재 active 상태의 프로젝트들
+//  */
+// export const load: LayoutServerLoad = async ({ locals }) => {
+// 	const activeProjectsAsync = Effect.gen(function* () {
+// 		const project = yield* Project.Service;
+// 		return yield* project.getActiveProjects();
+// 	}).pipe(Effect.provide(Layer.provide(Project.Service.Default, locals.supabase)));
 
-	const currentFocusSessionAsync = Effect.gen(function* () {
-		const session = yield* FocusSessionService;
-		return yield* session.getActiveFocusSessionWithTasksAsync();
-	}).pipe(
-		Effect.provide(FocusSessionLive),
-		Effect.provide(TaskLive),
-		Effect.provide(locals.supabase)
-	);
+// 	const currentFocusSessionAsync = Effect.gen(function* () {
+// 		const sessionRepository = yield* FocusSession.Service;
+// 		const activeSession = yield* sessionRepository.getActiveSession();
+// 		if (Option.isSome(activeSession)) {
+// 			const session = activeSession.value;
+// 			const taskRepository = yield* Task.Service;
+//       const tasks = yield* taskRepository.getTasks({});
+// 			return { session, task };
+// 		}
+// 	}).pipe(
+// 		Effect.provide(FocusSession.Service.Default),
+// 		Effect.provide(Task.Service.Default),
+// 		Effect.provide(locals.supabase)
+// 	);
 
-	const res = await Effect.all([activeProjectsAsync, currentFocusSessionAsync]).pipe(
-		Effect.either,
-		Effect.runPromise
-	);
+// 	const res = await Effect.all([activeProjectsAsync, currentFocusSessionAsync]).pipe(
+// 		Effect.either,
+// 		Effect.runPromise
+// 	);
 
-	if (res._tag === 'Left') {
-		return error(res.left.status, res.left);
-	}
+// 	if (res._tag === 'Left') {
+// 		return error(res.left.status, res.left);
+// 	}
 
-	return {
-		userAndProfile: locals.userAndProfile,
-		activeProjects: res.right[0],
-		currentFocusSession: res.right[1]
-	};
-};
+// 	return {
+// 		userProfile: locals.userAndProfile,
+// 		activeProjects: res.right[0],
+// 		currentFocusSession: res.right[1]
+// 	};
+// };

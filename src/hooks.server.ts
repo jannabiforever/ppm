@@ -3,7 +3,7 @@ import * as Option from 'effect/Option';
 import * as Supabase from '$lib/modules/supabase';
 import * as UserProfile from '$lib/modules/user_profile';
 import type { NoSuchElementException } from 'effect/Cause';
-import type { Session } from '@supabase/supabase-js';
+import type { Session, User } from '@supabase/supabase-js';
 import { Effect, Layer, Console } from 'effect';
 import { StatusCodes } from 'http-status-codes';
 import { error, type Handle, redirect } from '@sveltejs/kit';
@@ -28,7 +28,7 @@ const supabase: Handle = async ({ event, resolve }) => {
 
 const authGuard: Handle = async ({ event, resolve }) => {
 	const clientData: Either.Either<
-		Option.Option<{ session: Session; userAndProfile: UserProfile.UserProfile }>,
+		Option.Option<{ session: Session; user: User; profile: UserProfile.Profile }>,
 		NoSuchElementException | Supabase.AuthError | Supabase.PostgrestError
 	> = await Effect.gen(function* () {
 		const supabaseService = yield* Supabase.Service;
@@ -38,7 +38,7 @@ const authGuard: Handle = async ({ event, resolve }) => {
 		const user = yield* supabaseService.getUser();
 		const profile = yield* profileService.getCurrentUserProfile();
 
-		return Option.some({ session, userAndProfile: { user, profile } });
+		return Option.some({ session, user, profile });
 	}).pipe(
 		Effect.provide(UserProfile.Service.Default),
 		Effect.provide(event.locals.supabase),
@@ -61,8 +61,9 @@ const authGuard: Handle = async ({ event, resolve }) => {
 	}
 
 	Option.match(clientData.right, {
-		onSome: ({ session, userAndProfile }) => {
-			event.locals.userAndProfile = userAndProfile;
+		onSome: ({ session, user, profile }) => {
+			event.locals.user = user;
+			event.locals.profile = profile;
 			event.locals.session = session;
 
 			if (shouldBeRedirectedToApp(event.url.pathname)) {

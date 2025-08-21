@@ -1,5 +1,6 @@
 import type { Tables, TablesInsert, TablesUpdate } from '$lib/shared/database.types';
 import * as S from 'effect/Schema';
+import { PaginationQuerySchema } from '../pagination';
 
 export type FocusSession = Tables<'focus_sessions'>;
 export const FocusSessionSchema = S.Struct({
@@ -33,3 +34,13 @@ export const FocusSessionUpdateSchema = S.Struct({
 	start_at: S.optional(S.DateTimeUtc),
 	updated_at: S.optional(S.DateTimeUtc)
 });
+
+export const FocusSessionQuerySchema = S.extend(
+	PaginationQuerySchema,
+	S.Struct({
+		project_id: S.optional(S.NullOr(S.String)),
+		from_date: S.optional(S.DateTimeUtc),
+		to_date: S.optional(S.DateTimeUtc),
+		is_active: S.optional(S.Boolean)
+	})
+);

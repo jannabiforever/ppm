@@ -1,30 +1,25 @@
 <script lang="ts">
-	import type { TaskStatus } from '$lib/modules';
-	import {
-		Book,
-		BookCheck,
-		BookLock,
-		BookMarked,
-		BookOpenText,
-		type IconProps
-	} from 'lucide-svelte';
+	import type { TaskStatus } from '$lib/modules/tasks';
+	import { Book, BookX, CircleCheck, BookCheck, BookOpenText, type IconProps } from 'lucide-svelte';
 
 	interface Props {
 		status: TaskStatus;
+		isPlanned?: boolean;
+		isInSession?: boolean;
 		iconProps?: IconProps;
 	}
 
-	let { status, iconProps }: Props = $props();
+	const { status, isPlanned = false, isInSession = false, iconProps = {} }: Props = $props();
 </script>
 
-{#if status === 'backlog'}
+{#if isInSession}
+	<BookOpenText {...iconProps} />
+{:else if isPlanned}
+	<BookCheck {...iconProps} />
+{:else if status === 'backlog'}
 	<Book {...iconProps} />
 {:else if status === 'blocked'}
-	<BookLock {...iconProps} />
+	<BookX {...iconProps} />
 {:else if status === 'completed'}
-	<BookMarked {...iconProps} />
-{:else if status === 'in_session'}
-	<BookOpenText {...iconProps} />
-{:else if status === 'planned'}
-	<BookCheck {...iconProps} />
+	<CircleCheck {...iconProps} />
 {/if}

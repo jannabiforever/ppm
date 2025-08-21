@@ -83,6 +83,11 @@ export class PostgrestError extends Data.TaggedError('SupabasePostgrest')<{
 	constructor(error: PE, status: number) {
 		super({ message: error.message, code: error.code, status });
 	}
+
+	when<E>(mappers: Record<string, () => E>): PostgrestError | E {
+		const mapper = mappers[this.code];
+		return mapper ? mapper() : this;
+	}
 }
 
 export class NoSessionOrUserError extends Data.TaggedError('NoSessionOrUser')<{

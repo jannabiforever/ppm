@@ -1,7 +1,7 @@
-import type { Session } from '@supabase/supabase-js';
 import * as Supabase from '$lib/modules/supabase';
+import * as UserProfile from '$lib/modules/user_profile';
 import type { Layer } from 'effect';
-import type { UserProfile } from '$lib/modules/user_profile';
+import type { Session, User } from '@supabase/supabase-js';
 
 declare global {
 	namespace App {
@@ -12,7 +12,8 @@ declare global {
 		interface Locals {
 			supabase: Layer.Layer<Supabase.Service, never, never>;
 			session: Session;
-			userAndProfile: UserProfile;
+			user: User;
+			profile: UserProfile.Profile;
 		}
 		// interface PageData {}
 		// interface PageState {}
