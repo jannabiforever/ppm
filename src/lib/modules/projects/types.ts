@@ -36,5 +36,5 @@ export const ProjectUpdateSchema = S.Struct({
 
 export const ProjectQuerySchema = S.Struct({
 	name_query: S.optional(S.String),
-	status: S.optional(S.Boolean)
+	active: S.optional(S.Boolean)
 });
