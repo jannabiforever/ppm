@@ -1,62 +1,34 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
-	graphql_public: {
-		Tables: {
-			[_ in never]: never;
-		};
-		Views: {
-			[_ in never]: never;
-		};
-		Functions: {
-			graphql: {
-				Args: {
-					extensions?: Json;
-					operationName?: string;
-					query?: string;
-					variables?: Json;
-				};
-				Returns: Json;
-			};
-		};
-		Enums: {
-			[_ in never]: never;
-		};
-		CompositeTypes: {
-			[_ in never]: never;
-		};
-	};
 	public: {
 		Tables: {
 			focus_sessions: {
 				Row: {
-					closed_at: string | null;
 					created_at: string;
+					end_at: string;
 					id: string;
 					owner_id: string;
 					project_id: string | null;
-					scheduled_end_at: string;
-					started_at: string;
+					start_at: string;
 					updated_at: string;
 				};
 				Insert: {
-					closed_at?: string | null;
 					created_at?: string;
+					end_at: string;
 					id?: string;
-					owner_id?: string;
+					owner_id: string;
 					project_id?: string | null;
-					scheduled_end_at?: string;
-					started_at: string;
+					start_at: string;
 					updated_at?: string;
 				};
 				Update: {
-					closed_at?: string | null;
 					created_at?: string;
+					end_at?: string;
 					id?: string;
 					owner_id?: string;
 					project_id?: string | null;
-					scheduled_end_at?: string;
-					started_at?: string;
+					start_at?: string;
 					updated_at?: string;
 				};
 				Relationships: [
@@ -85,7 +57,7 @@ export type Database = {
 					description?: string | null;
 					id?: string;
 					name: string;
-					owner_id?: string;
+					owner_id: string;
 					updated_at?: string;
 				};
 				Update: {
@@ -127,6 +99,13 @@ export type Database = {
 						foreignKeyName: 'session_tasks_task_id_fkey';
 						columns: ['task_id'];
 						isOneToOne: false;
+						referencedRelation: 'inbox_tasks';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'session_tasks_task_id_fkey';
+						columns: ['task_id'];
+						isOneToOne: false;
 						referencedRelation: 'tasks';
 						referencedColumns: ['id'];
 					}
@@ -134,10 +113,11 @@ export type Database = {
 			};
 			tasks: {
 				Row: {
-					blocked_note: string | null;
+					completed_in_session_id: string | null;
 					created_at: string;
 					description: string | null;
 					id: string;
+					memo: string | null;
 					owner_id: string;
 					planned_for: string | null;
 					project_id: string | null;
@@ -146,11 +126,12 @@ export type Database = {
 					updated_at: string;
 				};
 				Insert: {
-					blocked_note?: string | null;
+					completed_in_session_id?: string | null;
 					created_at?: string;
 					description?: string | null;
 					id?: string;
-					owner_id?: string;
+					memo?: string | null;
+					owner_id: string;
 					planned_for?: string | null;
 					project_id?: string | null;
 					status?: Database['public']['Enums']['task_status'];
@@ -158,10 +139,11 @@ export type Database = {
 					updated_at?: string;
 				};
 				Update: {
-					blocked_note?: string | null;
+					completed_in_session_id?: string | null;
 					created_at?: string;
 					description?: string | null;
 					id?: string;
+					memo?: string | null;
 					owner_id?: string;
 					planned_for?: string | null;
 					project_id?: string | null;
@@ -170,6 +152,13 @@ export type Database = {
 					updated_at?: string;
 				};
 				Relationships: [
+					{
+						foreignKeyName: 'tasks_completed_in_session_id_fkey';
+						columns: ['completed_in_session_id'];
+						isOneToOne: false;
+						referencedRelation: 'focus_sessions';
+						referencedColumns: ['id'];
+					},
 					{
 						foreignKeyName: 'tasks_project_id_fkey';
 						columns: ['project_id'];
@@ -196,13 +185,75 @@ export type Database = {
 			};
 		};
 		Views: {
-			[_ in never]: never;
+			inbox_tasks: {
+				Row: {
+					completed_in_session_id: string | null;
+					created_at: string | null;
+					description: string | null;
+					id: string | null;
+					is_in_session: boolean | null;
+					is_planned: boolean | null;
+					memo: string | null;
+					owner_id: string | null;
+					planned_for: string | null;
+					project_id: string | null;
+					status: Database['public']['Enums']['task_status'] | null;
+					title: string | null;
+					updated_at: string | null;
+				};
+				Insert: {
+					completed_in_session_id?: string | null;
+					created_at?: string | null;
+					description?: string | null;
+					id?: string | null;
+					is_in_session?: never;
+					is_planned?: never;
+					memo?: string | null;
+					owner_id?: string | null;
+					planned_for?: string | null;
+					project_id?: string | null;
+					status?: Database['public']['Enums']['task_status'] | null;
+					title?: string | null;
+					updated_at?: string | null;
+				};
+				Update: {
+					completed_in_session_id?: string | null;
+					created_at?: string | null;
+					description?: string | null;
+					id?: string | null;
+					is_in_session?: never;
+					is_planned?: never;
+					memo?: string | null;
+					owner_id?: string | null;
+					planned_for?: string | null;
+					project_id?: string | null;
+					status?: Database['public']['Enums']['task_status'] | null;
+					title?: string | null;
+					updated_at?: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'tasks_completed_in_session_id_fkey';
+						columns: ['completed_in_session_id'];
+						isOneToOne: false;
+						referencedRelation: 'focus_sessions';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'tasks_project_id_fkey';
+						columns: ['project_id'];
+						isOneToOne: false;
+						referencedRelation: 'projects';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 		};
 		Functions: {
 			[_ in never]: never;
 		};
 		Enums: {
-			task_status: 'backlog' | 'planned' | 'in_session' | 'blocked' | 'completed';
+			task_status: 'backlog' | 'blocked' | 'completed';
 		};
 		CompositeTypes: {
 			[_ in never]: never;
@@ -326,12 +377,9 @@ export type CompositeTypes<
 		: never;
 
 export const Constants = {
-	graphql_public: {
-		Enums: {}
-	},
 	public: {
 		Enums: {
-			task_status: ['backlog', 'planned', 'in_session', 'blocked', 'completed']
+			task_status: ['backlog', 'blocked', 'completed']
 		}
 	}
 } as const;
