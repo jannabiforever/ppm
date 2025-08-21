@@ -6,7 +6,6 @@ export default defineConfig({
 	test: {
 		globals: true,
 		environment: 'node',
-		setupFiles: ['./src/lib/__tests__/setup/global-environment.ts'],
 		testTimeout: 10000, // 10s for integration tests
 		hookTimeout: 5000, // 5s for setup/teardown
 		include: ['src/**/*.{test,spec}.{js,ts}'],
@@ -14,7 +13,7 @@ export default defineConfig({
 			'node_modules/**',
 			'build/**',
 			'.svelte-kit/**',
-			'src/lib/infra/supabase/types.ts', // Generated types
+			'src/lib/shared/supabase/types.ts', // Generated types
 			'src/**/*.d.ts'
 		],
 		coverage: {
