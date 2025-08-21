@@ -21,7 +21,8 @@
 		"test:timing": "vitest --grep='timing|timeout|duration'",
 		"test:concurrent": "vitest --grep='concurrent|race|parallel'",
 		"test:integration": "vitest --grep='integration'",
-		"test:unit": "vitest --grep='unit'"
+		"test:unit": "vitest --grep='unit'",
+		"gentypes": "npx supabase gen types typescript --local --schema public > src/lib/shared/database.types.ts"
 	},
 	"devDependencies": {
 		"@effect/platform": "^0.90.2",
