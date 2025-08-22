@@ -4,10 +4,10 @@
 	import DarkModeHandler from './DarkModeHandler.svelte';
 
 	interface Props {
-		userAndProfile: UserProfile;
+		userProfile: UserProfile;
 	}
 
-	let { userAndProfile }: Props = $props();
+	let { userProfile: userAndProfile }: Props = $props();
 </script>
 
 <div class="flex w-full items-center justify-between">

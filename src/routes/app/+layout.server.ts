@@ -1,51 +1,82 @@
-// import { Effect } from 'effect';
-// import * as Layer from 'effect/Layer';
-// import * as Option from 'effect/Option';
-// import type { LayoutServerLoad } from './$types';
+import { error, redirect } from '@sveltejs/kit';
+import type { LayoutServerLoad } from './$types';
 
-// import * as FocusSession from '$lib/modules/focus_sessions';
-// import * as Project from '$lib/modules/projects';
-// import * as Task from '$lib/modules/tasks';
+import { Effect } from 'effect';
+import * as Option from 'effect/Option';
+import * as Either from 'effect/Either';
+import * as Console from 'effect/Console';
+import * as FocusSession from '$lib/modules/focus_sessions';
+import * as Project from '$lib/modules/projects';
+import * as Task from '$lib/modules/tasks';
+import * as SessionTask from '$lib/modules/session_tasks';
+import { StatusCodes } from 'http-status-codes';
 
-// /**
-//  * 네비게이션에는 다음 데이터가 필요함:
-//  * - 유저와 프로필 정보
-//  * - 현재 진행 중인 세션 (존재하는 경우에만)
-//  * - 현재 active 상태의 프로젝트들
-//  */
-// export const load: LayoutServerLoad = async ({ locals }) => {
-// 	const activeProjectsAsync = Effect.gen(function* () {
-// 		const project = yield* Project.Service;
-// 		return yield* project.getActiveProjects();
-// 	}).pipe(Effect.provide(Layer.provide(Project.Service.Default, locals.supabase)));
+/**
+ * 네비게이션에는 다음 데이터가 필요함:
+ * - 유저와 프로필 정보
+ * - 현재 진행 중인 세션 (존재하는 경우에만)
+ * - 현재 active 상태의 프로젝트들
+ */
+export const load: LayoutServerLoad = async ({ locals }) => {
+	const program = Effect.gen(function* () {
+		const projectRepo = yield* Project.Service;
+		const taskRepo = yield* Task.Service;
+		const sessionTaskRepo = yield* SessionTask.Service;
+		const focusSessionRepo = yield* FocusSession.Service;
 
-// 	const currentFocusSessionAsync = Effect.gen(function* () {
-// 		const sessionRepository = yield* FocusSession.Service;
-// 		const activeSession = yield* sessionRepository.getActiveSession();
-// 		if (Option.isSome(activeSession)) {
-// 			const session = activeSession.value;
-// 			const taskRepository = yield* Task.Service;
-//       const tasks = yield* taskRepository.getTasks({});
-// 			return { session, task };
-// 		}
-// 	}).pipe(
-// 		Effect.provide(FocusSession.Service.Default),
-// 		Effect.provide(Task.Service.Default),
-// 		Effect.provide(locals.supabase)
-// 	);
+		const activeProjects = yield* projectRepo.getActiveProjects();
+		const currentSession = yield* focusSessionRepo.getActiveSession();
 
-// 	const res = await Effect.all([activeProjectsAsync, currentFocusSessionAsync]).pipe(
-// 		Effect.either,
-// 		Effect.runPromise
-// 	);
+		const assignedTaskIds: string[] = yield* Option.match(currentSession, {
+			onSome: (session) =>
+				sessionTaskRepo.getTasksBySession(session.id).pipe(
+					Effect.map((rels) => rels.map((rel) => rel.task_id)),
+					Effect.orElse(() => Effect.succeed([]))
+				),
+			onNone: () => Effect.succeed([])
+		});
 
-// 	if (res._tag === 'Left') {
-// 		return error(res.left.status, res.left);
-// 	}
+		const assignedTasks = yield* Effect.all(assignedTaskIds.map((id) => taskRepo.getTaskById(id)));
 
-// 	return {
-// 		userProfile: locals.userAndProfile,
-// 		activeProjects: res.right[0],
-// 		currentFocusSession: res.right[1]
-// 	};
-// };
+		return {
+			activeProjects,
+			currentSession: {
+				session: currentSession,
+				assignedTasks
+			}
+		};
+	});
+
+	const p = await program.pipe(
+		Effect.provide(Project.Service.Default),
+		Effect.provide(Task.Service.Default),
+		Effect.provide(SessionTask.Service.Default),
+		Effect.provide(FocusSession.Service.Default),
+		Effect.provide(locals.supabase),
+		Effect.tapError(Console.error),
+		Effect.either,
+		Effect.runPromise
+	);
+
+	return Either.match(p, {
+		onRight: (data) => {
+			return { ...data, user: locals.user, profile: locals.profile };
+		},
+		onLeft: (err) => {
+			switch (err._tag) {
+				case 'NoSessionOrUser':
+					return redirect(StatusCodes.UNAUTHORIZED, '/auth/login');
+				case 'SupabaseAuth':
+					return error(err.status, {
+						_tag: err._tag,
+						message: err.message
+					});
+				case 'SupabasePostgrest':
+					return error(err.status, {
+						_tag: err._tag,
+						message: err.message
+					});
+			}
+		}
+	});
+};

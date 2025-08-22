@@ -1,4 +1,5 @@
-import { AuthLive, AuthService, SignInSchema } from '$lib/modules/auth';
+import * as Auth from '$lib/modules/auth';
+import * as Either from 'effect/Either';
 import { decodeFormData } from '$lib/decode';
 import { fail, redirect, type Actions } from '@sveltejs/kit';
 import { Console, Effect, Layer } from 'effect';
@@ -7,28 +8,28 @@ import HttpStatusCodes from 'http-status-codes';
 export const actions = {
 	'sign-in': async ({ locals, request, cookies }) => {
 		const formData = await request.formData();
-		const decodedFormData = decodeFormData(formData, SignInSchema).pipe(
+		const decodedFormData = decodeFormData(formData, Auth.SignInSchema).pipe(
 			Effect.tapError(Console.error),
 			Effect.either,
 			Effect.runSync
 		);
 
-		if (decodedFormData._tag === 'Left') {
+		if (Either.isLeft(decodedFormData)) {
 			return fail(HttpStatusCodes.BAD_REQUEST, decodedFormData.left);
 		}
 
 		const result = await Effect.gen(function* () {
-			const auth = yield* AuthService;
+			const auth = yield* Auth.Service;
 			return yield* auth.signInWithPassword(decodedFormData.right);
 		}).pipe(
-			Effect.provide(Layer.provide(AuthLive, locals.supabase)),
+			Effect.provide(Layer.provide(Auth.Service.Default, locals.supabase)),
 			Effect.tapError(Console.error),
 			Effect.either,
 			Effect.runPromise
 		);
 
-		switch (result._tag) {
-			case 'Right':
+		return Either.match(result, {
+			onRight: () => {
 				// Handle remember
 				if (decodedFormData.right.remember) {
 					cookies.set('email', decodedFormData.right.email, {
@@ -39,28 +40,30 @@ export const actions = {
 						maxAge: 60 * 60 * 24 * 30 // 30 days
 					});
 				}
-				throw redirect(HttpStatusCodes.SEE_OTHER, '/app');
-			case 'Left':
-				return fail(HttpStatusCodes.UNAUTHORIZED, result.left);
-		}
+				return redirect(HttpStatusCodes.SEE_OTHER, '/app');
+			},
+			onLeft: (error) => {
+				return fail(HttpStatusCodes.UNAUTHORIZED, error);
+			}
+		});
 	},
 
 	'sign-in-google': async ({ locals }) => {
 		const result = await Effect.gen(function* () {
-			const auth = yield* AuthService;
+			const auth = yield* Auth.Service;
 			return yield* auth.signInWithGoogleOAuth();
 		}).pipe(
-			Effect.provide(Layer.provide(AuthLive, locals.supabase)),
+			Effect.provide(Layer.provide(Auth.Service.Default, locals.supabase)),
 			Effect.tapError(Console.error),
 			Effect.either,
 			Effect.runPromise
 		);
 
-		switch (result._tag) {
-			case 'Right':
-				throw redirect(HttpStatusCodes.SEE_OTHER, result.right);
-			case 'Left':
-				return fail(HttpStatusCodes.UNAUTHORIZED, result.left);
-		}
+		return Either.match(result, {
+			onLeft: (error) => fail(HttpStatusCodes.UNAUTHORIZED, error),
+			onRight: (url) => {
+				redirect(HttpStatusCodes.SEE_OTHER, url);
+			}
+		});
 	}
 } satisfies Actions;

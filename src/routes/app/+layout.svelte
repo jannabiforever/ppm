@@ -21,7 +21,12 @@
 	<aside
 		class="fixed flex h-full w-[220px] flex-col gap-4.5 rounded-r-sm border border-surface-200-800 p-2.5"
 	>
-		<NavHeader userAndProfile={data.userAndProfile} />
+		<NavHeader
+			userProfile={{
+				user: data.user,
+				profile: data.profile
+			}}
+		/>
 
 		<!-- Links -->
 		<div class="flex w-full flex-col">
@@ -56,7 +61,7 @@
 
 		<!-- Session Timer -->
 		<div class="flex w-full items-center justify-center">
-			{#if data.currentFocusSession}{/if}
+			{#if data.currentSession}{/if}
 		</div>
 	</aside>
 	<main class="ml-[220px] flex w-full flex-1 justify-center p-5">
