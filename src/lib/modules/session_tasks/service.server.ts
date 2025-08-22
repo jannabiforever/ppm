@@ -4,7 +4,7 @@ import * as Supabase from '../supabase';
 import { PaginationQuerySchema } from '../pagination';
 import { SessionNotActiveError, TaskAlreadyInSessionError, TaskNotInSessionError } from './errors';
 
-export class Service extends Effect.Service<Service>()('SessionTaskService', {
+export class Service extends Effect.Service<Service>()('SessionTaskRepository', {
 	effect: Effect.gen(function* () {
 		const supabase = yield* Supabase.Service;
 		const client = yield* supabase.getClient();

@@ -33,7 +33,7 @@ import { PaginationQuerySchema } from '../pagination';
  * yield* focusSessionService.deleteSession(sessionId);
  * ```
  */
-export class Service extends Effect.Service<Service>()('FocusSessionService', {
+export class Service extends Effect.Service<Service>()('FocusSessionRepository', {
 	effect: Effect.gen(function* () {
 		const supabase = yield* Supabase.Service;
 		const client = yield* supabase.getClient();

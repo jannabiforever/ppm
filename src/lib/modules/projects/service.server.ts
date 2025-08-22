@@ -3,7 +3,7 @@ import * as Supabase from '../supabase';
 import * as S from 'effect/Schema';
 import type { Project, ProjectInsert, ProjectQuerySchema, ProjectUpdate } from './types';
 
-export class Service extends Effect.Service<Service>()('ProjectService', {
+export class Service extends Effect.Service<Service>()('ProjectRepository', {
 	effect: Effect.gen(function* () {
 		const supabase = yield* Supabase.Service;
 		const client = yield* supabase.getClient();

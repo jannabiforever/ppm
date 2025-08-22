@@ -3,7 +3,7 @@ import * as Supabase from '$lib/modules/supabase';
 import { type Profile, type ProfileInsert, type ProfileUpdate } from './types';
 import { AssociatedProfileNotFoundError } from './errors';
 
-export class Service extends Effect.Service<Service>()('UserProfileService', {
+export class Service extends Effect.Service<Service>()('UserProfileRepository', {
 	effect: Effect.gen(function* () {
 		const supabase = yield* Supabase.Service;
 		const client = yield* supabase.getClient();

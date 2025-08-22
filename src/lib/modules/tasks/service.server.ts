@@ -7,7 +7,7 @@ import type { Task, TaskInsert, TaskQuerySchema, TaskUpdate } from './types';
 /**
  * 태스크 데이터의 생성, 조회, 수정, 삭제를 관리한다
  */
-export class Service extends Effect.Service<Service>()('TaskService', {
+export class Service extends Effect.Service<Service>()('TaskRepository', {
 	effect: Effect.gen(function* () {
 		const supabase = yield* Supabase.Service;
 		const client = yield* supabase.getClient();
