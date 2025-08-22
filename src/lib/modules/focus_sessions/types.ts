@@ -1,6 +1,6 @@
 import type { Tables, TablesInsert, TablesUpdate } from '$lib/shared/database.types';
 import * as S from 'effect/Schema';
-import { PaginationQuerySchema } from '../pagination';
+import { PaginationQuerySchema } from '../../shared/pagination';
 
 export type FocusSession = Tables<'focus_sessions'>;
 export const FocusSessionSchema = S.Struct({

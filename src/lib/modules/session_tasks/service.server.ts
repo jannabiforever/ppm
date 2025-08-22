@@ -1,7 +1,7 @@
 import { DateTime, Effect, Option } from 'effect';
 import * as S from 'effect/Schema';
 import * as Supabase from '../supabase';
-import { PaginationQuerySchema } from '../pagination';
+import { PaginationQuerySchema } from '$lib/shared/pagination';
 import { SessionNotActiveError, TaskAlreadyInSessionError, TaskNotInSessionError } from './errors';
 
 export class Service extends Effect.Service<Service>()('SessionTaskRepository', {

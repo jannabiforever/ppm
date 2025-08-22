@@ -7,7 +7,7 @@ import type {
 	FocusSessionUpdate,
 	FocusSessionQuerySchema
 } from './types';
-import { PaginationQuerySchema } from '../pagination';
+import { PaginationQuerySchema } from '$lib/shared/pagination';
 
 /**
  * 포커스 세션 관리 서비스
