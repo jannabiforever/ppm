@@ -1,6 +1,7 @@
 import { Effect, Option, DateTime } from 'effect';
 import * as FocusSessions from '$lib/modules/focus_sessions';
-import { TimeConflictError, InvalidSessionTimeError, NoAvailableTimeSlotError } from './errors';
+import { SessionTimeConflictError, InvalidSessionTimeError } from '$lib/modules/focus_sessions';
+import { NoAvailableTimeSlotError } from './errors';
 import type {
 	CanStartSessionAtParams,
 	CreateSessionWithConflictCheckParams,
@@ -72,10 +73,7 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 				// 시간 유효성 검사
 				if (DateTime.lessThanOrEqualTo(end_at, start_at)) {
 					return yield* Effect.fail(
-						new InvalidSessionTimeError({
-							start_at: DateTime.formatIso(start_at),
-							end_at: DateTime.formatIso(end_at)
-						})
+						new InvalidSessionTimeError(DateTime.formatIso(start_at), DateTime.formatIso(end_at))
 					);
 				}
 
@@ -121,18 +119,19 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 		 */
 		const createSessionWithConflictCheck = (
 			params: CreateSessionWithConflictCheckParams
-		): Effect.Effect<string, TimeConflictError | InvalidSessionTimeError | Error> =>
+		): Effect.Effect<string, SessionTimeConflictError | InvalidSessionTimeError | Error> =>
 			Effect.gen(function* () {
 				// 충돌 검사
 				const conflictResult = yield* checkTimeConflict(params.start_at, params.end_at);
 
 				if (conflictResult.has_conflict) {
+					const firstConflict = conflictResult.conflicting_sessions![0];
 					return yield* Effect.fail(
-						new TimeConflictError({
-							start_at: DateTime.formatIso(params.start_at),
-							end_at: DateTime.formatIso(params.end_at),
-							conflicting_session_ids: conflictResult.conflicting_sessions!.map((s) => s.id)
-						})
+						new SessionTimeConflictError(
+							firstConflict.id,
+							DateTime.formatIso(params.start_at),
+							DateTime.formatIso(params.end_at)
+						)
 					);
 				}
 
@@ -149,7 +148,7 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 		 */
 		const updateSessionTimeWithConflictCheck = (
 			params: UpdateSessionTimeWithConflictCheckParams
-		): Effect.Effect<void, TimeConflictError | InvalidSessionTimeError | Error> =>
+		): Effect.Effect<void, SessionTimeConflictError | InvalidSessionTimeError | Error> =>
 			Effect.gen(function* () {
 				// 현재 세션 정보 조회
 				const currentSession = yield* focusSessionsService.getSessionById(params.session_id);
@@ -165,12 +164,13 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 				const conflictResult = yield* checkTimeConflict(newStartAt, newEndAt, params.session_id);
 
 				if (conflictResult.has_conflict) {
+					const firstConflict = conflictResult.conflicting_sessions![0];
 					return yield* Effect.fail(
-						new TimeConflictError({
-							start_at: DateTime.formatIso(newStartAt),
-							end_at: DateTime.formatIso(newEndAt),
-							conflicting_session_ids: conflictResult.conflicting_sessions!.map((s) => s.id)
-						})
+						new SessionTimeConflictError(
+							firstConflict.id,
+							DateTime.formatIso(newStartAt),
+							DateTime.formatIso(newEndAt)
+						)
 					);
 				}
 

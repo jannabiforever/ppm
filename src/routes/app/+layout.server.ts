@@ -21,7 +21,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	const program = Effect.gen(function* () {
 		const projectRepo = yield* Project.Service;
 		const taskRepo = yield* Task.Service;
-		const sessionTaskRepo = yield* SessionTask.default;
+		const sessionTaskRepo = yield* SessionTask.Service;
 		const focusSessionRepo = yield* FocusSession.Service;
 
 		const activeProjects = yield* projectRepo.getActiveProjects();
@@ -50,7 +50,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	const p = await program.pipe(
 		Effect.provide(Project.Service.Default),
 		Effect.provide(Task.Service.Default),
-		Effect.provide(SessionTask.default.Default),
+		Effect.provide(SessionTask.Service.Default),
 		Effect.provide(FocusSession.Service.Default),
 		Effect.provide(locals.supabase),
 		Effect.tapError(Console.error),

@@ -3,7 +3,9 @@ import * as Option from 'effect/Option';
 import * as FocusSession from '$lib/modules/focus_sessions';
 import * as SessionTask from '$lib/modules/session_tasks';
 import * as Task from '$lib/modules/tasks';
-import { SessionNotActiveError, TaskAlreadyInSessionError, TaskNotInSessionError } from './errors';
+import * as Supabase from '$lib/modules/supabase';
+import { TaskAlreadyInSessionError, TaskNotInSessionError } from '$lib/modules/session_tasks';
+import { SessionNotActiveError } from './errors';
 import type {
 	AddTaskToSessionParams,
 	RemoveTaskFromSessionParams,
@@ -56,7 +58,10 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 		 */
 		const removeTaskFromSession = (
 			params: RemoveTaskFromSessionParams
-		): Effect.Effect<void, SessionNotActiveError | TaskNotInSessionError | Error> =>
+		): Effect.Effect<
+			void,
+			SessionNotActiveError | TaskNotInSessionError | Supabase.PostgrestError
+		> =>
 			Effect.gen(function* () {
 				// 세션이 활성 상태인지 확인
 				const isActive = yield* focusSessionsService.isSessionActive(params.session_id);
@@ -84,7 +89,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 		 */
 		const addTasksToSession = (
 			params: AddTasksToSessionParams
-		): Effect.Effect<void, SessionNotActiveError | Error> =>
+		): Effect.Effect<void, SessionNotActiveError | Supabase.PostgrestError> =>
 			Effect.gen(function* () {
 				// 세션이 활성 상태인지 확인
 				const isActive = yield* focusSessionsService.isSessionActive(params.session_id);

@@ -112,3 +112,20 @@ export class InvalidSessionDurationError extends Data.TaggedError('InvalidSessio
 		});
 	}
 }
+
+/**
+ * 세션 시작 시간이 종료 시간보다 늦을 때 발생하는 에러 (DB constraint)
+ */
+export class InvalidSessionTimeError extends Data.TaggedError('InvalidSessionTime')<{
+	readonly message: string;
+	readonly start_at: string;
+	readonly end_at: string;
+}> {
+	constructor(start_at: string, end_at: string) {
+		super({
+			message: `세션 시작 시간이 종료 시간보다 늦습니다. 시작: ${start_at}, 종료: ${end_at}`,
+			start_at,
+			end_at
+		});
+	}
+}
