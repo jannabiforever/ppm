@@ -106,26 +106,7 @@ export class Service extends Effect.Service<Service>()('ProjectRepository', {
 			getActiveProjects: (): Effect.Effect<Project[], Supabase.PostgrestError> =>
 				Effect.promise(() =>
 					client.from('projects').select().eq('owner_id', user.id).eq('active', true)
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponse)),
-
-			/**
-			 * 프로젝트의 활성 상태를 토글한다
-			 */
-			toggleProjectStatus: (id: string): Effect.Effect<void, Supabase.PostgrestError> =>
-				Effect.gen(function* () {
-					// 먼저 현재 프로젝트 상태를 조회한다
-					const active = yield* Effect.promise(() =>
-						client.from('projects').select('active').eq('id', id).eq('owner_id', user.id).single()
-					).pipe(
-						Effect.flatMap(Supabase.mapPostgrestResponse),
-						Effect.map((p) => p.active)
-					);
-
-					// 상태를 토글한다
-					yield* Effect.promise(() =>
-						client.from('projects').update({ active: !active }).eq('id', id).eq('owner_id', user.id)
-					).pipe(Effect.flatMap(Supabase.mapPostgrestResponseVoid));
-				})
+				).pipe(Effect.flatMap(Supabase.mapPostgrestResponse))
 		};
 	})
 }) {}

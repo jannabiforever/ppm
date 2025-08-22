@@ -44,7 +44,7 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 			 * 새로운 포커스 세션을 생성한다
 			 */
 			createSession: (
-				payload: FocusSessionInsert
+				payload: Omit<FocusSessionInsert, 'owner_id'>
 			): Effect.Effect<string, Supabase.PostgrestError> =>
 				Effect.promise(() =>
 					client
@@ -286,30 +286,6 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 				}
 
 				return Effect.promise(() => query).pipe(Effect.flatMap(Supabase.mapPostgrestResponse));
-			},
-
-			/**
-			 * 특정 시간에 세션을 시작할 수 있는지 확인한다 (시간 충돌 검사)
-			 */
-			canStartSessionAt: (
-				startAt: Date,
-				durationMinutes: number
-			): Effect.Effect<boolean, Supabase.PostgrestError> => {
-				const endAt = new Date(startAt.getTime() + durationMinutes * 60 * 1000);
-
-				return Effect.promise(() =>
-					client
-						.from('focus_sessions')
-						.select('id')
-						.eq('owner_id', user.id)
-						.or(
-							`and(start_at.lte.${DateTime.formatIso(DateTime.unsafeFromDate(endAt))},end_at.gt.${DateTime.formatIso(DateTime.unsafeFromDate(startAt))})`
-						)
-						.limit(1)
-				).pipe(
-					Effect.flatMap(Supabase.mapPostgrestResponse),
-					Effect.map((sessions) => sessions.length === 0)
-				);
 			},
 
 			/**

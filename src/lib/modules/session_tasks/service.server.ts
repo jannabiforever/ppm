@@ -2,24 +2,17 @@ import { DateTime, Effect, Option } from 'effect';
 import * as S from 'effect/Schema';
 import * as Supabase from '../supabase';
 import { PaginationQuerySchema } from '$lib/shared/pagination';
-import { SessionNotActiveError, TaskAlreadyInSessionError, TaskNotInSessionError } from './errors';
+import { TaskAlreadyInSessionError, TaskNotInSessionError } from './errors';
 
 export class Service extends Effect.Service<Service>()('SessionTaskRepository', {
 	effect: Effect.gen(function* () {
 		const supabase = yield* Supabase.Service;
 		const client = yield* supabase.getClient();
-
 		// 1. 세션-태스크 연결 관리
 
 		// 세션에 태스크 추가
 		const addTaskToSession = (params: { session_id: string; task_id: string }) =>
 			Effect.gen(function* () {
-				// 세션이 활성 상태인지 확인
-				const isActive = yield* isSessionActive(params.session_id);
-				if (!isActive) {
-					return yield* Effect.fail(new SessionNotActiveError({ session_id: params.session_id }));
-				}
-
 				// 이미 추가되어 있는지 확인
 				const existing = yield* getSessionTask(params);
 				if (Option.isSome(existing)) {
@@ -46,12 +39,6 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 		// 세션에서 태스크 제거
 		const removeTaskFromSession = (params: { session_id: string; task_id: string }) =>
 			Effect.gen(function* () {
-				// 세션이 활성 상태인지 확인
-				const isActive = yield* isSessionActive(params.session_id);
-				if (!isActive) {
-					return yield* Effect.fail(new SessionNotActiveError({ session_id: params.session_id }));
-				}
-
 				// 존재하는지 확인
 				const existing = yield* getSessionTask(params);
 				if (Option.isNone(existing)) {
@@ -74,14 +61,8 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 			});
 
 		// 여러 태스크를 한번에 추가
-		const addTasksToSession = (params: { session_id: string; task_ids: string[] }) =>
+		const addTasksToSession = (params: { session_id: string; task_ids: readonly string[] }) =>
 			Effect.gen(function* () {
-				// 세션이 활성 상태인지 확인
-				const isActive = yield* isSessionActive(params.session_id);
-				if (!isActive) {
-					return yield* Effect.fail(new SessionNotActiveError({ session_id: params.session_id }));
-				}
-
 				// 이미 추가된 태스크들 확인
 				const existingTasks = yield* getTasksBySession(params.session_id);
 				const existingTaskIds = new Set(existingTasks.map((st) => st.task_id));
@@ -107,17 +88,10 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 
 		// 세션의 모든 태스크 연결 제거
 		const clearSessionTasks = (session_id: string) =>
-			Effect.gen(function* () {
-				// 세션이 활성 상태인지 확인
-				const isActive = yield* isSessionActive(session_id);
-				if (!isActive) {
-					return yield* Effect.fail(new SessionNotActiveError({ session_id }));
-				}
-
-				return yield* Effect.promise(() =>
-					client.from('session_tasks').delete().eq('session_id', session_id)
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponse), Effect.asVoid);
-			});
+			Effect.promise(() => client.from('session_tasks').delete().eq('session_id', session_id)).pipe(
+				Effect.flatMap(Supabase.mapPostgrestResponse),
+				Effect.asVoid
+			);
 
 		// 2. 조회 기능
 
@@ -251,26 +225,6 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				return Option.isSome(result);
 			});
 
-		// 세션에 추가 가능한지 확인
-		const canAddTaskToSession = (params: { session_id: string; task_id: string }) =>
-			Effect.gen(function* () {
-				// 세션이 활성 상태인지 확인
-				const isActive = yield* isSessionActive(params.session_id);
-				if (!isActive) {
-					return false;
-				}
-
-				// 이미 세션에 있는지 확인
-				const alreadyInSession = yield* isTaskInSession(params);
-				if (alreadyInSession) {
-					return false;
-				}
-
-				// 태스크가 이미 완료되었는지 확인 (추후 Task 서비스와 연동 필요)
-				// 현재는 true 반환
-				return true;
-			});
-
 		// 세션의 태스크 개수 조회
 		const getSessionTaskCount = (session_id: string) =>
 			Effect.gen(function* () {
@@ -286,24 +240,6 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				}
 
 				return result.count ?? 0;
-			});
-
-		// Helper: 세션이 활성 상태인지 확인
-		const isSessionActive = (session_id: string) =>
-			Effect.gen(function* () {
-				const now = DateTime.formatIso(DateTime.unsafeNow());
-				const result = yield* Effect.promise(() =>
-					client
-						.from('focus_sessions')
-						.select('id')
-						.eq('id', session_id)
-						.lte('start_at', now)
-						.gte('end_at', now)
-						.limit(1)
-						.maybeSingle()
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseOptional));
-
-				return Option.isSome(result);
 			});
 
 		return {
@@ -323,7 +259,6 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 			// 검증 및 비즈니스 로직
 			isTaskInSession,
 			isTaskInActiveSession,
-			canAddTaskToSession,
 			getSessionTaskCount
 		};
 	})

@@ -10,11 +10,3 @@ export class TaskNotInSessionError extends Data.TaggedError('TaskNotInSession')<
 	task_id: string;
 	session_id: string;
 }> {}
-
-export class SessionNotActiveError extends Data.TaggedError('SessionNotActive')<{
-	session_id: string;
-}> {}
-
-export class SessionNotFoundError extends Data.TaggedError('SessionNotFound')<{
-	session_id: string;
-}> {}
