@@ -23,6 +23,75 @@ redis, aws s3 등등 외부 모듈을 사용하는 것들이 위치하면 된다
 모듈(외부 api를 사용하는 서비스들)을 다시 활용하여 유스 케이스를 구현하는 서비스들의 경우, 'src/lib/applications' 폴더에 위치한다.
 예를 들어 supabase api를 호출하여 s3에 파일을 업로드 하는 서비스를 정의하려는 경우, 'src/lib/applications/some-use-case'와 같은 서비스 정의 폴더를 생성하여 작업하면 된다.
 
+## 애플리케이션과 모듈의 경계
+
+DB 제약 조건 때문에 모듈에 비즈니스 로직이 스며드는 것처럼 보일 수 있지만, 실제로는 **불변성(invariant) 해석**과 **정책(policy) 적용**을 분리하면 경계가 명확해진다.
+
+### 모듈에서 허용되는 로직 (OK)
+
+* **DB 제약 해석**: 데이터베이스 오류 코드(SQLSTATE)나 제약 이름을 **도메인 불변성 에러**로 변환
+
+  * 예: `projects_name_key` → `ProjectNameAlreadyTaken`
+  * 예: `tasks_project_id_fkey` → `ProjectNotFound`
+* **단일 리소스 수준의 불변성 체크**
+
+  * unique, foreign key, check 제약 등
+* **형식/범위 검증**: 스키마 기반 타입 검증, 값 정규화
+* **입출력 안전장치**: 페이지 크기 상한, 정렬 키 화이트리스트 등 보안 목적 제한
+
+### 모듈에 두면 안 되는 로직 (NG)
+
+* **교차 엔터티 규칙**: “프로젝트 생성 시 초기 태스크도 있어야 한다”
+* **정책적 분기**: “사용자 등급이 X면 Y전략”
+* **멀티 리포/외부 시스템 오케스트레이션**
+* **트랜잭션 경계 설정**
+
+### 레이어 역할 정리
+
+* **Module (Repository/Adapter)**
+
+  * 인프라 ↔ 도메인 간 인터페이스
+  * DB 에러를 해석하여 도메인 불변성 에러로 변환
+  * 교차 정책이나 트랜잭션은 모름
+
+* **Application (UseCase)**
+
+  * 교차 엔터티 규칙 적용
+  * 여러 모듈 조합 및 트랜잭션 경계 관리
+  * 모듈 에러를 자신만의 유스케이스 에러로 다시 매핑
+
+### 예시 코드
+
+```ts
+// modules/projects/errors.ts
+export class ProjectNameAlreadyTaken extends Error { _tag = "ProjectNameAlreadyTaken" as const; }
+export class ProjectNotFound extends Error { _tag = "ProjectNotFound" as const; }
+
+export function mapPostgrestError(e: Supabase.PostgrestError): Error {
+  if (e.code === "23505" && e.constraint === "projects_name_key") {
+    return new ProjectNameAlreadyTaken();
+  }
+  if (e.code === "23503" && e.constraint === "tasks_project_id_fkey") {
+    return new ProjectNotFound();
+  }
+  return e;
+}
+
+// applications/project-bootstrap/errors.ts
+export class BootstrapConflict extends Error { _tag = "BootstrapConflict" as const; }
+export function mapModuleToAppError(e: unknown): Error {
+  if (e instanceof Projects.ProjectNameAlreadyTaken) return new BootstrapConflict();
+  return e as Error;
+}
+```
+
+### 결론
+
+* **모듈 = 불변성/계약 층**, **애플리케이션 = 정책/오케스트레이션 층**
+* 모듈에서 DB 제약을 해석하는 건 불가피하지만, 이는 **도메인 불변성 명명화**이지 비즈니스 로직 침투가 아님
+* 교차 정책, 트랜잭션, 워크플로우는 반드시 애플리케이션 레이어로 올려서 관리
+
+
 # 서비스 정의 폴더 규칙
 
 임의의 서비스를 정의하는 폴더는 다음과 같이 구성한다.
@@ -31,6 +100,7 @@ redis, aws s3 등등 외부 모듈을 사용하는 것들이 위치하면 된다
 src/lib/modules/focus_sessions
 ├── __test__
 │   └── schema.test.ts
+├── errors.ts
 ├── index.ts
 ├── service.server.ts
 └── types.ts
@@ -39,6 +109,10 @@ src/lib/modules/focus_sessions
 ## index.ts
 
 단순한 export 문을 포함하는 파일
+
+## errors.ts
+
+에러 정의 파일. `Data.TaggedError`를 활용해 에러를 정의.
 
 ## service.server.ts
 
