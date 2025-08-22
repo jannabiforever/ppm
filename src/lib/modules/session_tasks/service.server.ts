@@ -171,6 +171,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskService', {
 					.select('*')
 					.eq('session_id', params.session_id)
 					.eq('task_id', params.task_id)
+					.limit(1)
 					.maybeSingle()
 			).pipe(Effect.flatMap(Supabase.mapPostgrestResponseOptional));
 
@@ -185,6 +186,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskService', {
 						.select('id')
 						.lte('start_at', now)
 						.gte('end_at', now)
+						.limit(1)
 						.maybeSingle()
 				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseOptional));
 
@@ -192,8 +194,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskService', {
 					return [];
 				}
 
-				const session = sessionResult.value;
-				return yield* getTasksBySession(session.id);
+				return yield* getTasksBySession(sessionResult.value.id);
 			});
 
 		// 특정 기간 동안의 세션-태스크 연결 조회
@@ -243,6 +244,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskService', {
 						.eq('task_id', task_id)
 						.lte('focus_sessions.start_at', now)
 						.gte('focus_sessions.end_at', now)
+						.limit(1)
 						.maybeSingle()
 				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseOptional));
 
@@ -297,6 +299,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskService', {
 						.eq('id', session_id)
 						.lte('start_at', now)
 						.gte('end_at', now)
+						.limit(1)
 						.maybeSingle()
 				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseOptional));
 

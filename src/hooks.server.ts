@@ -2,7 +2,6 @@ import * as Either from 'effect/Either';
 import * as Option from 'effect/Option';
 import * as Supabase from '$lib/modules/supabase';
 import * as UserProfile from '$lib/modules/user_profile';
-import type { NoSuchElementException } from 'effect/Cause';
 import type { Session, User } from '@supabase/supabase-js';
 import { Effect, Layer, Console } from 'effect';
 import { StatusCodes } from 'http-status-codes';
@@ -29,7 +28,7 @@ const supabase: Handle = async ({ event, resolve }) => {
 const authGuard: Handle = async ({ event, resolve }) => {
 	const clientData: Either.Either<
 		Option.Option<{ session: Session; user: User; profile: UserProfile.Profile }>,
-		NoSuchElementException | Supabase.AuthError | Supabase.PostgrestError
+		Supabase.AuthError | Supabase.PostgrestError
 	> = await Effect.gen(function* () {
 		const supabaseService = yield* Supabase.Service;
 		const profileService = yield* UserProfile.Service;
@@ -43,10 +42,10 @@ const authGuard: Handle = async ({ event, resolve }) => {
 		Effect.provide(UserProfile.Service.Default),
 		Effect.provide(event.locals.supabase),
 		Effect.catchTags({
-			NoSessionOrUser: () => Option.none(),
-			UserProfileNotFound: (err) => {
+			NoSessionOrUser: () => Effect.succeed(Option.none()),
+			AssociatedProfileNotFound: (err) => {
 				Console.error(err);
-				return Option.none();
+				return Effect.succeed(Option.none());
 			}
 		}),
 		Effect.either,
@@ -54,10 +53,15 @@ const authGuard: Handle = async ({ event, resolve }) => {
 	);
 
 	if (Either.isLeft(clientData)) {
-		// TODO: 에러 일어나는 컨텍스트 확인하기
 		const err = clientData.left;
-		const status = 'status' in err ? err.status : 500;
-		error(status, err);
+		switch (err._tag) {
+			case 'SupabaseAuth':
+				if (shouldBeGuarded(event.url.pathname))
+					return redirect(StatusCodes.SEE_OTHER, '/auth/sign-in');
+				return resolve(event);
+			case 'SupabasePostgrest':
+				return error(StatusCodes.INTERNAL_SERVER_ERROR);
+		}
 	}
 
 	Option.match(clientData.right, {
@@ -71,7 +75,7 @@ const authGuard: Handle = async ({ event, resolve }) => {
 			}
 		},
 		onNone: () => {
-			if (shouldBeGuarded(event.url.pathname)) redirect(StatusCodes.SEE_OTHER, '/auth/sign-in');
+			if (shouldBeGuarded(event.url.pathname)) redirect(StatusCodes.UNAUTHORIZED, '/auth/sign-in');
 		}
 	});
 

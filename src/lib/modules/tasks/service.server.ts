@@ -1,5 +1,6 @@
 import { Effect, HashSet } from 'effect';
 import * as Supabase from '../supabase';
+import * as Option from 'effect/Option';
 import * as S from 'effect/Schema';
 import type { Task, TaskInsert, TaskQuerySchema, TaskUpdate } from './types';
 
@@ -42,10 +43,10 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 			/**
 			 * 특정 태스크의 상세 정보를 조회한다
 			 */
-			getTaskById: (id: string): Effect.Effect<Task, Supabase.PostgrestError> =>
+			getTaskById: (id: string): Effect.Effect<Option.Option<Task>, Supabase.PostgrestError> =>
 				Effect.promise(() =>
-					client.from('tasks').select().eq('id', id).eq('owner_id', user.id).single()
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponse)),
+					client.from('tasks').select().eq('id', id).eq('owner_id', user.id).maybeSingle()
+				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseOptional)),
 
 			/**
 			 * 오늘 계획된 태스크 목록을 조회한다

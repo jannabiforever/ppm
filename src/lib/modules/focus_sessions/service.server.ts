@@ -71,10 +71,12 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 			/**
 			 * 특정 포커스 세션의 상세 정보를 조회한다
 			 */
-			getSessionById: (id: string): Effect.Effect<FocusSession, Supabase.PostgrestError> =>
+			getSessionById: (
+				id: string
+			): Effect.Effect<Option.Option<FocusSession>, Supabase.PostgrestError> =>
 				Effect.promise(() =>
-					client.from('focus_sessions').select().eq('id', id).eq('owner_id', user.id).single()
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponse)),
+					client.from('focus_sessions').select().eq('id', id).eq('owner_id', user.id).maybeSingle()
+				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseOptional)),
 
 			/**
 			 * 기존 포커스 세션의 정보를 수정한다
@@ -142,7 +144,7 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 						.eq('owner_id', user.id)
 						.lte('start_at', now)
 						.gte('end_at', now)
-						.single()
+						.maybeSingle()
 				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseOptional));
 			},
 
@@ -311,21 +313,32 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 			},
 
 			/**
-			 * 세션이 현재 활성 상태인지 확인한다
+			 * 세션이 현재 활성 상태인지 확인한다.
+			 * 만약 주어진 아이디의 세션이 존재하지 않을 경우 Option.none 반환.
 			 */
-			isSessionActive: (sessionId: string): Effect.Effect<boolean, Supabase.PostgrestError> => {
+			isSessionActive: (
+				sessionId: string
+			): Effect.Effect<Option.Option<boolean>, Supabase.PostgrestError> => {
 				const now = DateTime.formatIso(DateTime.unsafeNow());
 
 				return Effect.promise(() =>
 					client
 						.from('focus_sessions')
-						.select('id')
+						.select('id,start_at,end_at')
 						.eq('id', sessionId)
 						.eq('owner_id', user.id)
-						.lte('start_at', now)
-						.gte('end_at', now)
-						.single()
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseOptional), Effect.map(Option.isSome));
+						.maybeSingle()
+				).pipe(
+					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
+					Effect.flatMap((session) =>
+						Effect.succeed(
+							Option.match(session, {
+								onSome: (session) => Option.some(session.start_at <= now && session.end_at >= now),
+								onNone: () => Option.none()
+							})
+						)
+					)
+				);
 			}
 		};
 	})
