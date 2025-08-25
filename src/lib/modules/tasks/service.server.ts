@@ -1,14 +1,14 @@
-import { Effect, HashSet } from 'effect';
+import { DateTime, Effect, HashSet } from 'effect';
 import * as Supabase from '../supabase';
 import * as Option from 'effect/Option';
 import * as S from 'effect/Schema';
-import type { Task, TaskInsert, TaskQuerySchema, TaskUpdate } from './types';
-import { NotFound } from './errors';
+import { TaskQuerySchema, TaskSchema, TaskInsertSchema, TaskUpdateSchema } from './types';
+import { NotFound, InvalidProject, InvalidSession, InvalidOwner, HasDependencies } from './errors';
 
 /**
  * 태스크 데이터의 생성, 조회, 수정, 삭제를 관리한다
  */
-export class Service extends Effect.Service<Service>()('TaskRepository', {
+export class Service extends Effect.Service<Service>()('TaskService', {
 	effect: Effect.gen(function* () {
 		const supabase = yield* Supabase.Service;
 		const client = yield* supabase.getClient();
@@ -18,7 +18,12 @@ export class Service extends Effect.Service<Service>()('TaskRepository', {
 			/**
 			 * 새로운 태스크을 생성한다
 			 */
-			createTask: (payload: TaskInsert): Effect.Effect<string, Supabase.PostgrestError> =>
+			createTask: (
+				payload: typeof TaskInsertSchema.Encoded
+			): Effect.Effect<
+				string,
+				Supabase.PostgrestError | InvalidProject | InvalidSession | InvalidOwner
+			> =>
 				Effect.promise(() =>
 					client
 						.from('tasks')
@@ -30,20 +35,45 @@ export class Service extends Effect.Service<Service>()('TaskRepository', {
 						.single()
 				).pipe(
 					Effect.flatMap(Supabase.mapPostgrestResponse),
-					Effect.map((res) => res.id)
+					Effect.map((res) => res.id),
+					Effect.catchTag(
+						'SupabasePostgrest',
+						(
+							error
+						): Effect.Effect<
+							never,
+							Supabase.PostgrestError | InvalidProject | InvalidSession | InvalidOwner
+						> => {
+							if (error.code === '23503') {
+								// Foreign key constraint violation
+								if (error.message.includes('project_id')) {
+									return Effect.fail(new InvalidProject(payload.project_id || ''));
+								}
+								if (error.message.includes('completed_in_session_id')) {
+									return Effect.fail(new InvalidSession(payload.completed_in_session_id || ''));
+								}
+								if (error.message.includes('owner_id')) {
+									return Effect.fail(new InvalidOwner(user.id));
+								}
+							}
+							return Effect.fail(error);
+						}
+					)
 				),
 
 			/**
 			 * 태스크을 삭제한다
 			 */
-			deleteTask: (taskId: string): Effect.Effect<void, Supabase.PostgrestError | NotFound> =>
+			deleteTask: (
+				taskId: string
+			): Effect.Effect<void, Supabase.PostgrestError | NotFound | HasDependencies> =>
 				Effect.promise(() =>
 					client
 						.from('tasks')
 						.delete()
 						.eq('id', taskId)
 						.eq('owner_id', user.id)
-						.select()
+						.select('id')
 						.maybeSingle()
 				).pipe(
 					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
@@ -52,13 +82,20 @@ export class Service extends Effect.Service<Service>()('TaskRepository', {
 							onNone: () => Effect.fail(new NotFound(taskId)),
 							onSome: () => Effect.void
 						})
+					),
+					Effect.catchTag(
+						'SupabasePostgrest',
+						(error): Effect.Effect<never, Supabase.PostgrestError | HasDependencies> =>
+							error.code === '23503' ? Effect.fail(new HasDependencies(taskId)) : Effect.fail(error)
 					)
 				),
 
 			/**
 			 * 특정 태스크의 상세 정보를 조회한다
 			 */
-			getTaskById: (taskId: string): Effect.Effect<Task, Supabase.PostgrestError | NotFound> =>
+			getTaskById: (
+				taskId: string
+			): Effect.Effect<typeof TaskSchema.Type, Supabase.PostgrestError | NotFound> =>
 				Effect.promise(() =>
 					client.from('tasks').select().eq('id', taskId).eq('owner_id', user.id).maybeSingle()
 				).pipe(
@@ -66,7 +103,8 @@ export class Service extends Effect.Service<Service>()('TaskRepository', {
 					Effect.flatMap(
 						Option.match({
 							onNone: () => Effect.fail(new NotFound(taskId)),
-							onSome: (task) => Effect.succeed(task)
+							onSome: (task) =>
+								S.decode(TaskSchema)(task).pipe(Effect.mapError(() => new NotFound(taskId)))
 						})
 					)
 				),
@@ -74,66 +112,81 @@ export class Service extends Effect.Service<Service>()('TaskRepository', {
 			/**
 			 * 오늘 계획된 태스크 목록을 조회한다
 			 */
-			getTodayTasks: (): Effect.Effect<Task[], Supabase.PostgrestError> => {
-				const today = new Date().toISOString().split('T')[0];
-				return Effect.promise(() =>
-					client.from('tasks').select().eq('owner_id', user.id).eq('planned_for', today)
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponse));
-			},
+			getTodayTasks: (): Effect.Effect<Array<typeof TaskSchema.Type>, Supabase.PostgrestError> =>
+				Effect.gen(function* () {
+					const today = yield* DateTime.nowAsDate;
+					const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+					const tasks = yield* Effect.promise(() =>
+						client.from('tasks').select().eq('owner_id', user.id).eq('planned_for', todayString)
+					).pipe(Effect.flatMap(Supabase.mapPostgrestResponse));
+
+					return yield* Effect.all(
+						tasks.map((task) => S.decode(TaskSchema)(task).pipe(Effect.orDie))
+					);
+				}),
 
 			/**
 			 * 조건에 맞는 태스크 목록을 조회한다
 			 */
 			getTasks: (
-				query: S.Schema.Type<typeof TaskQuerySchema>
-			): Effect.Effect<Task[], Supabase.PostgrestError> => {
-				let queryBuilder = client.from('tasks').select().eq('owner_id', user.id);
+				query: typeof TaskQuerySchema.Encoded
+			): Effect.Effect<Array<typeof TaskSchema.Type>, Supabase.PostgrestError> =>
+				Effect.gen(function* () {
+					// Schema decoding is needed for HashSet and Date types
+					const decodedQuery = yield* S.decode(TaskQuerySchema)(query).pipe(Effect.orDie);
 
-				if (query.title_query) {
-					queryBuilder = queryBuilder.ilike('title', `%${query.title_query}%`);
-				}
+					let queryBuilder = client.from('tasks').select().eq('owner_id', user.id);
 
-				if (query.project_id) {
-					queryBuilder = queryBuilder.eq('project_id', query.project_id);
-				}
+					if (decodedQuery.title_query) {
+						queryBuilder = queryBuilder.ilike('title', `%${decodedQuery.title_query}%`);
+					}
 
-				if (query.status && HashSet.size(query.status) > 0) {
-					const statusArray = Array.from(query.status);
-					queryBuilder = queryBuilder.in('status', statusArray);
-				}
+					if (decodedQuery.project_id) {
+						queryBuilder = queryBuilder.eq('project_id', decodedQuery.project_id);
+					}
 
-				if (query.date_start) {
-					queryBuilder = queryBuilder.gte(
-						'planned_for',
-						query.date_start.toISOString().split('T')[0]
+					if (decodedQuery.status && HashSet.size(decodedQuery.status) > 0) {
+						const statusArray = Array.from(decodedQuery.status);
+						queryBuilder = queryBuilder.in('status', statusArray);
+					}
+
+					if (decodedQuery.date_start) {
+						const dateString = `${decodedQuery.date_start.getFullYear()}-${String(decodedQuery.date_start.getMonth() + 1).padStart(2, '0')}-${String(decodedQuery.date_start.getDate()).padStart(2, '0')}`;
+						queryBuilder = queryBuilder.gte('planned_for', dateString);
+					}
+
+					if (decodedQuery.date_end) {
+						const dateString = `${decodedQuery.date_end.getFullYear()}-${String(decodedQuery.date_end.getMonth() + 1).padStart(2, '0')}-${String(decodedQuery.date_end.getDate()).padStart(2, '0')}`;
+						queryBuilder = queryBuilder.lte('planned_for', dateString);
+					}
+
+					const response = yield* Effect.promise(() => queryBuilder).pipe(
+						Effect.flatMap(Supabase.mapPostgrestResponse)
 					);
-				}
 
-				if (query.date_end) {
-					queryBuilder = queryBuilder.lte(
-						'planned_for',
-						query.date_end.toISOString().split('T')[0]
+					return yield* Effect.all(
+						response.map((task) => S.decode(TaskSchema)(task).pipe(Effect.orDie))
 					);
-				}
-
-				return Effect.promise(() => queryBuilder).pipe(
-					Effect.flatMap(Supabase.mapPostgrestResponse)
-				);
-			},
+				}),
 
 			/**
 			 * 기존 태스크의 정보를 수정한다
 			 */
 			updateTask: (
 				taskId: string,
-				payload: TaskUpdate
-			): Effect.Effect<void, Supabase.PostgrestError | NotFound> =>
+				payload: typeof TaskUpdateSchema.Encoded
+			): Effect.Effect<
+				void,
+				Supabase.PostgrestError | NotFound | InvalidProject | InvalidSession
+			> =>
 				Effect.promise(() =>
 					client
 						.from('tasks')
 						.update(payload)
 						.eq('id', taskId)
 						.eq('owner_id', user.id)
+						.select('id')
 						.maybeSingle()
 				).pipe(
 					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
@@ -142,6 +195,24 @@ export class Service extends Effect.Service<Service>()('TaskRepository', {
 							onNone: () => Effect.fail(new NotFound(taskId)),
 							onSome: () => Effect.void
 						})
+					),
+					Effect.catchTag(
+						'SupabasePostgrest',
+						(
+							error
+						): Effect.Effect<never, Supabase.PostgrestError | InvalidProject | InvalidSession> => {
+							if (error.code === '23503') {
+								// Foreign key constraint violation
+								if (error.message.includes('project_id')) {
+									return Effect.fail(new InvalidProject(payload.project_id || ''));
+								}
+								if (error.message.includes('completed_in_session_id')) {
+									return Effect.fail(new InvalidSession(payload.completed_in_session_id || ''));
+								}
+							}
+							// P0001 is trigger error - just pass through
+							return Effect.fail(error);
+						}
 					)
 				)
 		};

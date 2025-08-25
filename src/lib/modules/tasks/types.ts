@@ -1,52 +1,47 @@
-import type { Database, Tables, TablesInsert, TablesUpdate } from '$lib/shared/database.types';
 import * as S from 'effect/Schema';
 
-export type TaskStatus = Database['public']['Enums']['task_status'];
 export const TaskStatusSchema = S.Literal('backlog', 'blocked', 'completed');
 
-export type Task = Tables<'tasks'>;
 export const TaskSchema = S.Struct({
-	completed_in_session_id: S.Union(S.String, S.Null),
+	completed_in_session_id: S.NullOr(S.String),
 	created_at: S.String,
-	description: S.Union(S.String, S.Null),
+	description: S.NullOr(S.String),
 	id: S.String,
-	memo: S.Union(S.String, S.Null),
+	memo: S.NullOr(S.String),
 	owner_id: S.String,
-	planned_for: S.Union(S.String, S.Null),
-	project_id: S.Union(S.String, S.Null),
+	planned_for: S.NullOr(S.Date),
+	project_id: S.NullOr(S.String),
 	status: TaskStatusSchema,
 	title: S.String,
-	updated_at: S.String
+	updated_at: S.DateTimeUtc
 });
 
-export type TaskInsert = TablesInsert<'tasks'>;
 export const TaskInsertSchema = S.Struct({
-	completed_in_session_id: S.optional(S.Union(S.String, S.Null)),
+	completed_in_session_id: S.optional(S.NullishOr(S.String)),
 	created_at: S.optional(S.String),
-	description: S.optional(S.Union(S.String, S.Null)),
+	description: S.optional(S.NullishOr(S.String)),
 	id: S.optional(S.String),
-	memo: S.optional(S.Union(S.String, S.Null)),
+	memo: S.optional(S.NullishOr(S.String)),
 	owner_id: S.String,
-	planned_for: S.optional(S.Union(S.String, S.Null)),
-	project_id: S.optional(S.Union(S.String, S.Null)),
+	planned_for: S.NullishOr(S.Date),
+	project_id: S.NullishOr(S.String),
 	status: S.optional(TaskStatusSchema),
 	title: S.String,
 	updated_at: S.optional(S.String)
 });
 
-export type TaskUpdate = TablesUpdate<'tasks'>;
 export const TaskUpdateSchema = S.Struct({
-	completed_in_session_id: S.optional(S.Union(S.String, S.Null)),
+	completed_in_session_id: S.optional(S.NullishOr(S.String)),
 	created_at: S.optional(S.String),
-	description: S.optional(S.Union(S.String, S.Null)),
+	description: S.optional(S.NullishOr(S.String)),
 	id: S.optional(S.String),
-	memo: S.optional(S.Union(S.String, S.Null)),
+	memo: S.optional(S.NullishOr(S.String)),
 	owner_id: S.optional(S.String),
-	planned_for: S.optional(S.Union(S.String, S.Null)),
-	project_id: S.optional(S.Union(S.String, S.Null)),
+	planned_for: S.optional(S.NullishOr(S.String)),
+	project_id: S.optional(S.NullishOr(S.String)),
 	status: S.optional(TaskStatusSchema),
 	title: S.optional(S.String),
-	updated_at: S.optional(S.String)
+	updated_at: S.optional(S.DateTimeUtc)
 });
 
 export const TaskQuerySchema = S.Struct({

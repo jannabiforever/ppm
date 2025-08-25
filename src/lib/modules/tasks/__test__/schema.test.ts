@@ -1,16 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import {
-	type Task,
-	TaskSchema,
-	type TaskInsert,
-	TaskInsertSchema,
-	type TaskUpdate,
-	TaskUpdateSchema,
-	type TaskStatus,
-	TaskStatusSchema
-} from '..';
+import type { Database, Tables, TablesInsert, TablesUpdate } from '$lib/shared/database.types';
+import { TaskSchema, TaskInsertSchema, TaskUpdateSchema, TaskStatusSchema } from '..';
 import * as S from 'effect/Schema';
 import type { Equal } from '$lib/shared/schema';
+
+export type TaskStatus = Database['public']['Enums']['task_status'];
+export type Task = Tables<'tasks'>;
+export type TaskInsert = TablesInsert<'tasks'>;
+export type TaskUpdate = TablesUpdate<'tasks'>;
 
 describe('Schema of TaskStatus', () => {
 	type TaskStatusSchemaEncoded = S.Schema.Encoded<typeof TaskStatusSchema>;
