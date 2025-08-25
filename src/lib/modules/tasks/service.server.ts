@@ -3,6 +3,7 @@ import * as Supabase from '../supabase';
 import * as Option from 'effect/Option';
 import * as S from 'effect/Schema';
 import type { Task, TaskInsert, TaskQuerySchema, TaskUpdate } from './types';
+import { NotFound } from './errors';
 
 /**
  * 태스크 데이터의 생성, 조회, 수정, 삭제를 관리한다
@@ -35,18 +36,40 @@ export class Service extends Effect.Service<Service>()('TaskRepository', {
 			/**
 			 * 태스크을 삭제한다
 			 */
-			deleteTask: (id: string): Effect.Effect<void, Supabase.PostgrestError> =>
+			deleteTask: (taskId: string): Effect.Effect<void, Supabase.PostgrestError | NotFound> =>
 				Effect.promise(() =>
-					client.from('tasks').delete().eq('id', id).eq('owner_id', user.id)
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseVoid)),
+					client
+						.from('tasks')
+						.delete()
+						.eq('id', taskId)
+						.eq('owner_id', user.id)
+						.select()
+						.maybeSingle()
+				).pipe(
+					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
+					Effect.flatMap(
+						Option.match({
+							onNone: () => Effect.fail(new NotFound(taskId)),
+							onSome: () => Effect.void
+						})
+					)
+				),
 
 			/**
 			 * 특정 태스크의 상세 정보를 조회한다
 			 */
-			getTaskById: (id: string): Effect.Effect<Option.Option<Task>, Supabase.PostgrestError> =>
+			getTaskById: (taskId: string): Effect.Effect<Task, Supabase.PostgrestError | NotFound> =>
 				Effect.promise(() =>
-					client.from('tasks').select().eq('id', id).eq('owner_id', user.id).maybeSingle()
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseOptional)),
+					client.from('tasks').select().eq('id', taskId).eq('owner_id', user.id).maybeSingle()
+				).pipe(
+					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
+					Effect.flatMap(
+						Option.match({
+							onNone: () => Effect.fail(new NotFound(taskId)),
+							onSome: (task) => Effect.succeed(task)
+						})
+					)
+				),
 
 			/**
 			 * 오늘 계획된 태스크 목록을 조회한다
@@ -101,10 +124,26 @@ export class Service extends Effect.Service<Service>()('TaskRepository', {
 			/**
 			 * 기존 태스크의 정보를 수정한다
 			 */
-			updateTask: (id: string, payload: TaskUpdate): Effect.Effect<void, Supabase.PostgrestError> =>
+			updateTask: (
+				taskId: string,
+				payload: TaskUpdate
+			): Effect.Effect<void, Supabase.PostgrestError | NotFound> =>
 				Effect.promise(() =>
-					client.from('tasks').update(payload).eq('id', id).eq('owner_id', user.id)
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseVoid))
+					client
+						.from('tasks')
+						.update(payload)
+						.eq('id', taskId)
+						.eq('owner_id', user.id)
+						.maybeSingle()
+				).pipe(
+					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
+					Effect.flatMap(
+						Option.match({
+							onNone: () => Effect.fail(new NotFound(taskId)),
+							onSome: () => Effect.void
+						})
+					)
+				)
 		};
 	})
 }) {}

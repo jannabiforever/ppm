@@ -1,7 +1,7 @@
 import { Effect, DateTime } from 'effect';
 import * as FocusSessions from '$lib/modules/focus_sessions';
 import * as Supabase from '$lib/modules/supabase';
-import { NoAvailableTimeSlotError } from './errors';
+import { NoAvailableTimeSlot } from './errors';
 import type {
 	CanStartSessionAtParams,
 	CreateSessionWithConflictCheckParams,
@@ -196,7 +196,7 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 		 */
 		const findAvailableTimeSlots = (
 			params: FindAvailableTimeSlotsParams
-		): Effect.Effect<AvailableTimeSlot[], NoAvailableTimeSlotError | Supabase.PostgrestError> =>
+		): Effect.Effect<AvailableTimeSlot[], NoAvailableTimeSlot | Supabase.PostgrestError> =>
 			Effect.gen(function* () {
 				// 검색 범위 설정
 				const dateMillis = DateTime.toEpochMillis(params.date);
@@ -281,7 +281,7 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 
 				if (availableSlots.length === 0) {
 					return yield* Effect.fail(
-						new NoAvailableTimeSlotError({
+						new NoAvailableTimeSlot({
 							date: DateTime.formatIso(params.date),
 							duration_minutes: params.duration_minutes
 						})
@@ -297,7 +297,7 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 		const findNextAvailableSlot = (
 			duration_minutes: number,
 			from_time?: DateTime.Utc
-		): Effect.Effect<AvailableTimeSlot, NoAvailableTimeSlotError> =>
+		): Effect.Effect<AvailableTimeSlot, NoAvailableTimeSlot> =>
 			Effect.gen(function* () {
 				const startTime = from_time || DateTime.unsafeNow();
 				let currentDateMillis = DateTime.toEpochMillis(startTime);
@@ -324,7 +324,7 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 				}
 
 				return yield* Effect.fail(
-					new NoAvailableTimeSlotError({
+					new NoAvailableTimeSlot({
 						date: DateTime.formatIso(startTime),
 						duration_minutes
 					})

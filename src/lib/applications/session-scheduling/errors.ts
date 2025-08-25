@@ -3,7 +3,7 @@ import { Data } from 'effect';
 /**
  * 사용 가능한 시간 슬롯을 찾을 수 없을 때 발생하는 에러
  */
-export class NoAvailableTimeSlotError extends Data.TaggedError('NoAvailableTimeSlotError')<{
+export class NoAvailableTimeSlot extends Data.TaggedError('NoAvailableTimeSlot')<{
 	date: string;
 	duration_minutes: number;
 	message?: string;
