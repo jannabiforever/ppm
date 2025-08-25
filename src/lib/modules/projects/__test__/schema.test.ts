@@ -1,14 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import {
-	ProjectInsertSchema,
-	ProjectSchema,
-	ProjectUpdateSchema,
-	type Project,
-	type ProjectInsert,
-	type ProjectUpdate
-} from '..';
+import type { Tables, TablesInsert, TablesUpdate } from '$lib/shared/database.types';
+import { ProjectInsertSchema, ProjectSchema, ProjectUpdateSchema } from '..';
 import * as S from 'effect/Schema';
 import type { Equal } from '$lib/shared/schema';
+
+type Project = Tables<'projects'>;
+type ProjectInsert = TablesInsert<'projects'>;
+type ProjectUpdate = TablesUpdate<'projects'>;
 
 describe('Schema of Project', () => {
 	type ProjectSchemaEncoded = S.Schema.Encoded<typeof ProjectSchema>;
