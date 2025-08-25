@@ -16,31 +16,8 @@ import {
 	TimeConflict,
 	InvalidTime
 } from './errors';
+import { Ear } from 'lucide-svelte';
 
-/**
- * 포커스 세션 관리 서비스
- *
- * @example
- * ```typescript
- * // 세션 생성
- * const sessionId = yield* focusSessionService.createSession({
- *   project_id: "project-123",
- *   start_at: new Date().toISOString(),
- *   end_at: new Date(Date.now() + 50 * 60 * 1000).toISOString()
- * });
- *
- * // 세션 조회
- * const session = yield* focusSessionService.getSessionById(sessionId);
- *
- * // 세션 수정
- * yield* focusSessionService.updateSession(sessionId, {
- *   end_at: new Date(Date.now() + 60 * 60 * 1000).toISOString()
- * });
- *
- * // 세션 삭제
- * yield* focusSessionService.deleteSession(sessionId);
- * ```
- */
 export class Service extends Effect.Service<Service>()('FocusSessionService', {
 	effect: Effect.gen(function* () {
 		const supabase = yield* Supabase.Service;

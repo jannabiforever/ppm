@@ -25,9 +25,9 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		const focusSessionRepo = yield* FocusSession.Service;
 
 		const activeProjects = yield* projectRepo.getActiveProjects();
-		const currentSession = yield* focusSessionRepo.getActiveSession();
+		const currentFocusSession = yield* focusSessionRepo.getActiveFocusSession();
 
-		const assignedTaskIds: string[] = yield* Option.match(currentSession, {
+		const assignedTaskIds: string[] = yield* Option.match(currentFocusSession, {
 			onSome: (session) =>
 				sessionTaskRepo.getTasksBySession(session.id).pipe(
 					Effect.map((rels) => rels.map((rel) => rel.task_id)),
@@ -41,7 +41,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		return {
 			activeProjects,
 			currentSession: {
-				session: currentSession,
+				session: currentFocusSession,
 				assignedTasks
 			}
 		};

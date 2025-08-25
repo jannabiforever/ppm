@@ -2,13 +2,13 @@ import { Effect, DateTime } from 'effect';
 import * as FocusSessions from '$lib/modules/focus_sessions';
 import * as Supabase from '$lib/modules/supabase';
 import { NoAvailableTimeSlot } from './errors';
-import type {
-	CanStartSessionAtParams,
-	CreateSessionWithConflictCheckParams,
-	UpdateSessionTimeWithConflictCheckParams,
-	TimeConflictCheckResult,
-	FindAvailableTimeSlotsParams,
-	AvailableTimeSlot
+import {
+	CanStartSessionAtParamsSchema,
+	CreateSessionWithConflictCheckParamsSchema,
+	UpdateSessionTimeWithConflictCheckParamsSchema,
+	TimeConflictCheckResultSchema,
+	FindAvailableTimeSlotsParamsSchema,
+	AvailableTimeSlotSchema
 } from './types';
 
 /**
@@ -24,7 +24,7 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 		 * 특정 시간에 세션을 시작할 수 있는지 확인한다
 		 */
 		const canStartSessionAt = (
-			params: CanStartSessionAtParams
+			params: typeof CanStartSessionAtParamsSchema.Type
 		): Effect.Effect<boolean, Supabase.PostgrestError> =>
 			Effect.gen(function* () {
 				const startMillis = DateTime.toEpochMillis(params.start_at);
@@ -38,16 +38,16 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 
 				// 해당 시간대에 충돌하는 세션들 조회
 				const sessions = yield* focusSessionsService.getFocusSessions({
-					from_date: params.start_at,
-					to_date: endAt,
+					from_date: DateTime.formatIso(params.start_at),
+					to_date: DateTime.formatIso(endAt),
 					limit: 100,
 					offset: 0
 				});
 
 				// 충돌 검사
 				for (const session of sessions) {
-					const sessionStart = DateTime.unsafeMake(session.start_at);
-					const sessionEnd = DateTime.unsafeMake(session.end_at);
+					const sessionStart = session.start_at;
+					const sessionEnd = session.end_at;
 
 					// 시간이 겹치는지 확인
 					if (
@@ -71,7 +71,7 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 			end_at: DateTime.Utc,
 			exclude_session_id?: string
 		): Effect.Effect<
-			TimeConflictCheckResult,
+			typeof TimeConflictCheckResultSchema.Type,
 			Supabase.PostgrestError | FocusSessions.InvalidTime
 		> =>
 			Effect.gen(function* () {
@@ -84,8 +84,8 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 
 				// 해당 시간대에 충돌하는 세션들 조회
 				const sessions = yield* focusSessionsService.getFocusSessions({
-					from_date: start_at,
-					to_date: end_at,
+					from_date: DateTime.formatIso(start_at),
+					to_date: DateTime.formatIso(end_at),
 					limit: 100,
 					offset: 0
 				});
@@ -96,8 +96,8 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 						return false;
 					}
 
-					const sessionStart = DateTime.unsafeMake(session.start_at);
-					const sessionEnd = DateTime.unsafeMake(session.end_at);
+					const sessionStart = session.start_at;
+					const sessionEnd = session.end_at;
 
 					// 시간이 겹치는지 확인
 					return (
@@ -112,8 +112,8 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 					has_conflict: conflictingSessions.length > 0,
 					conflicting_sessions: conflictingSessions.map((s) => ({
 						id: s.id,
-						start_at: DateTime.unsafeMake(s.start_at),
-						end_at: DateTime.unsafeMake(s.end_at),
+						start_at: s.start_at,
+						end_at: s.end_at,
 						project_id: s.project_id
 					}))
 				};
@@ -123,10 +123,14 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 		 * 충돌 검사를 포함하여 세션을 생성한다
 		 */
 		const createSessionWithConflictCheck = (
-			params: CreateSessionWithConflictCheckParams
+			params: typeof CreateSessionWithConflictCheckParamsSchema.Type
 		): Effect.Effect<
 			string,
-			Supabase.PostgrestError | FocusSessions.TimeConflict | FocusSessions.InvalidTime
+			| Supabase.PostgrestError
+			| FocusSessions.TimeConflict
+			| FocusSessions.InvalidTime
+			| FocusSessions.InvalidProject
+			| FocusSessions.InvalidOwner
 		> =>
 			Effect.gen(function* () {
 				// 충돌 검사
@@ -147,7 +151,8 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 				return yield* focusSessionsService.createFocusSession({
 					project_id: params.project_id,
 					start_at: DateTime.formatIso(params.start_at),
-					end_at: DateTime.formatIso(params.end_at)
+					end_at: DateTime.formatIso(params.end_at),
+					owner_id: ''
 				});
 			});
 
@@ -155,19 +160,20 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 		 * 충돌 검사를 포함하여 세션 시간을 수정한다
 		 */
 		const updateSessionTimeWithConflictCheck = (
-			params: UpdateSessionTimeWithConflictCheckParams
+			params: typeof UpdateSessionTimeWithConflictCheckParamsSchema.Type
 		): Effect.Effect<
 			void,
 			| FocusSessions.TimeConflict
 			| FocusSessions.InvalidTime
+			| FocusSessions.InvalidProject
 			| Supabase.PostgrestError
 			| FocusSessions.NotFound
 		> =>
 			Effect.gen(function* () {
 				// 현재 세션 정보 조회
 				const currentSession = yield* focusSessionsService.getFocusSessionById(params.session_id);
-				const newStartAt = params.start_at || DateTime.unsafeMake(currentSession.start_at);
-				const newEndAt = params.end_at || DateTime.unsafeMake(currentSession.end_at);
+				const newStartAt = params.start_at || currentSession.start_at;
+				const newEndAt = params.end_at || currentSession.end_at;
 
 				// 충돌 검사 (자기 자신은 제외)
 				const conflictResult = yield* checkTimeConflict(newStartAt, newEndAt, params.session_id);
@@ -184,9 +190,11 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 				}
 
 				// 세션 시간 업데이트
-				const updatePayload: FocusSessions.FocusSessionUpdate = {};
-				if (params.start_at) updatePayload.start_at = DateTime.formatIso(params.start_at);
-				if (params.end_at) updatePayload.end_at = DateTime.formatIso(params.end_at);
+				const updatePayload: typeof FocusSessions.FocusSessionUpdateSchema.Encoded = {
+					start_at: params.start_at ? DateTime.formatIso(params.start_at) : undefined,
+					end_at: params.end_at ? DateTime.formatIso(params.end_at) : undefined,
+					project_id: undefined
+				};
 
 				yield* focusSessionsService.updateFocusSession(params.session_id, updatePayload);
 			});
@@ -195,8 +203,11 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 		 * 특정 날짜에 사용 가능한 시간 슬롯을 찾는다
 		 */
 		const findAvailableTimeSlots = (
-			params: FindAvailableTimeSlotsParams
-		): Effect.Effect<AvailableTimeSlot[], NoAvailableTimeSlot | Supabase.PostgrestError> =>
+			params: typeof FindAvailableTimeSlotsParamsSchema.Type
+		): Effect.Effect<
+			Array<typeof AvailableTimeSlotSchema.Type>,
+			NoAvailableTimeSlot | Supabase.PostgrestError
+		> =>
 			Effect.gen(function* () {
 				// 검색 범위 설정
 				const dateMillis = DateTime.toEpochMillis(params.date);
@@ -235,18 +246,18 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 
 				// 세션들을 시작 시간 기준으로 정렬
 				const sortedSessions = [...sessions].sort((a, b) => {
-					const aStart = DateTime.toEpochMillis(DateTime.unsafeMake(a.start_at));
-					const bStart = DateTime.toEpochMillis(DateTime.unsafeMake(b.start_at));
+					const aStart = DateTime.toEpochMillis(a.start_at);
+					const bStart = DateTime.toEpochMillis(b.start_at);
 					return aStart - bStart;
 				});
 
-				const availableSlots: AvailableTimeSlot[] = [];
+				const availableSlots: Array<typeof AvailableTimeSlotSchema.Type> = [];
 				let currentTime = fromTime;
 
 				// 세션들 사이의 빈 시간 찾기
 				for (const session of sortedSessions) {
-					const sessionStart = DateTime.unsafeMake(session.start_at);
-					const sessionEnd = DateTime.unsafeMake(session.end_at);
+					const sessionStart = session.start_at;
+					const sessionEnd = session.end_at;
 
 					// 현재 시간과 세션 시작 시간 사이에 충분한 공간이 있는지 확인
 					const gapMillis =
@@ -297,7 +308,7 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 		const findNextAvailableSlot = (
 			duration_minutes: number,
 			from_time?: DateTime.Utc
-		): Effect.Effect<AvailableTimeSlot, NoAvailableTimeSlot> =>
+		): Effect.Effect<typeof AvailableTimeSlotSchema.Type, NoAvailableTimeSlot> =>
 			Effect.gen(function* () {
 				const startTime = from_time || DateTime.unsafeNow();
 				let currentDateMillis = DateTime.toEpochMillis(startTime);

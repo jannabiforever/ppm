@@ -12,15 +12,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const todayTasksAndSessionsResult = await Effect.gen(function* () {
 		const taskRepo = yield* Task.Service;
 		const focusSessionRepo = yield* FocusSession.Service;
-		const today = yield* DateTime.now;
+		const today = yield* DateTime.nowAsDate;
 		return {
 			todayTasks: yield* taskRepo.getTodayTasks(),
-			todaySessions: yield* focusSessionRepo.getSessions({
-				from_date: today,
-				to_date: today,
-				offset: 0,
-				limit: 100
-			})
+			todaySessions: yield* focusSessionRepo.getFocusSessionsByDate(today)
 		};
 	}).pipe(
 		Effect.provide(FocusSession.Service.Default),

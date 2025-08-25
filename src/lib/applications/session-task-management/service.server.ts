@@ -5,12 +5,13 @@ import * as SessionTask from '$lib/modules/session_tasks';
 import * as Task from '$lib/modules/tasks';
 import * as Supabase from '$lib/modules/supabase';
 import { TaskAlreadyInSessionError, TaskNotInSessionError } from '$lib/modules/session_tasks';
-import type {
-	AddTaskToSessionParams,
-	RemoveTaskFromSessionParams,
-	AddTasksToSessionParams,
-	ClearSessionTasksParams,
-	CanAddTaskToSessionParams
+import {
+	AddTaskToSessionSchema,
+	RemoveTaskFromSessionSchema,
+	AddTasksToSessionSchema,
+	ClearSessionTasksSchema,
+	CanAddTaskToSessionSchema,
+	FocusSessionWithAssignedTasksSchema
 } from './types';
 
 /**
@@ -28,7 +29,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 		 * 활성 세션에 태스크를 추가한다
 		 */
 		const addTaskToSession = (
-			params: AddTaskToSessionParams
+			params: typeof AddTaskToSessionSchema.Type
 		): Effect.Effect<
 			void,
 			| FocusSession.NotActive
@@ -62,7 +63,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 		 * 활성 세션에서 태스크를 제거한다
 		 */
 		const removeTaskFromSession = (
-			params: RemoveTaskFromSessionParams
+			params: typeof RemoveTaskFromSessionSchema.Type
 		): Effect.Effect<
 			void,
 			| FocusSession.NotFound
@@ -73,7 +74,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 			Effect.gen(function* () {
 				// 세션이 활성 상태인지 확인
 				const isActive = yield* focusSessionsService.isFocusSessionActive(params.session_id);
-				if (isActive) {
+				if (!isActive) {
 					return yield* Effect.fail(new FocusSession.NotActive(params.session_id));
 				}
 
@@ -96,7 +97,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 		 * 활성 세션에 여러 태스크를 한번에 추가한다
 		 */
 		const addTasksToSession = (
-			params: AddTasksToSessionParams
+			params: typeof AddTasksToSessionSchema.Type
 		): Effect.Effect<
 			void,
 			FocusSession.NotFound | FocusSession.NotActive | Supabase.PostgrestError
@@ -104,7 +105,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 			Effect.gen(function* () {
 				// 세션이 활성 상태인지 확인
 				const isActive = yield* focusSessionsService.isFocusSessionActive(params.session_id);
-				if (isActive) {
+				if (!isActive) {
 					return yield* Effect.fail(new FocusSession.NotActive(params.session_id));
 				}
 
@@ -116,7 +117,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 		 * 활성 세션의 모든 태스크를 제거한다
 		 */
 		const clearSessionTasks = (
-			params: ClearSessionTasksParams
+			params: typeof ClearSessionTasksSchema.Type
 		): Effect.Effect<
 			void,
 			FocusSession.NotActive | Supabase.PostgrestError | FocusSession.NotFound
@@ -136,7 +137,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 		 * 세션에 태스크를 추가할 수 있는지 확인한다
 		 */
 		const canAddTaskToSession = (
-			params: CanAddTaskToSessionParams
+			params: typeof CanAddTaskToSessionSchema.Type
 		): Effect.Effect<
 			boolean,
 			Supabase.PostgrestError | FocusSession.NotActive | FocusSession.NotFound | Task.NotFound
@@ -144,7 +145,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 			Effect.gen(function* () {
 				// 세션이 활성 상태인지 확인
 				const isActive = yield* focusSessionsService.isFocusSessionActive(params.session_id);
-				if (isActive) {
+				if (!isActive) {
 					return false;
 				}
 
@@ -161,12 +162,35 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 				return !alreadyCompleted;
 			});
 
+		/**
+		 * 세션과 해당 세션에 할당된 태스크들을 함께 조회한다
+		 */
+		const getSessionWithAssignedTasks = (
+			sessionId: string
+		): Effect.Effect<
+			typeof FocusSessionWithAssignedTasksSchema.Type,
+			Supabase.PostgrestError | FocusSession.NotFound | Task.NotFound
+		> =>
+			Effect.gen(function* () {
+				const focusSession = yield* focusSessionsService.getFocusSessionById(sessionId);
+				const sessionTasks = yield* sessionTasksService.getTasksBySession(sessionId);
+				const tasks = yield* Effect.all(
+					sessionTasks.map((sessionTask) => taskService.getTaskById(sessionTask.task_id))
+				);
+
+				return {
+					...focusSession,
+					tasks
+				};
+			});
+
 		return {
 			addTaskToSession,
 			removeTaskFromSession,
 			addTasksToSession,
 			clearSessionTasks,
-			canAddTaskToSession
+			canAddTaskToSession,
+			getSessionWithAssignedTasks
 		};
 	})
 }) {}
