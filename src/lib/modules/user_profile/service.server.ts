@@ -1,7 +1,7 @@
 import { Effect } from 'effect';
 import * as Supabase from '$lib/modules/supabase';
 import { type Profile, type ProfileInsert, type ProfileUpdate } from './types';
-import { AssociatedProfileNotFoundError } from './errors';
+import { AssociatedProfileNotFound } from './errors';
 
 export class Service extends Effect.Service<Service>()('UserProfileRepository', {
 	effect: Effect.gen(function* () {
@@ -12,7 +12,7 @@ export class Service extends Effect.Service<Service>()('UserProfileRepository', 
 		return {
 			createUserProfile: (
 				input: ProfileInsert
-			): Effect.Effect<Profile, Supabase.PostgrestError | AssociatedProfileNotFoundError> =>
+			): Effect.Effect<Profile, Supabase.PostgrestError | AssociatedProfileNotFound> =>
 				Effect.promise(() =>
 					client
 						.from('user_profiles')
@@ -26,14 +26,14 @@ export class Service extends Effect.Service<Service>()('UserProfileRepository', 
 
 			getCurrentUserProfile: (): Effect.Effect<
 				Profile,
-				Supabase.PostgrestError | AssociatedProfileNotFoundError
+				Supabase.PostgrestError | AssociatedProfileNotFound
 			> =>
 				Effect.promise(() =>
 					client.from('user_profiles').select().eq('id', user.id).maybeSingle()
 				).pipe(
 					Effect.flatMap(Supabase.mapPostgrestResponse),
 					Effect.flatMap((res) => {
-						if (res === null) return Effect.fail(new AssociatedProfileNotFoundError(user.id));
+						if (res === null) return Effect.fail(new AssociatedProfileNotFound(user.id));
 						return Effect.succeed(res);
 					})
 				),

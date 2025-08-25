@@ -3,7 +3,9 @@ import { Data } from 'effect';
 /**
  * 이미 활성 세션이 존재할 때 발생하는 에러
  */
-export class ActiveSessionExistsError extends Data.TaggedError('ActiveSessionExists')<{
+export class ActiveOneAlreadyExists extends Data.TaggedError(
+	'FocusSession/ActiveOneAlreadyExists'
+)<{
 	readonly message: string;
 	readonly currentSessionId: string;
 	readonly endsAt: string;
@@ -20,7 +22,7 @@ export class ActiveSessionExistsError extends Data.TaggedError('ActiveSessionExi
 /**
  * 세션을 찾을 수 없을 때 발생하는 에러
  */
-export class SessionNotFoundError extends Data.TaggedError('SessionNotFound')<{
+export class NotFound extends Data.TaggedError('FocusSession/NotFound')<{
 	readonly message: string;
 	readonly sessionId: string;
 }> {
@@ -35,7 +37,7 @@ export class SessionNotFoundError extends Data.TaggedError('SessionNotFound')<{
 /**
  * 세션이 활성 상태가 아닐 때 발생하는 에러
  */
-export class SessionNotActiveError extends Data.TaggedError('SessionNotActive')<{
+export class NotActive extends Data.TaggedError('FocusSession/NotActive')<{
 	readonly message: string;
 	readonly sessionId: string;
 }> {
@@ -50,7 +52,7 @@ export class SessionNotActiveError extends Data.TaggedError('SessionNotActive')<
 /**
  * 세션이 이미 종료되었을 때 발생하는 에러
  */
-export class SessionAlreadyEndedError extends Data.TaggedError('SessionAlreadyEnded')<{
+export class AlreadyEnded extends Data.TaggedError('FocusSession/AlreadyEnded')<{
 	readonly message: string;
 	readonly sessionId: string;
 	readonly endedAt: string;
@@ -67,7 +69,7 @@ export class SessionAlreadyEndedError extends Data.TaggedError('SessionAlreadyEn
 /**
  * 세션 시간이 충돌할 때 발생하는 에러
  */
-export class SessionTimeConflictError extends Data.TaggedError('SessionTimeConflict')<{
+export class TimeConflict extends Data.TaggedError('FocusSession/TimeConflict')<{
 	readonly message: string;
 	readonly conflictingSessionId: string;
 	readonly requestedStart: string;
@@ -86,7 +88,7 @@ export class SessionTimeConflictError extends Data.TaggedError('SessionTimeConfl
 /**
  * 세션 소유자가 아닐 때 발생하는 에러
  */
-export class SessionNotOwnerError extends Data.TaggedError('SessionNotOwner')<{
+export class NotOwned extends Data.TaggedError('FocusSession/NotOwned')<{
 	readonly message: string;
 	readonly sessionId: string;
 }> {
@@ -101,7 +103,7 @@ export class SessionNotOwnerError extends Data.TaggedError('SessionNotOwner')<{
 /**
  * 세션 시간이 유효하지 않을 때 발생하는 에러
  */
-export class InvalidSessionDurationError extends Data.TaggedError('InvalidSessionDuration')<{
+export class InvalidDuration extends Data.TaggedError('FocusSession/InvalidDuration')<{
 	readonly message: string;
 	readonly duration: number;
 }> {
@@ -116,7 +118,7 @@ export class InvalidSessionDurationError extends Data.TaggedError('InvalidSessio
 /**
  * 세션 시작 시간이 종료 시간보다 늦을 때 발생하는 에러 (DB constraint)
  */
-export class InvalidSessionTimeError extends Data.TaggedError('InvalidSessionTime')<{
+export class InvalidTime extends Data.TaggedError('FocusSession/InvalidTime')<{
 	readonly message: string;
 	readonly start_at: string;
 	readonly end_at: string;

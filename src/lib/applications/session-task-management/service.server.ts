@@ -33,7 +33,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 		): Effect.Effect<void, SessionNotActiveError | TaskAlreadyInSessionError | Error> =>
 			Effect.gen(function* () {
 				// 세션이 활성 상태인지 확인
-				const isActive = yield* focusSessionsService.isSessionActive(params.session_id);
+				const isActive = yield* focusSessionsService.isFocusSessionActive(params.session_id);
 				if (Option.isNone(isActive) || !isActive.value) {
 					return yield* Effect.fail(new SessionNotActiveError({ session_id: params.session_id }));
 				}
@@ -64,7 +64,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 		> =>
 			Effect.gen(function* () {
 				// 세션이 활성 상태인지 확인
-				const isActive = yield* focusSessionsService.isSessionActive(params.session_id);
+				const isActive = yield* focusSessionsService.isFocusSessionActive(params.session_id);
 				if (Option.isNone(isActive) || !isActive.value) {
 					return yield* Effect.fail(new SessionNotActiveError({ session_id: params.session_id }));
 				}
@@ -92,7 +92,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 		): Effect.Effect<void, SessionNotActiveError | Supabase.PostgrestError> =>
 			Effect.gen(function* () {
 				// 세션이 활성 상태인지 확인
-				const isActive = yield* focusSessionsService.isSessionActive(params.session_id);
+				const isActive = yield* focusSessionsService.isFocusSessionActive(params.session_id);
 				if (Option.isNone(isActive) || !isActive.value) {
 					return yield* Effect.fail(new SessionNotActiveError({ session_id: params.session_id }));
 				}
@@ -109,7 +109,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 		): Effect.Effect<void, SessionNotActiveError | Error> =>
 			Effect.gen(function* () {
 				// 세션이 활성 상태인지 확인
-				const isActive = yield* focusSessionsService.isSessionActive(params.session_id);
+				const isActive = yield* focusSessionsService.isFocusSessionActive(params.session_id);
 				if (Option.isNone(isActive) || !isActive.value) {
 					return yield* Effect.fail(new SessionNotActiveError({ session_id: params.session_id }));
 				}
@@ -126,7 +126,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 		): Effect.Effect<boolean, Error> =>
 			Effect.gen(function* () {
 				// 세션이 활성 상태인지 확인
-				const isActive = yield* focusSessionsService.isSessionActive(params.session_id);
+				const isActive = yield* focusSessionsService.isFocusSessionActive(params.session_id);
 				if (Option.isNone(isActive) || !isActive.value) {
 					return false;
 				}

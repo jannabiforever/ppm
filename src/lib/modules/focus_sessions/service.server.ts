@@ -8,6 +8,7 @@ import type {
 	FocusSessionQuerySchema
 } from './types';
 import { PaginationQuerySchema } from '$lib/shared/pagination';
+import { NotFound } from './errors';
 
 /**
  * 포커스 세션 관리 서비스
@@ -43,7 +44,7 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 			/**
 			 * 새로운 포커스 세션을 생성한다
 			 */
-			createSession: (
+			createFocusSession: (
 				payload: Omit<FocusSessionInsert, 'owner_id'>
 			): Effect.Effect<string, Supabase.PostgrestError> =>
 				Effect.promise(() =>
@@ -63,36 +64,49 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 			/**
 			 * 포커스 세션을 삭제한다
 			 */
-			deleteSession: (id: string): Effect.Effect<void, Supabase.PostgrestError> =>
+			deleteFocusSession: (sessionId: string): Effect.Effect<void, Supabase.PostgrestError> =>
 				Effect.promise(() =>
-					client.from('focus_sessions').delete().eq('id', id).eq('owner_id', user.id)
+					client.from('focus_sessions').delete().eq('id', sessionId).eq('owner_id', user.id)
 				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseVoid)),
 
 			/**
 			 * 특정 포커스 세션의 상세 정보를 조회한다
 			 */
-			getSessionById: (
-				id: string
-			): Effect.Effect<Option.Option<FocusSession>, Supabase.PostgrestError> =>
+			getFocusSessionById: (
+				sessionId: string
+			): Effect.Effect<FocusSession, Supabase.PostgrestError | NotFound> =>
 				Effect.promise(() =>
-					client.from('focus_sessions').select().eq('id', id).eq('owner_id', user.id).maybeSingle()
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseOptional)),
+					client
+						.from('focus_sessions')
+						.select()
+						.eq('id', sessionId)
+						.eq('owner_id', user.id)
+						.maybeSingle()
+				).pipe(
+					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
+					Effect.flatMap(
+						Option.match({
+							onSome: (session) => Effect.succeed(session),
+							onNone: () => Effect.fail(new NotFound(sessionId))
+						})
+					)
+				),
 
 			/**
 			 * 기존 포커스 세션의 정보를 수정한다
 			 */
-			updateSession: (
-				id: string,
+			updateFocusSession: (
+				sessionId: string,
 				payload: FocusSessionUpdate
 			): Effect.Effect<void, Supabase.PostgrestError> =>
 				Effect.promise(() =>
-					client.from('focus_sessions').update(payload).eq('id', id).eq('owner_id', user.id)
+					client.from('focus_sessions').update(payload).eq('id', sessionId).eq('owner_id', user.id)
 				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseVoid)),
 
 			/**
 			 * 조건에 맞는 포커스 세션 목록을 조회한다
 			 */
-			getSessions: (
+			getFocusSessions: (
 				query?: S.Schema.Type<typeof FocusSessionQuerySchema>
 			): Effect.Effect<FocusSession[], Supabase.PostgrestError> => {
 				let queryBuilder = client.from('focus_sessions').select().eq('owner_id', user.id);
@@ -135,7 +149,10 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 			/**
 			 * 현재 활성 중인 세션을 조회한다 (start_at <= now <= end_at)
 			 */
-			getActiveSession: (): Effect.Effect<Option.Option<FocusSession>, Supabase.PostgrestError> => {
+			getActiveFocusSession: (): Effect.Effect<
+				Option.Option<FocusSession>,
+				Supabase.PostgrestError
+			> => {
 				const now = DateTime.formatIso(DateTime.unsafeNow());
 				return Effect.promise(() =>
 					client
@@ -151,7 +168,7 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 			/**
 			 * 특정 프로젝트의 세션 목록을 조회한다
 			 */
-			getProjectSessions: (
+			getFocusSessionsOfCertainProject: (
 				projectId: string,
 				pagination?: S.Schema.Type<typeof PaginationQuerySchema>
 			): Effect.Effect<FocusSession[], Supabase.PostgrestError> => {
@@ -175,7 +192,9 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 			/**
 			 * 특정 날짜의 세션 목록을 조회한다
 			 */
-			getSessionsByDate: (date: Date): Effect.Effect<FocusSession[], Supabase.PostgrestError> => {
+			getFocusSessionsByDate: (
+				date: Date
+			): Effect.Effect<FocusSession[], Supabase.PostgrestError> => {
 				const startOfDay = new Date(date);
 				startOfDay.setHours(0, 0, 0, 0);
 				const endOfDay = new Date(date);
@@ -195,7 +214,7 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 			/**
 			 * 기간별 세션 목록을 조회한다
 			 */
-			getSessionsInRange: (
+			getFocusSessionsInRange: (
 				startDate: Date,
 				endDate: Date,
 				pagination?: S.Schema.Type<typeof PaginationQuerySchema>
@@ -221,7 +240,7 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 			/**
 			 * 예정된 세션 목록을 조회한다 (아직 시작하지 않은 세션)
 			 */
-			getUpcomingSessions: (
+			getUpcomingFocusSessions: (
 				pagination?: S.Schema.Type<typeof PaginationQuerySchema>
 			): Effect.Effect<FocusSession[], Supabase.PostgrestError> => {
 				const now = DateTime.formatIso(DateTime.unsafeNow());
@@ -245,7 +264,7 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 			/**
 			 * 완료된 세션 목록을 조회한다
 			 */
-			getCompletedSessions: (
+			getCompletedFocusSessions: (
 				pagination?: S.Schema.Type<typeof PaginationQuerySchema>
 			): Effect.Effect<FocusSession[], Supabase.PostgrestError> => {
 				let query = client
@@ -266,9 +285,9 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 			},
 
 			/**
-			 * 프로젝트가 없는 세션 목록을 조회한다
+			 * 수집함의 세션 목록을 조회한다
 			 */
-			getSessionsWithoutProject: (
+			getInboxFocusSessions: (
 				pagination?: S.Schema.Type<typeof PaginationQuerySchema>
 			): Effect.Effect<FocusSession[], Supabase.PostgrestError> => {
 				let query = client
@@ -290,11 +309,10 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 
 			/**
 			 * 세션이 현재 활성 상태인지 확인한다.
-			 * 만약 주어진 아이디의 세션이 존재하지 않을 경우 Option.none 반환.
 			 */
-			isSessionActive: (
+			isFocusSessionActive: (
 				sessionId: string
-			): Effect.Effect<Option.Option<boolean>, Supabase.PostgrestError> => {
+			): Effect.Effect<boolean, Supabase.PostgrestError | NotFound> => {
 				const now = DateTime.formatIso(DateTime.unsafeNow());
 
 				return Effect.promise(() =>
@@ -307,12 +325,10 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 				).pipe(
 					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
 					Effect.flatMap((session) =>
-						Effect.succeed(
-							Option.match(session, {
-								onSome: (session) => Option.some(session.start_at <= now && session.end_at >= now),
-								onNone: () => Option.none()
-							})
-						)
+						Option.match(session, {
+							onSome: (session) => Effect.succeed(session.start_at <= now && session.end_at >= now),
+							onNone: () => Effect.fail(new NotFound(sessionId))
+						})
 					)
 				);
 			}
