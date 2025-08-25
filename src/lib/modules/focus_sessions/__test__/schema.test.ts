@@ -1,14 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import {
-	type FocusSession,
-	type FocusSessionInsert,
-	type FocusSessionUpdate,
-	FocusSessionSchema,
-	FocusSessionInsertSchema,
-	FocusSessionUpdateSchema
-} from '..';
+import type { Tables, TablesInsert, TablesUpdate } from '$lib/shared/database.types';
+import { FocusSessionSchema, FocusSessionInsertSchema, FocusSessionUpdateSchema } from '..';
 import type { Equal } from '$lib/shared/schema';
 import * as S from 'effect/Schema';
+
+type FocusSession = Tables<'focus_sessions'>;
+type FocusSessionInsert = TablesInsert<'focus_sessions'>;
+type FocusSessionUpdate = TablesUpdate<'focus_sessions'>;
 
 describe('Schema of FocusSession', () => {
 	type FocusSessionSchemaEncoded = S.Schema.Encoded<typeof FocusSessionSchema>;

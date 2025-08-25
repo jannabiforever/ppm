@@ -1,14 +1,21 @@
 import { Effect, Option, DateTime } from 'effect';
 import * as Supabase from '../supabase';
 import * as S from 'effect/Schema';
-import type {
-	FocusSession,
-	FocusSessionInsert,
-	FocusSessionUpdate,
+import {
+	FocusSessionSchema,
+	FocusSessionInsertSchema,
+	FocusSessionUpdateSchema,
 	FocusSessionQuerySchema
 } from './types';
 import { PaginationQuerySchema } from '$lib/shared/pagination';
-import { NotFound } from './errors';
+import {
+	NotFound,
+	InvalidProject,
+	InvalidOwner,
+	HasDependencies,
+	TimeConflict,
+	InvalidTime
+} from './errors';
 
 /**
  * 포커스 세션 관리 서비스
@@ -34,7 +41,7 @@ import { NotFound } from './errors';
  * yield* focusSessionService.deleteSession(sessionId);
  * ```
  */
-export class Service extends Effect.Service<Service>()('FocusSessionRepository', {
+export class Service extends Effect.Service<Service>()('FocusSessionService', {
 	effect: Effect.gen(function* () {
 		const supabase = yield* Supabase.Service;
 		const client = yield* supabase.getClient();
@@ -45,8 +52,11 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 			 * 새로운 포커스 세션을 생성한다
 			 */
 			createFocusSession: (
-				payload: Omit<FocusSessionInsert, 'owner_id'>
-			): Effect.Effect<string, Supabase.PostgrestError> =>
+				payload: typeof FocusSessionInsertSchema.Encoded
+			): Effect.Effect<
+				string,
+				Supabase.PostgrestError | InvalidProject | InvalidOwner | TimeConflict | InvalidTime
+			> =>
 				Effect.promise(() =>
 					client
 						.from('focus_sessions')
@@ -58,23 +68,80 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 						.single()
 				).pipe(
 					Effect.flatMap(Supabase.mapPostgrestResponse),
-					Effect.map((res) => res.id)
+					Effect.map((res) => res.id),
+					Effect.catchTag(
+						'SupabasePostgrest',
+						(
+							error
+						): Effect.Effect<
+							never,
+							Supabase.PostgrestError | InvalidProject | InvalidOwner | TimeConflict | InvalidTime
+						> => {
+							if (error.code === '23503') {
+								// Foreign key constraint violation
+								if (error.message.includes('project_id')) {
+									return Effect.fail(new InvalidProject(payload.project_id || ''));
+								}
+								if (error.message.includes('owner_id')) {
+									return Effect.fail(new InvalidOwner(user.id));
+								}
+							}
+							if (error.code === '23514') {
+								// Check constraint violation
+								if (error.message.includes('check_end_after_start')) {
+									return Effect.fail(new InvalidTime(payload.start_at, payload.end_at));
+								}
+							}
+							if (error.code === 'P0001') {
+								// Trigger error - overlapping sessions
+								if (error.message.includes('overlapping') || error.message.includes('중복')) {
+									return Effect.fail(
+										new TimeConflict('existing-session', payload.start_at, payload.end_at)
+									);
+								}
+							}
+							return Effect.fail(error);
+						}
+					)
 				),
 
 			/**
 			 * 포커스 세션을 삭제한다
 			 */
-			deleteFocusSession: (sessionId: string): Effect.Effect<void, Supabase.PostgrestError> =>
+			deleteFocusSession: (
+				sessionId: string
+			): Effect.Effect<void, Supabase.PostgrestError | NotFound | HasDependencies> =>
 				Effect.promise(() =>
-					client.from('focus_sessions').delete().eq('id', sessionId).eq('owner_id', user.id)
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseVoid)),
+					client
+						.from('focus_sessions')
+						.delete()
+						.eq('id', sessionId)
+						.eq('owner_id', user.id)
+						.select('id')
+						.maybeSingle()
+				).pipe(
+					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
+					Effect.flatMap(
+						Option.match({
+							onNone: () => Effect.fail(new NotFound(sessionId)),
+							onSome: () => Effect.void
+						})
+					),
+					Effect.catchTag(
+						'SupabasePostgrest',
+						(error): Effect.Effect<never, Supabase.PostgrestError | HasDependencies> =>
+							error.code === '23503'
+								? Effect.fail(new HasDependencies(sessionId))
+								: Effect.fail(error)
+					)
+				),
 
 			/**
 			 * 특정 포커스 세션의 상세 정보를 조회한다
 			 */
 			getFocusSessionById: (
 				sessionId: string
-			): Effect.Effect<FocusSession, Supabase.PostgrestError | NotFound> =>
+			): Effect.Effect<typeof FocusSessionSchema.Type, Supabase.PostgrestError | NotFound> =>
 				Effect.promise(() =>
 					client
 						.from('focus_sessions')
@@ -86,7 +153,10 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
 					Effect.flatMap(
 						Option.match({
-							onSome: (session) => Effect.succeed(session),
+							onSome: (session) =>
+								S.decode(FocusSessionSchema)(session).pipe(
+									Effect.mapError(() => new NotFound(sessionId))
+								),
 							onNone: () => Effect.fail(new NotFound(sessionId))
 						})
 					)
@@ -97,60 +167,125 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 			 */
 			updateFocusSession: (
 				sessionId: string,
-				payload: FocusSessionUpdate
-			): Effect.Effect<void, Supabase.PostgrestError> =>
+				payload: typeof FocusSessionUpdateSchema.Encoded
+			): Effect.Effect<
+				void,
+				Supabase.PostgrestError | NotFound | InvalidProject | TimeConflict | InvalidTime
+			> =>
 				Effect.promise(() =>
-					client.from('focus_sessions').update(payload).eq('id', sessionId).eq('owner_id', user.id)
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseVoid)),
+					client
+						.from('focus_sessions')
+						.update(payload)
+						.eq('id', sessionId)
+						.eq('owner_id', user.id)
+						.select('id')
+						.maybeSingle()
+				).pipe(
+					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
+					Effect.flatMap(
+						Option.match({
+							onNone: () => Effect.fail(new NotFound(sessionId)),
+							onSome: () => Effect.void
+						})
+					),
+					Effect.catchTag(
+						'SupabasePostgrest',
+						(
+							error
+						): Effect.Effect<
+							never,
+							Supabase.PostgrestError | InvalidProject | TimeConflict | InvalidTime
+						> => {
+							if (error.code === '23503') {
+								// Foreign key constraint violation
+								if (error.message.includes('project_id')) {
+									return Effect.fail(new InvalidProject(payload.project_id || ''));
+								}
+							}
+							if (error.code === '23514') {
+								// Check constraint violation
+								if (error.message.includes('check_end_after_start')) {
+									return Effect.fail(new InvalidTime(payload.start_at || '', payload.end_at || ''));
+								}
+							}
+							if (error.code === 'P0001') {
+								// Trigger error - overlapping sessions
+								if (error.message.includes('overlapping') || error.message.includes('중복')) {
+									return Effect.fail(
+										new TimeConflict(
+											'existing-session',
+											payload.start_at || '',
+											payload.end_at || ''
+										)
+									);
+								}
+							}
+							return Effect.fail(error);
+						}
+					)
+				),
 
 			/**
 			 * 조건에 맞는 포커스 세션 목록을 조회한다
 			 */
 			getFocusSessions: (
-				query?: S.Schema.Type<typeof FocusSessionQuerySchema>
-			): Effect.Effect<FocusSession[], Supabase.PostgrestError> => {
-				let queryBuilder = client.from('focus_sessions').select().eq('owner_id', user.id);
+				query?: typeof FocusSessionQuerySchema.Encoded
+			): Effect.Effect<Array<typeof FocusSessionSchema.Type>, Supabase.PostgrestError> =>
+				Effect.gen(function* () {
+					// Decode query for Date types
+					const decodedQuery = query
+						? yield* S.decode(FocusSessionQuerySchema)(query).pipe(Effect.orDie)
+						: undefined;
 
-				if (query?.project_id !== undefined) {
-					queryBuilder =
-						query.project_id === null
-							? queryBuilder.is('project_id', null)
-							: queryBuilder.eq('project_id', query.project_id);
-				}
+					let queryBuilder = client.from('focus_sessions').select().eq('owner_id', user.id);
 
-				if (query?.from_date) {
-					queryBuilder = queryBuilder.gte('start_at', DateTime.formatIso(query.from_date));
-				}
+					if (decodedQuery?.project_id !== undefined) {
+						queryBuilder =
+							decodedQuery.project_id === null
+								? queryBuilder.is('project_id', null)
+								: queryBuilder.eq('project_id', decodedQuery.project_id);
+					}
 
-				if (query?.to_date) {
-					queryBuilder = queryBuilder.lte('start_at', DateTime.formatIso(query.to_date));
-				}
+					if (decodedQuery?.from_date) {
+						queryBuilder = queryBuilder.gte('start_at', DateTime.formatIso(decodedQuery.from_date));
+					}
 
-				if (query?.is_active) {
-					const now = DateTime.formatIso(DateTime.unsafeNow());
-					queryBuilder = queryBuilder.lte('start_at', now).gte('end_at', now);
-				}
+					if (decodedQuery?.to_date) {
+						queryBuilder = queryBuilder.lte('start_at', DateTime.formatIso(decodedQuery.to_date));
+					}
 
-				queryBuilder = queryBuilder.order('start_at', { ascending: false });
+					if (decodedQuery?.is_active) {
+						const now = DateTime.formatIso(DateTime.unsafeNow());
+						queryBuilder = queryBuilder.lte('start_at', now).gte('end_at', now);
+					}
 
-				if (query?.limit) {
-					queryBuilder = queryBuilder.limit(query.limit);
-				}
+					queryBuilder = queryBuilder.order('start_at', { ascending: false });
 
-				if (query?.offset) {
-					queryBuilder = queryBuilder.range(query.offset, query.offset + (query.limit || 20) - 1);
-				}
+					if (decodedQuery?.limit) {
+						queryBuilder = queryBuilder.limit(decodedQuery.limit);
+					}
 
-				return Effect.promise(() => queryBuilder).pipe(
-					Effect.flatMap(Supabase.mapPostgrestResponse)
-				);
-			},
+					if (decodedQuery?.offset) {
+						queryBuilder = queryBuilder.range(
+							decodedQuery.offset,
+							decodedQuery.offset + (decodedQuery.limit || 20) - 1
+						);
+					}
+
+					const response = yield* Effect.promise(() => queryBuilder).pipe(
+						Effect.flatMap(Supabase.mapPostgrestResponse)
+					);
+
+					return yield* Effect.all(
+						response.map((session) => S.decode(FocusSessionSchema)(session).pipe(Effect.orDie))
+					);
+				}),
 
 			/**
 			 * 현재 활성 중인 세션을 조회한다 (start_at <= now <= end_at)
 			 */
 			getActiveFocusSession: (): Effect.Effect<
-				Option.Option<FocusSession>,
+				Option.Option<typeof FocusSessionSchema.Type>,
 				Supabase.PostgrestError
 			> => {
 				const now = DateTime.formatIso(DateTime.unsafeNow());
@@ -162,7 +297,16 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 						.lte('start_at', now)
 						.gte('end_at', now)
 						.maybeSingle()
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponseOptional));
+				).pipe(
+					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
+					Effect.flatMap((option) =>
+						Option.match(option, {
+							onNone: () => Effect.succeed(Option.none()),
+							onSome: (session) =>
+								S.decode(FocusSessionSchema)(session).pipe(Effect.map(Option.some), Effect.orDie)
+						})
+					)
+				);
 			},
 
 			/**
@@ -170,46 +314,65 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 			 */
 			getFocusSessionsOfCertainProject: (
 				projectId: string,
-				pagination?: S.Schema.Type<typeof PaginationQuerySchema>
-			): Effect.Effect<FocusSession[], Supabase.PostgrestError> => {
-				let query = client
-					.from('focus_sessions')
-					.select()
-					.eq('owner_id', user.id)
-					.eq('project_id', projectId)
-					.order('start_at', { ascending: false });
+				pagination?: typeof PaginationQuerySchema.Encoded
+			): Effect.Effect<Array<typeof FocusSessionSchema.Type>, Supabase.PostgrestError> =>
+				Effect.gen(function* () {
+					const decodedPagination = pagination
+						? yield* S.decode(PaginationQuerySchema)(pagination).pipe(Effect.orDie)
+						: undefined;
 
-				if (pagination?.limit) {
-					query = query.limit(pagination.limit);
-				}
-				if (pagination?.offset) {
-					query = query.range(pagination.offset, pagination.offset + (pagination.limit || 20) - 1);
-				}
+					let query = client
+						.from('focus_sessions')
+						.select()
+						.eq('owner_id', user.id)
+						.eq('project_id', projectId)
+						.order('start_at', { ascending: false });
 
-				return Effect.promise(() => query).pipe(Effect.flatMap(Supabase.mapPostgrestResponse));
-			},
+					if (decodedPagination?.limit) {
+						query = query.limit(decodedPagination.limit);
+					}
+					if (decodedPagination?.offset) {
+						query = query.range(
+							decodedPagination.offset,
+							decodedPagination.offset + (decodedPagination.limit || 20) - 1
+						);
+					}
+
+					const response = yield* Effect.promise(() => query).pipe(
+						Effect.flatMap(Supabase.mapPostgrestResponse)
+					);
+
+					return yield* Effect.all(
+						response.map((session) => S.decode(FocusSessionSchema)(session).pipe(Effect.orDie))
+					);
+				}),
 
 			/**
 			 * 특정 날짜의 세션 목록을 조회한다
 			 */
 			getFocusSessionsByDate: (
 				date: Date
-			): Effect.Effect<FocusSession[], Supabase.PostgrestError> => {
-				const startOfDay = new Date(date);
-				startOfDay.setHours(0, 0, 0, 0);
-				const endOfDay = new Date(date);
-				endOfDay.setHours(23, 59, 59, 999);
+			): Effect.Effect<Array<typeof FocusSessionSchema.Type>, Supabase.PostgrestError> =>
+				Effect.gen(function* () {
+					const startOfDay = new Date(date);
+					startOfDay.setHours(0, 0, 0, 0);
+					const endOfDay = new Date(date);
+					endOfDay.setHours(23, 59, 59, 999);
 
-				return Effect.promise(() =>
-					client
-						.from('focus_sessions')
-						.select()
-						.eq('owner_id', user.id)
-						.gte('start_at', DateTime.formatIso(DateTime.unsafeFromDate(startOfDay)))
-						.lt('start_at', DateTime.formatIso(DateTime.unsafeFromDate(endOfDay)))
-						.order('start_at', { ascending: true })
-				).pipe(Effect.flatMap(Supabase.mapPostgrestResponse));
-			},
+					const response = yield* Effect.promise(() =>
+						client
+							.from('focus_sessions')
+							.select()
+							.eq('owner_id', user.id)
+							.gte('start_at', DateTime.formatIso(DateTime.unsafeFromDate(startOfDay)))
+							.lt('start_at', DateTime.formatIso(DateTime.unsafeFromDate(endOfDay)))
+							.order('start_at', { ascending: true })
+					).pipe(Effect.flatMap(Supabase.mapPostgrestResponse));
+
+					return yield* Effect.all(
+						response.map((session) => S.decode(FocusSessionSchema)(session).pipe(Effect.orDie))
+					);
+				}),
 
 			/**
 			 * 기간별 세션 목록을 조회한다
@@ -217,95 +380,151 @@ export class Service extends Effect.Service<Service>()('FocusSessionRepository',
 			getFocusSessionsInRange: (
 				startDate: Date,
 				endDate: Date,
-				pagination?: S.Schema.Type<typeof PaginationQuerySchema>
-			): Effect.Effect<FocusSession[], Supabase.PostgrestError> => {
-				let query = client
-					.from('focus_sessions')
-					.select()
-					.eq('owner_id', user.id)
-					.gte('start_at', DateTime.formatIso(DateTime.unsafeFromDate(startDate)))
-					.lte('start_at', DateTime.formatIso(DateTime.unsafeFromDate(endDate)))
-					.order('start_at', { ascending: false });
+				pagination?: typeof PaginationQuerySchema.Encoded
+			): Effect.Effect<Array<typeof FocusSessionSchema.Type>, Supabase.PostgrestError> =>
+				Effect.gen(function* () {
+					const decodedPagination = pagination
+						? yield* S.decode(PaginationQuerySchema)(pagination).pipe(Effect.orDie)
+						: undefined;
 
-				if (pagination?.limit) {
-					query = query.limit(pagination.limit);
-				}
-				if (pagination?.offset) {
-					query = query.range(pagination.offset, pagination.offset + (pagination.limit || 20) - 1);
-				}
+					let query = client
+						.from('focus_sessions')
+						.select()
+						.eq('owner_id', user.id)
+						.gte('start_at', DateTime.formatIso(DateTime.unsafeFromDate(startDate)))
+						.lte('start_at', DateTime.formatIso(DateTime.unsafeFromDate(endDate)))
+						.order('start_at', { ascending: false });
 
-				return Effect.promise(() => query).pipe(Effect.flatMap(Supabase.mapPostgrestResponse));
-			},
+					if (decodedPagination?.limit) {
+						query = query.limit(decodedPagination.limit);
+					}
+					if (decodedPagination?.offset) {
+						query = query.range(
+							decodedPagination.offset,
+							decodedPagination.offset + (decodedPagination.limit || 20) - 1
+						);
+					}
+
+					const response = yield* Effect.promise(() => query).pipe(
+						Effect.flatMap(Supabase.mapPostgrestResponse)
+					);
+
+					return yield* Effect.all(
+						response.map((session) => S.decode(FocusSessionSchema)(session).pipe(Effect.orDie))
+					);
+				}),
 
 			/**
 			 * 예정된 세션 목록을 조회한다 (아직 시작하지 않은 세션)
 			 */
 			getUpcomingFocusSessions: (
-				pagination?: S.Schema.Type<typeof PaginationQuerySchema>
-			): Effect.Effect<FocusSession[], Supabase.PostgrestError> => {
-				const now = DateTime.formatIso(DateTime.unsafeNow());
-				let query = client
-					.from('focus_sessions')
-					.select()
-					.eq('owner_id', user.id)
-					.gt('start_at', now)
-					.order('start_at', { ascending: true });
+				pagination?: typeof PaginationQuerySchema.Encoded
+			): Effect.Effect<Array<typeof FocusSessionSchema.Type>, Supabase.PostgrestError> =>
+				Effect.gen(function* () {
+					const decodedPagination = pagination
+						? yield* S.decode(PaginationQuerySchema)(pagination).pipe(Effect.orDie)
+						: undefined;
 
-				if (pagination?.limit) {
-					query = query.limit(pagination.limit);
-				}
-				if (pagination?.offset) {
-					query = query.range(pagination.offset, pagination.offset + (pagination.limit || 20) - 1);
-				}
+					const now = DateTime.formatIso(DateTime.unsafeNow());
+					let query = client
+						.from('focus_sessions')
+						.select()
+						.eq('owner_id', user.id)
+						.gt('start_at', now)
+						.order('start_at', { ascending: true });
 
-				return Effect.promise(() => query).pipe(Effect.flatMap(Supabase.mapPostgrestResponse));
-			},
+					if (decodedPagination?.limit) {
+						query = query.limit(decodedPagination.limit);
+					}
+					if (decodedPagination?.offset) {
+						query = query.range(
+							decodedPagination.offset,
+							decodedPagination.offset + (decodedPagination.limit || 20) - 1
+						);
+					}
+
+					const response = yield* Effect.promise(() => query).pipe(
+						Effect.flatMap(Supabase.mapPostgrestResponse)
+					);
+
+					return yield* Effect.all(
+						response.map((session) => S.decode(FocusSessionSchema)(session).pipe(Effect.orDie))
+					);
+				}),
 
 			/**
 			 * 완료된 세션 목록을 조회한다
 			 */
 			getCompletedFocusSessions: (
-				pagination?: S.Schema.Type<typeof PaginationQuerySchema>
-			): Effect.Effect<FocusSession[], Supabase.PostgrestError> => {
-				let query = client
-					.from('focus_sessions')
-					.select()
-					.eq('owner_id', user.id)
-					.lt('end_at', DateTime.formatIso(DateTime.unsafeNow()))
-					.order('end_at', { ascending: false });
+				pagination?: typeof PaginationQuerySchema.Encoded
+			): Effect.Effect<Array<typeof FocusSessionSchema.Type>, Supabase.PostgrestError> =>
+				Effect.gen(function* () {
+					const decodedPagination = pagination
+						? yield* S.decode(PaginationQuerySchema)(pagination).pipe(Effect.orDie)
+						: undefined;
 
-				if (pagination?.limit) {
-					query = query.limit(pagination.limit);
-				}
-				if (pagination?.offset) {
-					query = query.range(pagination.offset, pagination.offset + (pagination.limit || 20) - 1);
-				}
+					let query = client
+						.from('focus_sessions')
+						.select()
+						.eq('owner_id', user.id)
+						.lt('end_at', DateTime.formatIso(DateTime.unsafeNow()))
+						.order('end_at', { ascending: false });
 
-				return Effect.promise(() => query).pipe(Effect.flatMap(Supabase.mapPostgrestResponse));
-			},
+					if (decodedPagination?.limit) {
+						query = query.limit(decodedPagination.limit);
+					}
+					if (decodedPagination?.offset) {
+						query = query.range(
+							decodedPagination.offset,
+							decodedPagination.offset + (decodedPagination.limit || 20) - 1
+						);
+					}
+
+					const response = yield* Effect.promise(() => query).pipe(
+						Effect.flatMap(Supabase.mapPostgrestResponse)
+					);
+
+					return yield* Effect.all(
+						response.map((session) => S.decode(FocusSessionSchema)(session).pipe(Effect.orDie))
+					);
+				}),
 
 			/**
 			 * 수집함의 세션 목록을 조회한다
 			 */
 			getInboxFocusSessions: (
-				pagination?: S.Schema.Type<typeof PaginationQuerySchema>
-			): Effect.Effect<FocusSession[], Supabase.PostgrestError> => {
-				let query = client
-					.from('focus_sessions')
-					.select()
-					.eq('owner_id', user.id)
-					.is('project_id', null)
-					.order('start_at', { ascending: false });
+				pagination?: typeof PaginationQuerySchema.Encoded
+			): Effect.Effect<Array<typeof FocusSessionSchema.Type>, Supabase.PostgrestError> =>
+				Effect.gen(function* () {
+					const decodedPagination = pagination
+						? yield* S.decode(PaginationQuerySchema)(pagination).pipe(Effect.orDie)
+						: undefined;
 
-				if (pagination?.limit) {
-					query = query.limit(pagination.limit);
-				}
-				if (pagination?.offset) {
-					query = query.range(pagination.offset, pagination.offset + (pagination.limit || 20) - 1);
-				}
+					let query = client
+						.from('focus_sessions')
+						.select()
+						.eq('owner_id', user.id)
+						.is('project_id', null)
+						.order('start_at', { ascending: false });
 
-				return Effect.promise(() => query).pipe(Effect.flatMap(Supabase.mapPostgrestResponse));
-			},
+					if (decodedPagination?.limit) {
+						query = query.limit(decodedPagination.limit);
+					}
+					if (decodedPagination?.offset) {
+						query = query.range(
+							decodedPagination.offset,
+							decodedPagination.offset + (decodedPagination.limit || 20) - 1
+						);
+					}
+
+					const response = yield* Effect.promise(() => query).pipe(
+						Effect.flatMap(Supabase.mapPostgrestResponse)
+					);
+
+					return yield* Effect.all(
+						response.map((session) => S.decode(FocusSessionSchema)(session).pipe(Effect.orDie))
+					);
+				}),
 
 			/**
 			 * 세션이 현재 활성 상태인지 확인한다.

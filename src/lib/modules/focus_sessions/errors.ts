@@ -131,3 +131,36 @@ export class InvalidTime extends Data.TaggedError('FocusSession/InvalidTime')<{
 		});
 	}
 }
+
+/**
+ * 유효하지 않은 프로젝트에 세션을 연결하려 할 때 발생하는 에러
+ */
+export class InvalidProject extends Data.TaggedError('FocusSession/InvalidProject')<{
+	message: string;
+}> {
+	constructor(projectId: string) {
+		super({ message: `유효하지 않은 프로젝트 ID입니다: ${projectId}` });
+	}
+}
+
+/**
+ * 유효하지 않은 소유자로 세션을 생성하려 할 때 발생하는 에러
+ */
+export class InvalidOwner extends Data.TaggedError('FocusSession/InvalidOwner')<{
+	message: string;
+}> {
+	constructor(ownerId: string) {
+		super({ message: `유효하지 않은 소유자 ID입니다: ${ownerId}` });
+	}
+}
+
+/**
+ * 세션이 다른 리소스에서 참조되고 있어 삭제할 수 없을 때 발생하는 에러
+ */
+export class HasDependencies extends Data.TaggedError('FocusSession/HasDependencies')<{
+	message: string;
+}> {
+	constructor(sessionId: string) {
+		super({ message: `세션 ${sessionId}가 다른 리소스에서 사용 중이므로 삭제할 수 없습니다` });
+	}
+}
