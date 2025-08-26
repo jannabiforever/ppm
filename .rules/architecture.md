@@ -78,13 +78,18 @@ src/lib/modules/focus_sessions
 │   └── schema.test.ts
 ├── errors.ts
 ├── index.ts
+├── index.server.ts
 ├── service.server.ts
 └── types.ts
 ```
 
 ## index.ts
 
-단순한 export 문을 포함하는 파일
+클라이언트와 서버 양쪽에서 사용 가능한 export를 포함하는 파일. 주로 타입, 스키마, 에러 정의 등을 export한다.
+
+## index.server.ts
+
+서버 전용 export를 포함하는 파일. service.server.ts와 같은 서버 전용 파일들을 export한다.
 
 ## errors.ts
 
