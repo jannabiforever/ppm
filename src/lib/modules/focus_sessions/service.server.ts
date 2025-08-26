@@ -1,5 +1,5 @@
 import { Effect, Option, DateTime } from 'effect';
-import * as Supabase from '../supabase';
+import * as Supabase from '../supabase/index.server';
 import * as S from 'effect/Schema';
 import {
 	FocusSessionSchema,
@@ -16,7 +16,6 @@ import {
 	TimeConflict,
 	InvalidTime
 } from './errors';
-import { Ear } from 'lucide-svelte';
 
 export class Service extends Effect.Service<Service>()('FocusSessionService', {
 	effect: Effect.gen(function* () {
