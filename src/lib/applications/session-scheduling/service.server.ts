@@ -1,6 +1,6 @@
 import { Effect, DateTime } from 'effect';
-import * as FocusSessions from '$lib/modules/focus_sessions';
-import * as Supabase from '$lib/modules/supabase';
+import * as FocusSessions from '$lib/modules/focus_sessions/index.server';
+import * as Supabase from '$lib/modules/supabase/index.server';
 import { NoAvailableTimeSlot } from './errors';
 import {
 	CanStartSessionAtParamsSchema,

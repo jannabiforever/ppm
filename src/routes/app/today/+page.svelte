@@ -1,12 +1,13 @@
 <script>
-	import { DEFAULT_ICON_PROPS } from '$lib/components/constants';
+	import { ICON_PROPS } from '$lib/components/constants';
+	import Timeline from '$lib/components/timeline/Timeline.svelte';
 	import { CalendarCheck2 } from 'lucide-svelte';
 
 	let { data } = $props();
 </script>
 
 <div class="flex w-full gap-3">
-	<CalendarCheck2 {...DEFAULT_ICON_PROPS.lg} />
+	<CalendarCheck2 {...ICON_PROPS.lg} />
 	<span class="font-semibold">오늘 </span>
 </div>
 
@@ -25,5 +26,6 @@
 			<span class="font-semibold">집중 세션</span>
 			<span class="flex-1">{data.todaySessions.length}개</span>
 		</div>
+		<Timeline focusSessions={[]} />
 	</div>
 </div>

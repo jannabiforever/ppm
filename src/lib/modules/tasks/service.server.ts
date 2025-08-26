@@ -1,5 +1,5 @@
 import { DateTime, Effect, HashSet } from 'effect';
-import * as Supabase from '../supabase';
+import * as Supabase from '../supabase/index.server';
 import * as Option from 'effect/Option';
 import * as S from 'effect/Schema';
 import { TaskQuerySchema, TaskSchema, TaskInsertSchema, TaskUpdateSchema } from './types';

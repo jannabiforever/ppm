@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { TaskWithComputedStatus } from '$lib/modules/tasks';
 	import { Hash } from 'lucide-svelte';
-	import { DEFAULT_ICON_PROPS } from '../constants';
+	import { ICON_PROPS } from '../constants';
 	import TaskStatusIcon from './TaskStatusIcon.svelte';
 	import { Separator } from 'bits-ui';
 
@@ -25,12 +25,12 @@
 				status={task.status}
 				isPlanned={task.isPlanned ?? false}
 				isInSession={task.isInSession ?? false}
-				iconProps={DEFAULT_ICON_PROPS.md}
+				iconProps={ICON_PROPS.md}
 			/>
 		</div>
 
 		<div class="flex justify-end gap-1 text-surface-400-600">
-			<Hash {...DEFAULT_ICON_PROPS.sm} />
+			<Hash {...ICON_PROPS.sm} />
 			<span class="text-xs">{task.project_id ?? '수집함'}</span>
 		</div>
 	</div>

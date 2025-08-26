@@ -1,6 +1,6 @@
 import { DateTime, Effect, Option } from 'effect';
 import * as S from 'effect/Schema';
-import * as Supabase from '../supabase';
+import * as Supabase from '../supabase/index.server';
 import { PaginationQuerySchema } from '$lib/shared/pagination';
 import { TaskAlreadyInSessionError, TaskNotInSessionError } from './errors';
 

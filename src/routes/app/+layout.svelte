@@ -11,7 +11,7 @@
 	import type { LayoutProps } from './$types';
 	import NavLink from '$lib/components/nav/NavLink.svelte';
 	import NavItemSeparator from '$lib/components/nav/NavItemSeparator.svelte';
-	import { DEFAULT_ICON_PROPS } from '$lib/components/constants';
+	import { ICON_PROPS } from '$lib/components/constants';
 
 	let { children, data }: LayoutProps = $props();
 </script>
@@ -31,17 +31,17 @@
 		<!-- Links -->
 		<div class="flex w-full flex-col">
 			<NavLink href="/app/today" label="오늘" selected={false}>
-				<CalendarCheck2 {...DEFAULT_ICON_PROPS.md} />
+				<CalendarCheck2 {...ICON_PROPS.md} />
 			</NavLink>
 			<NavLink href="/app/upcoming" label="다음" selected={false}>
-				<CalendarDays {...DEFAULT_ICON_PROPS.md} />
+				<CalendarDays {...ICON_PROPS.md} />
 			</NavLink>
 			<NavItemSeparator />
 			<NavLink href="/app/inbox" label="수집함" selected={false}>
-				<Inbox {...DEFAULT_ICON_PROPS.md} />
+				<Inbox {...ICON_PROPS.md} />
 			</NavLink>
 			<NavLink href="/app/projects" label="프로젝트" selected={false}>
-				<FolderKanban {...DEFAULT_ICON_PROPS.md} />
+				<FolderKanban {...ICON_PROPS.md} />
 			</NavLink>
 			{#each data.activeProjects as project (project.id)}
 				<NavLink
@@ -50,12 +50,12 @@
 					selected={false}
 					indented
 				>
-					<Hash {...DEFAULT_ICON_PROPS.md} />
+					<Hash {...ICON_PROPS.md} />
 				</NavLink>
 			{/each}
 			<NavItemSeparator />
 			<NavLink href="/app/protocols" label="프로토콜" selected={false}>
-				<ScrollText {...DEFAULT_ICON_PROPS.md} />
+				<ScrollText {...ICON_PROPS.md} />
 			</NavLink>
 		</div>
 

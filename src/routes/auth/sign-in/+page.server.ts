@@ -1,4 +1,4 @@
-import * as Auth from '$lib/modules/auth';
+import * as Auth from '$lib/modules/auth/index.server';
 import * as Either from 'effect/Either';
 import { decodeFormData } from '$lib/decode';
 import { fail, redirect, type Actions } from '@sveltejs/kit';
@@ -44,25 +44,6 @@ export const actions = {
 			},
 			onLeft: (error) => {
 				return fail(HttpStatusCodes.UNAUTHORIZED, error);
-			}
-		});
-	},
-
-	'sign-in-google': async ({ locals }) => {
-		const result = await Effect.gen(function* () {
-			const auth = yield* Auth.Service;
-			return yield* auth.signInWithGoogleOAuth();
-		}).pipe(
-			Effect.provide(Layer.provide(Auth.Service.Default, locals.supabase)),
-			Effect.tapError(Console.error),
-			Effect.either,
-			Effect.runPromise
-		);
-
-		return Either.match(result, {
-			onLeft: (error) => fail(HttpStatusCodes.UNAUTHORIZED, error),
-			onRight: (url) => {
-				redirect(HttpStatusCodes.SEE_OTHER, url);
 			}
 		});
 	}

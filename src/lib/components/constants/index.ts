@@ -1,4 +1,4 @@
-export const DEFAULT_ICON_PROPS = {
+export const ICON_PROPS = {
 	xl: {
 		size: 28,
 		strokeWidth: 2

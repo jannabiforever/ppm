@@ -5,10 +5,10 @@ import { Effect } from 'effect';
 import * as Option from 'effect/Option';
 import * as Either from 'effect/Either';
 import * as Console from 'effect/Console';
-import * as FocusSession from '$lib/modules/focus_sessions';
-import * as Project from '$lib/modules/projects';
-import * as Task from '$lib/modules/tasks';
-import * as SessionTask from '$lib/modules/session_tasks';
+import * as FocusSession from '$lib/modules/focus_sessions/index.server';
+import * as Project from '$lib/modules/projects/index.server';
+import * as Task from '$lib/modules/tasks/index.server';
+import * as SessionTask from '$lib/modules/session_tasks/index.server';
 import { StatusCodes } from 'http-status-codes';
 
 /**

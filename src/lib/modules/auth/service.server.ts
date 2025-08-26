@@ -1,6 +1,6 @@
 import { Effect } from 'effect';
 import * as S from 'effect/Schema';
-import * as Supabase from '$lib/modules/supabase';
+import * as Supabase from '$lib/modules/supabase/index.server';
 import { SignInSchema, SignUpSchema } from './types';
 
 export class Service extends Effect.Service<Service>()('AuthService', {
