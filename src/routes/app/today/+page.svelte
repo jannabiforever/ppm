@@ -12,7 +12,7 @@
 </div>
 
 <div class="flex w-full flex-1 gap-15">
-	<!-- task tab -->
+	<!-- 태스크 탭 -->
 	<div class="flex w-full flex-col gap-2.5">
 		<div class="flex w-full gap-2.5 rounded-sm bg-surface-100-900/80 px-2 py-3">
 			<span class="font-semibold">태스크</span>
@@ -20,7 +20,7 @@
 		</div>
 	</div>
 
-	<!-- focus session tab -->
+	<!-- 집중 세션 탭 -->
 	<div class="flex w-full flex-col gap-2.5">
 		<div class="flex w-full gap-2.5 rounded-sm bg-surface-100-900/80 px-2 py-3">
 			<span class="font-semibold">집중 세션</span>

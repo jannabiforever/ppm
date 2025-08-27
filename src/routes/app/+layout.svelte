@@ -23,8 +23,8 @@
 	>
 		<NavHeader
 			userProfile={{
-				user: data.user,
-				profile: data.profile
+				user: data.user!,
+				profile: data.profile!
 			}}
 		/>
 
@@ -43,7 +43,7 @@
 			<NavLink href="/app/projects" label="프로젝트" selected={false}>
 				<FolderKanban {...ICON_PROPS.md} />
 			</NavLink>
-			{#each data.activeProjects as project (project.id)}
+			{#each data.activeProjects! as project (project.id)}
 				<NavLink
 					href={`/app/projects/${project.id}`}
 					label={project.name}
@@ -65,7 +65,8 @@
 		</div>
 	</aside>
 	<main class="ml-[220px] flex w-full flex-1 justify-center p-5">
-		<div class="flex min-w-[1024px] flex-col gap-5">
+		<!-- TODO: 적당한 반응형 고려한 레이아웃 -->
+		<div class="flex w-2/3 flex-col gap-5">
 			{@render children?.()}
 		</div>
 	</main>

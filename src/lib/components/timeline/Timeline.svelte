@@ -6,6 +6,8 @@
 	import Dialog from '../ui/Dialog.svelte';
 	import { getKstMidnightAsUtc } from '$lib/shared/utils/datetime.svelte';
 
+	const UNIT_IN_MINUTES = 15;
+
 	interface Props {
 		focusSessions: Array<typeof FocusSessionProjectLookupSchema.Type>;
 	}
@@ -53,6 +55,7 @@
 	);
 
 	// Y 좌표를 시간으로 변환
+	// NOTE: 15분 단위로 반올림
 	function calculateYToDateTimeUtc(y: number): DateTime.Utc {
 		const rect = containerElement.getBoundingClientRect();
 		const relativeY = Math.max(0, Math.min(y - rect.top, rect.height));
@@ -63,10 +66,13 @@
 
 		// 오늘 KST 자정 기준으로 시간 계산
 		const todayMidnight = getKstMidnightAsUtc(DateTime.now.pipe(Effect.runSync));
-		return DateTime.add(todayMidnight, { minutes: Math.floor(minuteOffset) });
+		return DateTime.add(todayMidnight, {
+			minutes: Math.floor(minuteOffset / UNIT_IN_MINUTES) * UNIT_IN_MINUTES
+		});
 	}
 
 	// 시간을 Y 좌표로 변환
+	// NOTE: 15분 단위로 반올림
 	function calculateDateTimeUtcToY(time: DateTime.Utc): number {
 		if (!containerElement) return 0;
 
@@ -74,7 +80,9 @@
 		const todayMidnight = getKstMidnightAsUtc(time);
 
 		// 자정으로부터의 분 단위 차이 계산
-		const diffMinutes = DateTime.distance(todayMidnight, time) / (1000 * 60);
+		const diffMinutes =
+			Math.floor(DateTime.distance(todayMidnight, time) / (1000 * 60 * UNIT_IN_MINUTES)) *
+			UNIT_IN_MINUTES;
 		const hours = diffMinutes / 60;
 
 		// 24시간 기준으로 Y 위치 계산
