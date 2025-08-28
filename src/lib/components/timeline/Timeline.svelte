@@ -4,9 +4,13 @@
 	import SessionCard from './SessionCard.svelte';
 	import type { FocusSessionProjectLookupSchema } from '$lib/applications/session-project-lookup/types';
 	import Dialog from '../ui/Dialog.svelte';
-	import { getKstMidnightAsUtc } from '$lib/shared/utils/datetime.svelte';
+	import { formatTimeKstHHmm, getKstMidnightAsUtc } from '$lib/shared/utils/datetime.svelte';
+	import Button from '../ui/Button.svelte';
 
-	const UNIT_IN_MINUTES = 15;
+	/**
+	 * 세션 시간 단위. 반올림할 때 사용
+	 */
+	const QUANTIZED_UNIT_IN_MINUTES = 15;
 
 	interface Props {
 		focusSessions: Array<typeof FocusSessionProjectLookupSchema.Type>;
@@ -67,7 +71,7 @@
 		// 오늘 KST 자정 기준으로 시간 계산
 		const todayMidnight = getKstMidnightAsUtc(DateTime.now.pipe(Effect.runSync));
 		return DateTime.add(todayMidnight, {
-			minutes: Math.floor(minuteOffset / UNIT_IN_MINUTES) * UNIT_IN_MINUTES
+			minutes: Math.floor(minuteOffset / QUANTIZED_UNIT_IN_MINUTES) * QUANTIZED_UNIT_IN_MINUTES
 		});
 	}
 
@@ -81,21 +85,27 @@
 
 		// 자정으로부터의 분 단위 차이 계산
 		const diffMinutes =
-			Math.floor(DateTime.distance(todayMidnight, time) / (1000 * 60 * UNIT_IN_MINUTES)) *
-			UNIT_IN_MINUTES;
+			Math.floor(DateTime.distance(todayMidnight, time) / (1000 * 60 * QUANTIZED_UNIT_IN_MINUTES)) *
+			QUANTIZED_UNIT_IN_MINUTES;
 		const hours = diffMinutes / 60;
 
 		// 24시간 기준으로 Y 위치 계산
 		return (hours / 24) * rect.height;
 	}
 
-	// 세션 간 충돌 검사
+	/**
+	 * 세션 간 충돌 검사
+	 */
 	function checkCollision(interval: [DateTime.Utc, DateTime.Utc]): boolean {
 		return assignedFocusSessions.some((fs) => {
 			return interval[0] >= fs.start_at && interval[1] <= fs.end_at;
 		});
 	}
 
+	/**
+	 * 마우스 클릭 시 위치를 기준으로 timelineState를 'select'로 업데이트
+	 * @param e 마우스 이벤트
+	 */
 	function onmousedown(e: MouseEvent) {
 		if (timelineState.type === 'idle') {
 			const time = calculateYToDateTimeUtc(e.clientY);
@@ -107,12 +117,20 @@
 		}
 	}
 
+	/**
+	 * 마우스 드래그 시 위치를 기준으로 timelineState.nonAnchor 업데이트
+	 * @param e 마우스 이벤트
+	 */
 	function onmousemove(e: MouseEvent) {
 		if (timelineState.type === 'select') {
 			timelineState.nonAnchor = calculateYToDateTimeUtc(e.clientY);
 		}
 	}
 
+	/**
+	 * 마우스 버튼을 떼었을 때 Dialog 열기
+	 * @param e 마우스 이벤트
+	 */
 	function onmouseup() {
 		// 이 경우, timelineState가 'idle'임이 보장
 		if (interval !== null) {
@@ -130,7 +148,7 @@
 		}
 	}
 
-	// 선택 영역 스타일 계산
+	/** 선택 영역 스타일 */
 	let selectionStyle = $derived.by(() => {
 		// 이 경우, timelineState가 'idle'임이 보장
 		if (interval === null) return '';
@@ -139,19 +157,6 @@
 		const height = bottom - top;
 		return `top: ${top}px; height: ${height}px;`;
 	});
-
-	// 시간 포맷팅 헬퍼: KST TZ에서 HH:mm 꼴로.
-	function formatTimeKst(time: DateTime.Utc): string {
-		return DateTime.formatIntl(
-			time,
-			new Intl.DateTimeFormat('ko-KR', {
-				timeZone: 'Asia/Seoul',
-				hour: '2-digit',
-				minute: '2-digit',
-				hour12: false
-			})
-		);
-	}
 </script>
 
 {#snippet singleTimeLine(label: string)}
@@ -180,10 +185,11 @@
 	{#if timelineState.type !== 'idle' && interval !== null}
 		<div
 			class="pointer-events-none absolute right-4 left-16 z-10 rounded-lg border-2 border-primary-500 bg-surface-50-950"
+			class:border-error-500={checkCollision(interval)}
 			style={selectionStyle}
 		>
 			<div class="p-2 text-sm font-medium text-primary-700">
-				{formatTimeKst(interval[0])} ~ {formatTimeKst(interval[1])}
+				{formatTimeKstHHmm(interval[0])} ~ {formatTimeKstHHmm(interval[1])}
 			</div>
 		</div>
 	{/if}
@@ -209,5 +215,17 @@
 		}
 	}}
 >
-	{#snippet content()}{/snippet}
+	{#snippet content()}
+		{#if interval !== null}
+			<form method="POST" action="/api/focus-sessions">
+				<input type="hidden" name="start_at" value={DateTime.formatIso(interval[0])} />
+				<input type="hidden" name="end_at" value={DateTime.formatIso(interval[1])} />
+				<label for="project_id">프로젝트 선택</label>
+				<!-- TODO: 프로젝트 선택 콤보박스 or Select -->
+				<input type="text" name="project_id" />
+
+				<Button filled type="submit">생성</Button>
+			</form>
+		{/if}
+	{/snippet}
 </Dialog>

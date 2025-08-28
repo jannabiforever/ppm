@@ -19,3 +19,16 @@ export function getKstMidnightAsUtc(utc: DateTime.Utc): DateTime.Utc {
 	const kstZoned = getKstZoned(utc);
 	return DateTime.toUtc(DateTime.startOf(kstZoned, 'day'));
 }
+
+/**  시간 포맷팅 헬퍼: KST TZ에서 HH:mm 꼴로. **/
+export function formatTimeKstHHmm(time: DateTime.Utc): string {
+	return DateTime.formatIntl(
+		time,
+		new Intl.DateTimeFormat('ko-KR', {
+			timeZone: 'Asia/Seoul',
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false
+		})
+	);
+}
