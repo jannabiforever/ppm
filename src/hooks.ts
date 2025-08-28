@@ -49,6 +49,10 @@ const EitherTransporter: Transporter = {
     eo._tag == 'Left' ? Either.left(eo.value) : Either.right(eo.value)
 };
 
+// ------------------------------------------------------------
+// DateTime.Utc 트랜스포터
+// ------------------------------------------------------------
+
 const DateTimeUtcTransporter: Transporter = {
   encode: (value) => {
     if (!DateTime.isUtc(value)) return false;
