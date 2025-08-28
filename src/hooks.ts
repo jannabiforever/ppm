@@ -56,13 +56,11 @@ const EitherTransporter: Transporter = {
 const DateTimeUtcTransporter: Transporter = {
   encode: (value) => {
     if (!DateTime.isUtc(value)) return false;
-    return DateTime.formatIsoDateUtc(value);
+    return [DateTime.formatIsoDateUtc(value)];
   },
-  decode: (utc: string) => DateTime.unsafeMake(utc)
+  decode: ([utc]: [string]) => DateTime.unsafeMake(utc)
 }
 
-// TODO: 에러 트랜스포터
-// TODO: 현재 구현으로는 Option.Option<Either.Either<E, A>> 같은 네스팅 되어 있는 경우를 처리할 수 없음.
 export const transport: Transport = {
   Option: OptionTransporter,
   Either: EitherTransporter,
