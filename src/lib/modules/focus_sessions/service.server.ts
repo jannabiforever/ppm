@@ -8,14 +8,7 @@ import {
 	FocusSessionQuerySchema
 } from './types';
 import { PaginationQuerySchema } from '$lib/shared/pagination';
-import {
-	NotFound,
-	InvalidProject,
-	InvalidOwner,
-	HasDependencies,
-	TimeConflict,
-	InvalidTime
-} from './errors';
+import { NotFound, InvalidProject, HasDependencies, TimeConflict, InvalidTime } from './errors';
 
 export class Service extends Effect.Service<Service>()('FocusSessionService', {
 	effect: Effect.gen(function* () {
@@ -25,13 +18,15 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 
 		return {
 			/**
-			 * 새로운 포커스 세션을 생성한다
+			 * 새로운 집중 세션을 생성한다.
+			 *
+			 * @param payload 집중 세션 생성 정보 (owner_id 미포함)
 			 */
 			createFocusSession: (
-				payload: typeof FocusSessionInsertSchema.Encoded
+				payload: Omit<typeof FocusSessionInsertSchema.Encoded, 'owner_id'>
 			): Effect.Effect<
 				string,
-				Supabase.PostgrestError | InvalidProject | InvalidOwner | TimeConflict | InvalidTime
+				Supabase.PostgrestError | InvalidProject | TimeConflict | InvalidTime
 			> =>
 				Effect.promise(() =>
 					client
@@ -51,15 +46,12 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 							error
 						): Effect.Effect<
 							never,
-							Supabase.PostgrestError | InvalidProject | InvalidOwner | TimeConflict | InvalidTime
+							Supabase.PostgrestError | InvalidProject | TimeConflict | InvalidTime
 						> => {
 							if (error.code === '23503') {
 								// Foreign key constraint violation
 								if (error.message.includes('project_id')) {
 									return Effect.fail(new InvalidProject(payload.project_id || ''));
-								}
-								if (error.message.includes('owner_id')) {
-									return Effect.fail(new InvalidOwner(user.id));
 								}
 							}
 							if (error.code === '23514') {
@@ -82,7 +74,7 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 				),
 
 			/**
-			 * 포커스 세션을 삭제한다
+			 * 집중 세션을 삭제한다
 			 */
 			deleteFocusSession: (
 				sessionId: string
@@ -113,7 +105,7 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 				),
 
 			/**
-			 * 특정 포커스 세션의 상세 정보를 조회한다
+			 * 특정 집중 세션의 상세 정보를 조회한다
 			 */
 			getFocusSessionById: (
 				sessionId: string
@@ -139,11 +131,11 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 				),
 
 			/**
-			 * 기존 포커스 세션의 정보를 수정한다
+			 * 기존 집중 세션의 정보를 수정한다
 			 */
 			updateFocusSession: (
 				sessionId: string,
-				payload: typeof FocusSessionUpdateSchema.Encoded
+				payload: Omit<typeof FocusSessionUpdateSchema.Encoded, 'owner_id'>
 			): Effect.Effect<
 				void,
 				Supabase.PostgrestError | NotFound | InvalidProject | TimeConflict | InvalidTime
@@ -202,7 +194,7 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 				),
 
 			/**
-			 * 조건에 맞는 포커스 세션 목록을 조회한다
+			 * 조건에 맞는 집중 세션 목록을 조회한다
 			 */
 			getFocusSessions: (
 				query?: typeof FocusSessionQuerySchema.Encoded

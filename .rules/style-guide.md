@@ -16,12 +16,9 @@ import * as Schema from 'effect/Schema';
 import * as Cache from 'effect/Service';
 
 const program = Effect.gen(function* () {
-  const cache = yield* Cache.Service;
-  return yield* cache.lookup('key')
-}).pipe(
-  Effect.provide(Cache.Service.Default),
-  Effect.runPromise
-)
+	const cache = yield* Cache.Service;
+	return yield* cache.lookup('key');
+}).pipe(Effect.provide(Cache.Service.Default), Effect.runPromise);
 ```
 
 ## 서비스
@@ -32,20 +29,20 @@ const program = Effect.gen(function* () {
 
 ```typescript
 // cache.ts
-import { FileSystem } from "@effect/platform"
-import { NodeFileSystem } from "@effect/platform-node"
-import { Effect } from "effect"
+import { FileSystem } from '@effect/platform';
+import { NodeFileSystem } from '@effect/platform-node';
+import { Effect } from 'effect';
 
 // 캐시 서비스 정의
-class Service extends Effect.Service<Service>()("Cache", {
-  // 서비스 생성 방법 정의
-  effect: Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem
-    const lookup = (key: string) => fs.readFileString(`cache/${key}`)
-    return { lookup } as const
-  }),
-  // 의존성 지정
-  dependencies: [NodeFileSystem.layer]
+class Service extends Effect.Service<Service>()('Cache', {
+	// 서비스 생성 방법 정의
+	effect: Effect.gen(function* () {
+		const fs = yield* FileSystem.FileSystem;
+		const lookup = (key: string) => fs.readFileString(`cache/${key}`);
+		return { lookup } as const;
+	}),
+	// 의존성 지정
+	dependencies: [NodeFileSystem.layer]
 }) {}
 ```
 
@@ -72,12 +69,14 @@ class Service extends Context.Tag("Cache")<Service, {
 ### 레이어
 
 애플리케이션 레이어의 이름은 `Live`로 끝나야 함.
+
 ```typescript
 // 애플리케이션 코드에서 사용되는 기본 `CacheService` 레이어
 export const CacheLive = Layer.succeed(...)
 ```
 
 테스트 레이어의 이름은 `Test`로 끝나야 함.
+
 ```typescript
 // 테스트 코드에서 사용되는 기본 `CacheService` 레이어
 export const CacheTest = Layer.succeed(...)

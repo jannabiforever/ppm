@@ -9,24 +9,24 @@ import type { ParseError } from 'effect/ParseResult';
 export const actions = {
   'sign-in': async ({ locals, request, cookies }) => {
     const formData = await request.formData();
-    const decoded: Either.Either<typeof Auth.SignInSchema.Type & { remember: boolean }, ParseError> = Effect.gen(function* () {
-      const email = formData.get("email");
-      const password = formData.get("password");
-      const remember = formData.get("remember") === 'on';
+    const decoded: Either.Either<
+      typeof Auth.SignInSchema.Type & { remember: boolean },
+      ParseError
+    > = Effect.gen(function* () {
+      const email = formData.get('email');
+      const password = formData.get('password');
+      const remember = formData.get('remember') === 'on';
 
       const result = yield* S.decodeUnknown(Auth.SignInSchema)({
-        email, password
+        email,
+        password
       });
 
       return {
         ...result,
         remember
-      }
-    }).pipe(
-      Effect.tapError(Console.error),
-      Effect.either,
-      Effect.runSync
-    );
+      };
+    }).pipe(Effect.tapError(Console.error), Effect.either, Effect.runSync);
 
     if (Either.isLeft(decoded)) {
       return fail(HttpStatusCodes.BAD_REQUEST, decoded.left);
@@ -54,6 +54,7 @@ export const actions = {
             maxAge: 60 * 60 * 24 * 30 // 30 days
           });
         }
+
         return redirect(HttpStatusCodes.SEE_OTHER, '/app');
       },
       onLeft: (error) => {

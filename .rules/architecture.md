@@ -29,44 +29,40 @@ DB 제약 조건 때문에 모듈에 비즈니스 로직이 스며드는 것처�
 
 ### 모듈에서 허용되는 로직 (OK)
 
-* **DB 제약 해석**: 데이터베이스 오류 코드(SQLSTATE)나 제약 이름을 **도메인 불변성 에러**로 변환
+- **DB 제약 해석**: 데이터베이스 오류 코드(SQLSTATE)나 제약 이름을 **도메인 불변성 에러**로 변환
+  - 예: `projects_name_key` → `Project/NameAlreadyTaken`
+  - 예: `tasks_project_id_fkey` → `Project/NotFound`
 
-  * 예: `projects_name_key` → `Project/NameAlreadyTaken`
-  * 예: `tasks_project_id_fkey` → `Project/NotFound`
-* **단일 리소스 수준의 불변성 체크**
+- **단일 리소스 수준의 불변성 체크**
+  - unique, foreign key, check 제약 등
 
-  * unique, foreign key, check 제약 등
-* **형식/범위 검증**: 스키마 기반 타입 검증, 값 정규화
-* **입출력 안전장치**: 페이지 크기 상한, 정렬 키 화이트리스트 등 보안 목적 제한
+- **형식/범위 검증**: 스키마 기반 타입 검증, 값 정규화
+- **입출력 안전장치**: 페이지 크기 상한, 정렬 키 화이트리스트 등 보안 목적 제한
 
 ### 모듈에 두면 안 되는 로직 (NG)
 
-* **교차 엔터티 규칙**: “프로젝트 생성 시 초기 태스크도 있어야 한다”
-* **정책적 분기**: “사용자 등급이 X면 Y전략”
-* **멀티 리포/외부 시스템 오케스트레이션**
-* **트랜잭션 경계 설정**
+- **교차 엔터티 규칙**: “프로젝트 생성 시 초기 태스크도 있어야 한다”
+- **정책적 분기**: “사용자 등급이 X면 Y전략”
+- **멀티 리포/외부 시스템 오케스트레이션**
+- **트랜잭션 경계 설정**
 
 ### 레이어 역할 정리
 
-* **Module (Repository/Adapter)**
+- **Module (Repository/Adapter)**
+  - 인프라 ↔ 도메인 간 인터페이스
+  - DB 에러를 해석하여 도메인 불변성 에러로 변환
+  - 교차 정책이나 트랜잭션은 모름
 
-  * 인프라 ↔ 도메인 간 인터페이스
-  * DB 에러를 해석하여 도메인 불변성 에러로 변환
-  * 교차 정책이나 트랜잭션은 모름
-
-* **Application (UseCase)**
-
-  * 교차 엔터티 규칙 적용
-  * 여러 모듈 조합 및 트랜잭션 경계 관리
-  * 모듈 에러를 자신만의 유스케이스 에러로 다시 매핑
-
+- **Application (UseCase)**
+  - 교차 엔터티 규칙 적용
+  - 여러 모듈 조합 및 트랜잭션 경계 관리
+  - 모듈 에러를 자신만의 유스케이스 에러로 다시 매핑
 
 ### 결론
 
-* **모듈 = 불변성/계약 층**, **애플리케이션 = 정책/오케스트레이션 층**
-* 모듈에서 DB 제약을 해석하는 건 불가피하지만, 이는 **도메인 불변성 명명화**이지 비즈니스 로직 침투가 아님
-* 교차 정책, 트랜잭션, 워크플로우는 반드시 애플리케이션 레이어로 올려서 관리
-
+- **모듈 = 불변성/계약 층**, **애플리케이션 = 정책/오케스트레이션 층**
+- 모듈에서 DB 제약을 해석하는 건 불가피하지만, 이는 **도메인 불변성 명명화**이지 비즈니스 로직 침투가 아님
+- 교차 정책, 트랜잭션, 워크플로우는 반드시 애플리케이션 레이어로 올려서 관리
 
 # 서비스 정의 폴더 규칙
 
@@ -119,7 +115,7 @@ export class Service extends Effect.Service<Service>()('ProjectService', {
  */
 getTasks: (
 	query: typeof TaskQuerySchema.Encoded
-): Effect.Effect<Array<typeof TaskSchema.Type>, Supabase.PostgrestError> => {}
+): Effect.Effect<Array<typeof TaskSchema.Type>, Supabase.PostgrestError> => {};
 ```
 
 ## types.ts
@@ -166,9 +162,9 @@ export const ProjectQuerySchema = S.Struct({
 	name_query: S.optional(S.String),
 	status: S.optional(S.Boolean)
 });
-````
+```
 
-## __test__/schema.test.ts
+## **test**/schema.test.ts
 
 supabase에서 자동으로 생성한 타입 정의와, 스키마 상수가 올바르게 짝 지어서 구성된 건지 확인하는 테스트.
 `lib/shared/database.types.ts`에 정의되어 있는 supabase에서 생성한 타입 정의와
@@ -211,5 +207,4 @@ describe('Schema of ProjectUpdate', () => {
 		expect(match).toBe(true);
 	});
 });
-
 ```
