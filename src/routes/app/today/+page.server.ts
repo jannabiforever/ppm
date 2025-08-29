@@ -2,7 +2,7 @@ import * as FocusSession from '$lib/modules/focus_sessions/index.server';
 import * as FocusSessionProjectLookup from '$lib/applications/session-project-lookup/index.server';
 import * as Project from '$lib/modules/projects/index.server';
 import * as Task from '$lib/modules/tasks/index.server';
-import type { PageServerLoad, Actions } from './$types';
+import type { PageServerLoad } from './$types';
 import { Effect, DateTime, Console, Either, Layer } from 'effect';
 import { error } from '@sveltejs/kit';
 import { mapDomainError } from '$lib/shared/errors';
@@ -40,9 +40,3 @@ export const load: PageServerLoad = async ({ locals }) => {
 		})
 	});
 };
-
-export const actions = {
-	createSession: async () => {
-		// TODO: implement the api.
-	}
-} satisfies Actions;
