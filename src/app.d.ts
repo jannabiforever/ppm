@@ -5,9 +5,19 @@ import type { Session, User } from '@supabase/supabase-js';
 
 declare global {
 	namespace App {
+		/**
+		 * RFC 7807 표준에 맞춤.
+		 */
 		interface Error {
-			readonly _tag: string;
-			readonly message: string;
+			/** _tag */
+			readonly type: string;
+			/** 에러 설명 타이틀 */
+			readonly title: string;
+			/** 에러 부가 내용 */
+			readonly detail?: string;
+			readonly status: number;
+			// 확장 필드
+			readonly [key: string]: unknown;
 		}
 		interface Locals {
 			supabase: Layer.Layer<Supabase.Service, never, never>;
@@ -20,5 +30,3 @@ declare global {
 		// interface Platform {}
 	}
 }
-
-export {};

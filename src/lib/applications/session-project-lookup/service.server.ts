@@ -24,13 +24,16 @@ export class Service extends Effect.Service<Service>()('app/FocusSessionProjectL
 					return { ...focusSession, project: null };
 				}
 
-				const project = yield* projectService
-					.getProjectById(pid)
-					.pipe(
-						Effect.catchTag('Project/NotFound', () =>
-							Effect.fail(new SessionExistsButAssociatedProjectNotFound(session_id, pid))
+				const project = yield* projectService.getProjectById(pid).pipe(
+					Effect.catchTag('Project/NotFound', () =>
+						Effect.fail(
+							new SessionExistsButAssociatedProjectNotFound({
+								sessionId: session_id,
+								projectId: pid
+							})
 						)
-					);
+					)
+				);
 
 				return {
 					...focusSession,

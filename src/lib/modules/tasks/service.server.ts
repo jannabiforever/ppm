@@ -3,7 +3,7 @@ import * as Supabase from '../supabase/index.server';
 import * as Option from 'effect/Option';
 import * as S from 'effect/Schema';
 import { TaskQuerySchema, TaskSchema, TaskInsertSchema, TaskUpdateSchema } from './types';
-import { NotFound, InvalidProject, InvalidSession, InvalidOwner, HasDependencies } from './errors';
+import { NotFound, InvalidProject, InvalidSession, HasDependencies } from './errors';
 
 /**
  * 태스크 데이터의 생성, 조회, 수정, 삭제를 관리한다
@@ -20,10 +20,7 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 			 */
 			createTask: (
 				payload: typeof TaskInsertSchema.Encoded
-			): Effect.Effect<
-				string,
-				Supabase.PostgrestError | InvalidProject | InvalidSession | InvalidOwner
-			> =>
+			): Effect.Effect<string, Supabase.PostgrestError | InvalidProject | InvalidSession> =>
 				Effect.promise(() =>
 					client
 						.from('tasks')
@@ -40,20 +37,16 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 						'SupabasePostgrest',
 						(
 							error
-						): Effect.Effect<
-							never,
-							Supabase.PostgrestError | InvalidProject | InvalidSession | InvalidOwner
-						> => {
+						): Effect.Effect<never, Supabase.PostgrestError | InvalidProject | InvalidSession> => {
 							if (error.code === '23503') {
 								// Foreign key constraint violation
 								if (error.message.includes('project_id')) {
-									return Effect.fail(new InvalidProject(payload.project_id || ''));
+									return Effect.fail(new InvalidProject({ projectId: payload.project_id || '' }));
 								}
 								if (error.message.includes('completed_in_session_id')) {
-									return Effect.fail(new InvalidSession(payload.completed_in_session_id || ''));
-								}
-								if (error.message.includes('owner_id')) {
-									return Effect.fail(new InvalidOwner(user.id));
+									return Effect.fail(
+										new InvalidSession({ sessionId: payload.completed_in_session_id || '' })
+									);
 								}
 							}
 							return Effect.fail(error);
@@ -79,14 +72,16 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
 					Effect.flatMap(
 						Option.match({
-							onNone: () => Effect.fail(new NotFound(taskId)),
+							onNone: () => Effect.fail(new NotFound({ taskId })),
 							onSome: () => Effect.void
 						})
 					),
 					Effect.catchTag(
 						'SupabasePostgrest',
 						(error): Effect.Effect<never, Supabase.PostgrestError | HasDependencies> =>
-							error.code === '23503' ? Effect.fail(new HasDependencies(taskId)) : Effect.fail(error)
+							error.code === '23503'
+								? Effect.fail(new HasDependencies({ taskId }))
+								: Effect.fail(error)
 					)
 				),
 
@@ -102,9 +97,9 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
 					Effect.flatMap(
 						Option.match({
-							onNone: () => Effect.fail(new NotFound(taskId)),
+							onNone: () => Effect.fail(new NotFound({ taskId })),
 							onSome: (task) =>
-								S.decode(TaskSchema)(task).pipe(Effect.mapError(() => new NotFound(taskId)))
+								S.decode(TaskSchema)(task).pipe(Effect.mapError(() => new NotFound({ taskId })))
 						})
 					)
 				),
@@ -192,7 +187,7 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
 					Effect.flatMap(
 						Option.match({
-							onNone: () => Effect.fail(new NotFound(taskId)),
+							onNone: () => Effect.fail(new NotFound({ taskId })),
 							onSome: () => Effect.void
 						})
 					),
@@ -204,10 +199,12 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 							if (error.code === '23503') {
 								// Foreign key constraint violation
 								if (error.message.includes('project_id')) {
-									return Effect.fail(new InvalidProject(payload.project_id || ''));
+									return Effect.fail(new InvalidProject({ projectId: payload.project_id || '' }));
 								}
 								if (error.message.includes('completed_in_session_id')) {
-									return Effect.fail(new InvalidSession(payload.completed_in_session_id || ''));
+									return Effect.fail(
+										new InvalidSession({ sessionId: payload.completed_in_session_id || '' })
+									);
 								}
 							}
 							// P0001 is trigger error - just pass through

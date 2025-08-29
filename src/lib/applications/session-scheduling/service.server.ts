@@ -78,7 +78,10 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 				// 시간 유효성 검사
 				if (DateTime.lessThanOrEqualTo(end_at, start_at)) {
 					return yield* Effect.fail(
-						new FocusSessions.InvalidTime(DateTime.formatIso(start_at), DateTime.formatIso(end_at))
+						new FocusSessions.InvalidTime({
+							start_at: DateTime.formatIso(start_at),
+							end_at: DateTime.formatIso(end_at)
+						})
 					);
 				}
 
@@ -130,20 +133,17 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 			| FocusSessions.TimeConflict
 			| FocusSessions.InvalidTime
 			| FocusSessions.InvalidProject
-			| FocusSessions.InvalidOwner
 		> =>
 			Effect.gen(function* () {
 				// 충돌 검사
 				const conflictResult = yield* checkTimeConflict(params.start_at, params.end_at);
 
 				if (conflictResult.has_conflict) {
-					const firstConflict = conflictResult.conflicting_sessions![0];
 					return yield* Effect.fail(
-						new FocusSessions.TimeConflict(
-							firstConflict.id,
-							DateTime.formatIso(params.start_at),
-							DateTime.formatIso(params.end_at)
-						)
+						new FocusSessions.TimeConflict({
+							requestedStart: DateTime.formatIso(params.start_at),
+							requestedEnd: DateTime.formatIso(params.end_at)
+						})
 					);
 				}
 
@@ -151,8 +151,7 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 				return yield* focusSessionsService.createFocusSession({
 					project_id: params.project_id,
 					start_at: DateTime.formatIso(params.start_at),
-					end_at: DateTime.formatIso(params.end_at),
-					owner_id: ''
+					end_at: DateTime.formatIso(params.end_at)
 				});
 			});
 
@@ -179,13 +178,11 @@ export class Service extends Effect.Service<Service>()('SessionScheduling', {
 				const conflictResult = yield* checkTimeConflict(newStartAt, newEndAt, params.session_id);
 
 				if (conflictResult.has_conflict) {
-					const firstConflict = conflictResult.conflicting_sessions![0];
 					return yield* Effect.fail(
-						new FocusSessions.TimeConflict(
-							firstConflict.id,
-							DateTime.formatIso(newStartAt),
-							DateTime.formatIso(newEndAt)
-						)
+						new FocusSessions.TimeConflict({
+							requestedStart: DateTime.formatIso(newStartAt),
+							requestedEnd: DateTime.formatIso(newEndAt)
+						})
 					);
 				}
 

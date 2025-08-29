@@ -41,7 +41,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 				// 세션이 활성 상태인지 확인
 				const isActive = yield* focusSessionsService.isFocusSessionActive(params.session_id);
 				if (!isActive) {
-					return yield* Effect.fail(new FocusSession.NotActive(params.session_id));
+					return yield* Effect.fail(new FocusSession.NotActive({ sessionId: params.session_id }));
 				}
 
 				// 이미 추가되어 있는지 확인
@@ -49,8 +49,8 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 				if (Option.isSome(existing)) {
 					return yield* Effect.fail(
 						new TaskAlreadyInSessionError({
-							task_id: params.task_id,
-							session_id: params.session_id
+							taskId: params.task_id,
+							sessionId: params.session_id
 						})
 					);
 				}
@@ -75,7 +75,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 				// 세션이 활성 상태인지 확인
 				const isActive = yield* focusSessionsService.isFocusSessionActive(params.session_id);
 				if (!isActive) {
-					return yield* Effect.fail(new FocusSession.NotActive(params.session_id));
+					return yield* Effect.fail(new FocusSession.NotActive({ sessionId: params.session_id }));
 				}
 
 				// 존재하는지 확인
@@ -83,8 +83,8 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 				if (Option.isNone(existing)) {
 					return yield* Effect.fail(
 						new TaskNotInSessionError({
-							task_id: params.task_id,
-							session_id: params.session_id
+							taskId: params.task_id,
+							sessionId: params.session_id
 						})
 					);
 				}
@@ -106,7 +106,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 				// 세션이 활성 상태인지 확인
 				const isActive = yield* focusSessionsService.isFocusSessionActive(params.session_id);
 				if (!isActive) {
-					return yield* Effect.fail(new FocusSession.NotActive(params.session_id));
+					return yield* Effect.fail(new FocusSession.NotActive({ sessionId: params.session_id }));
 				}
 
 				// 태스크들 추가
@@ -126,7 +126,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskManagement', 
 				// 세션이 활성 상태인지 확인
 				const isActive = yield* focusSessionsService.isFocusSessionActive(params.session_id);
 				if (!isActive) {
-					return yield* Effect.fail(new FocusSession.NotActive(params.session_id));
+					return yield* Effect.fail(new FocusSession.NotActive({ sessionId: params.session_id }));
 				}
 
 				// 모든 태스크 제거

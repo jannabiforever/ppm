@@ -90,13 +90,7 @@ export class PostgrestError extends Data.TaggedError('SupabasePostgrest')<{
 	}
 }
 
-export class NoSessionOrUserError extends Data.TaggedError('NoSessionOrUser')<{
-	readonly message: string;
-}> {
-	constructor() {
-		super({ message: '세션이 없거나 대응되는 사용자가 없습니다.' });
-	}
-}
+export class NoSessionOrUserError extends Data.TaggedError('NoSessionOrUser') {}
 
 // ------------------------------------------------------------
 // 유틸 함수
@@ -123,3 +117,12 @@ export function mapPostgrestResponseVoid<T>(
 ): Effect.Effect<void, PostgrestError> {
 	return res.error ? Effect.fail(new PostgrestError(res.error, res.status)) : Effect.void;
 }
+
+// ------------------------------------------------------------
+// 유니온 타입
+// ------------------------------------------------------------
+
+/**
+ * Supabase 관련 에러
+ */
+export type Error = NoSessionOrUserError | PostgrestError | StorageError | AuthError;

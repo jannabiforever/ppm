@@ -1,15 +1,11 @@
-import { error, redirect } from '@sveltejs/kit';
-import type { LayoutServerLoad } from './$types';
-
-import { Effect } from 'effect';
-import * as Option from 'effect/Option';
-import * as Either from 'effect/Either';
-import * as Console from 'effect/Console';
 import * as FocusSession from '$lib/modules/focus_sessions/index.server';
 import * as Project from '$lib/modules/projects/index.server';
-import * as Task from '$lib/modules/tasks/index.server';
 import * as SessionTask from '$lib/modules/session_tasks/index.server';
-import { StatusCodes } from 'http-status-codes';
+import * as Task from '$lib/modules/tasks/index.server';
+import type { LayoutServerLoad } from './$types';
+import { Effect, Layer, Option, Either, Console } from 'effect';
+import { error } from '@sveltejs/kit';
+import { mapDomainError } from '$lib/shared/errors';
 
 /**
  * 네비게이션에는 다음 데이터가 필요함:
@@ -18,6 +14,13 @@ import { StatusCodes } from 'http-status-codes';
  * - 현재 active 상태의 프로젝트들
  */
 export const load: LayoutServerLoad = async ({ locals }) => {
+	const programResource = Layer.mergeAll(
+		Project.Service.Default,
+		Task.Service.Default,
+		SessionTask.Service.Default,
+		FocusSession.Service.Default
+	).pipe(Layer.provide(locals.supabase));
+
 	const program = Effect.gen(function* () {
 		const projectRepo = yield* Project.Service;
 		const taskRepo = yield* Task.Service;
@@ -48,12 +51,9 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	});
 
 	const p = await program.pipe(
-		Effect.provide(Project.Service.Default),
-		Effect.provide(Task.Service.Default),
-		Effect.provide(SessionTask.Service.Default),
-		Effect.provide(FocusSession.Service.Default),
-		Effect.provide(locals.supabase),
+		Effect.provide(programResource),
 		Effect.tapError(Console.error),
+		Effect.mapError(mapDomainError),
 		Effect.either,
 		Effect.runPromise
 	);
@@ -62,21 +62,6 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		onRight: (data) => {
 			return { ...data, user: locals.user, profile: locals.profile };
 		},
-		onLeft: (err) => {
-			switch (err._tag) {
-				case 'NoSessionOrUser':
-					return redirect(StatusCodes.UNAUTHORIZED, '/auth/login');
-				case 'SupabaseAuth':
-					return error(err.status, {
-						_tag: err._tag,
-						message: err.message
-					});
-				case 'SupabasePostgrest':
-					return error(err.status, {
-						_tag: err._tag,
-						message: err.message
-					});
-			}
-		}
+		onLeft: (err) => error(err.status, err)
 	});
 };

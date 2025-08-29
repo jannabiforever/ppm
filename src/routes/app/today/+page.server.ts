@@ -1,16 +1,20 @@
-import { Effect, DateTime } from 'effect';
-import * as Either from 'effect/Either';
-import * as Console from 'effect/Console';
-import * as Task from '$lib/modules/tasks/index.server';
 import * as FocusSession from '$lib/modules/focus_sessions/index.server';
 import * as FocusSessionProjectLookup from '$lib/applications/session-project-lookup/index.server';
 import * as Project from '$lib/modules/projects/index.server';
-
+import * as Task from '$lib/modules/tasks/index.server';
 import type { PageServerLoad, Actions } from './$types';
-import { error, redirect } from '@sveltejs/kit';
-import { StatusCodes } from 'http-status-codes';
+import { Effect, DateTime, Console, Either, Layer } from 'effect';
+import { error } from '@sveltejs/kit';
+import { mapDomainError } from '$lib/shared/errors';
 
 export const load: PageServerLoad = async ({ locals }) => {
+	const programResources = Layer.mergeAll(
+		FocusSessionProjectLookup.Service.Default,
+		FocusSession.Service.Default,
+		Project.Service.Default,
+		Task.Service.Default
+	).pipe(Layer.provide(locals.supabase));
+
 	const todayTasksAndSessionsResult = await Effect.gen(function* () {
 		const taskRepo = yield* Task.Service;
 		const focusSessionRepo = yield* FocusSessionProjectLookup.Service;
@@ -20,27 +24,15 @@ export const load: PageServerLoad = async ({ locals }) => {
 			todaySessions: yield* focusSessionRepo.getFocusSessionProjectLookupsByDate(today)
 		};
 	}).pipe(
-		Effect.provide(FocusSessionProjectLookup.Service.Default),
-		Effect.provide(FocusSession.Service.Default),
-		Effect.provide(Project.Service.Default),
-		Effect.provide(Task.Service.Default),
-		Effect.provide(locals.supabase),
+		Effect.provide(programResources),
 		Effect.tapError(Console.error),
+		Effect.mapError(mapDomainError),
 		Effect.either,
 		Effect.runPromise
 	);
 
 	return Either.match(todayTasksAndSessionsResult, {
-		onLeft: (err) => {
-			switch (err._tag) {
-				case 'SupabaseAuth':
-					return error(err.status, err);
-				case 'SupabasePostgrest':
-					return error(err.status, err);
-				case 'NoSessionOrUser':
-					return redirect(StatusCodes.UNAUTHORIZED, '/auth/login');
-			}
-		},
+		onLeft: (err) => error(err.status, err),
 		onRight: (data) => ({
 			todayTasks: data.todayTasks,
 			todaySessions: data.todaySessions

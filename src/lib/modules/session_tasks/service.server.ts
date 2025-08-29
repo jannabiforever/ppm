@@ -18,8 +18,8 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				if (Option.isSome(existing)) {
 					return yield* Effect.fail(
 						new TaskAlreadyInSessionError({
-							task_id: params.task_id,
-							session_id: params.session_id
+							taskId: params.task_id,
+							sessionId: params.session_id
 						})
 					);
 				}
@@ -44,8 +44,8 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				if (Option.isNone(existing)) {
 					return yield* Effect.fail(
 						new TaskNotInSessionError({
-							task_id: params.task_id,
-							session_id: params.session_id
+							taskId: params.task_id,
+							sessionId: params.session_id
 						})
 					);
 				}

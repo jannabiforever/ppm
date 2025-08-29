@@ -33,7 +33,8 @@ export class Service extends Effect.Service<Service>()('UserProfileRepository', 
 				).pipe(
 					Effect.flatMap(Supabase.mapPostgrestResponse),
 					Effect.flatMap((res) => {
-						if (res === null) return Effect.fail(new AssociatedProfileNotFound(user.id));
+						if (res === null)
+							return Effect.fail(new AssociatedProfileNotFound({ userId: user.id }));
 						return Effect.succeed(res);
 					})
 				),

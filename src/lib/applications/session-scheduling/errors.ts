@@ -6,15 +6,9 @@ import { Data } from 'effect';
 export class NoAvailableTimeSlot extends Data.TaggedError('NoAvailableTimeSlot')<{
 	date: string;
 	duration_minutes: number;
-	message?: string;
-}> {
-	constructor(params: { date: string; duration_minutes: number; message?: string }) {
-		super({
-			date: params.date,
-			duration_minutes: params.duration_minutes,
-			message:
-				params.message ??
-				`${params.date}에 ${params.duration_minutes}분 동안 사용 가능한 시간을 찾을 수 없습니다`
-		});
-	}
-}
+}> {}
+
+/**
+ * 세션 스케쥴링 애플리케이션 관련 에러
+ */
+export type Error = NoAvailableTimeSlot;

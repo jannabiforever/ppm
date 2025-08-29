@@ -1,12 +1,16 @@
 import { Data } from 'effect';
 
-// 도메인 에러 정의
 export class TaskAlreadyInSessionError extends Data.TaggedError('TaskAlreadyInSession')<{
-	task_id: string;
-	session_id: string;
+	taskId: string;
+	sessionId: string;
 }> {}
 
 export class TaskNotInSessionError extends Data.TaggedError('TaskNotInSession')<{
-	task_id: string;
-	session_id: string;
+	taskId: string;
+	sessionId: string;
 }> {}
+
+/**
+ * 집중세션-태스크 관계 관련 에러
+ */
+export type Error = TaskAlreadyInSessionError | TaskNotInSessionError;

@@ -51,20 +51,28 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 							if (error.code === '23503') {
 								// Foreign key constraint violation
 								if (error.message.includes('project_id')) {
-									return Effect.fail(new InvalidProject(payload.project_id || ''));
+									return Effect.fail(new InvalidProject({ projectId: payload.project_id || '' }));
 								}
 							}
 							if (error.code === '23514') {
 								// Check constraint violation
 								if (error.message.includes('check_end_after_start')) {
-									return Effect.fail(new InvalidTime(payload.start_at, payload.end_at));
+									return Effect.fail(
+										new InvalidTime({
+											start_at: payload.start_at,
+											end_at: payload.end_at
+										})
+									);
 								}
 							}
 							if (error.code === 'P0001') {
 								// Trigger error - overlapping sessions
 								if (error.message.includes('overlapping') || error.message.includes('중복')) {
 									return Effect.fail(
-										new TimeConflict('existing-session', payload.start_at, payload.end_at)
+										new TimeConflict({
+											requestedStart: payload.start_at,
+											requestedEnd: payload.end_at
+										})
 									);
 								}
 							}
@@ -91,7 +99,7 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
 					Effect.flatMap(
 						Option.match({
-							onNone: () => Effect.fail(new NotFound(sessionId)),
+							onNone: () => Effect.fail(new NotFound({ sessionId })),
 							onSome: () => Effect.void
 						})
 					),
@@ -99,7 +107,7 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 						'SupabasePostgrest',
 						(error): Effect.Effect<never, Supabase.PostgrestError | HasDependencies> =>
 							error.code === '23503'
-								? Effect.fail(new HasDependencies(sessionId))
+								? Effect.fail(new HasDependencies({ sessionId }))
 								: Effect.fail(error)
 					)
 				),
@@ -123,9 +131,9 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 						Option.match({
 							onSome: (session) =>
 								S.decode(FocusSessionSchema)(session).pipe(
-									Effect.mapError(() => new NotFound(sessionId))
+									Effect.mapError(() => new NotFound({ sessionId }))
 								),
-							onNone: () => Effect.fail(new NotFound(sessionId))
+							onNone: () => Effect.fail(new NotFound({ sessionId }))
 						})
 					)
 				),
@@ -152,7 +160,7 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
 					Effect.flatMap(
 						Option.match({
-							onNone: () => Effect.fail(new NotFound(sessionId)),
+							onNone: () => Effect.fail(new NotFound({ sessionId })),
 							onSome: () => Effect.void
 						})
 					),
@@ -167,24 +175,28 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 							if (error.code === '23503') {
 								// Foreign key constraint violation
 								if (error.message.includes('project_id')) {
-									return Effect.fail(new InvalidProject(payload.project_id || ''));
+									return Effect.fail(new InvalidProject({ projectId: payload.project_id || '' }));
 								}
 							}
 							if (error.code === '23514') {
 								// Check constraint violation
 								if (error.message.includes('check_end_after_start')) {
-									return Effect.fail(new InvalidTime(payload.start_at || '', payload.end_at || ''));
+									return Effect.fail(
+										new InvalidTime({
+											start_at: payload.start_at || '',
+											end_at: payload.end_at || ''
+										})
+									);
 								}
 							}
 							if (error.code === 'P0001') {
 								// Trigger error - overlapping sessions
 								if (error.message.includes('overlapping') || error.message.includes('중복')) {
 									return Effect.fail(
-										new TimeConflict(
-											'existing-session',
-											payload.start_at || '',
-											payload.end_at || ''
-										)
+										new TimeConflict({
+											requestedStart: payload.start_at || '',
+											requestedEnd: payload.end_at || ''
+										})
 									);
 								}
 							}
@@ -514,7 +526,7 @@ export class Service extends Effect.Service<Service>()('FocusSessionService', {
 					Effect.flatMap((session) =>
 						Option.match(session, {
 							onSome: (session) => Effect.succeed(session.start_at <= now && session.end_at >= now),
-							onNone: () => Effect.fail(new NotFound(sessionId))
+							onNone: () => Effect.fail(new NotFound({ sessionId }))
 						})
 					)
 				);

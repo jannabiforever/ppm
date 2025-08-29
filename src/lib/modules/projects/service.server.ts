@@ -8,7 +8,7 @@ import {
 	ProjectUpdateSchema,
 	ProjectQuerySchema
 } from './types';
-import { NotFound, NameAlreadyExists, InvalidOwner, HasDependencies } from './errors';
+import { NotFound, NameAlreadyExists, HasDependencies } from './errors';
 
 export class Service extends Effect.Service<Service>()('ProjectService', {
 	effect: Effect.gen(function* () {
@@ -22,7 +22,7 @@ export class Service extends Effect.Service<Service>()('ProjectService', {
 			 */
 			createProject: (
 				payload: typeof ProjectInsertSchema.Encoded
-			): Effect.Effect<string, Supabase.PostgrestError | NameAlreadyExists | InvalidOwner> =>
+			): Effect.Effect<string, Supabase.PostgrestError | NameAlreadyExists> =>
 				Effect.promise(() =>
 					client
 						.from('projects')
@@ -37,14 +37,11 @@ export class Service extends Effect.Service<Service>()('ProjectService', {
 					Effect.map((project) => project.id),
 					Effect.catchTag(
 						'SupabasePostgrest',
-						(
-							error
-						): Effect.Effect<never, Supabase.PostgrestError | NameAlreadyExists | InvalidOwner> =>
-							error.code === '23505'
-								? Effect.fail(new NameAlreadyExists(payload.name))
-								: error.code === '23503'
-									? Effect.fail(new InvalidOwner(user.id))
-									: Effect.fail(error)
+						(error): Effect.Effect<never, Supabase.PostgrestError | NameAlreadyExists> => {
+							if (error.code === '23505')
+								return Effect.fail(new NameAlreadyExists({ name: payload.name }));
+							else return Effect.fail(error);
+						}
 					)
 				),
 
@@ -68,14 +65,14 @@ export class Service extends Effect.Service<Service>()('ProjectService', {
 					Effect.flatMap(
 						Option.match({
 							onSome: () => Effect.void,
-							onNone: () => Effect.fail(new NotFound(project_id))
+							onNone: () => Effect.fail(new NotFound({ projectId: project_id }))
 						})
 					),
 					Effect.catchTag(
 						'SupabasePostgrest',
 						(error): Effect.Effect<never, Supabase.PostgrestError | NameAlreadyExists> =>
 							error.code === '23505'
-								? Effect.fail(new NameAlreadyExists(payload.name || ''))
+								? Effect.fail(new NameAlreadyExists({ name: payload.name || '' }))
 								: Effect.fail(error)
 					)
 				),
@@ -84,13 +81,13 @@ export class Service extends Effect.Service<Service>()('ProjectService', {
 			 * 프로젝트를 삭제한다
 			 */
 			deleteProject: (
-				project_id: string
+				projectId: string
 			): Effect.Effect<void, Supabase.PostgrestError | NotFound | HasDependencies> =>
 				Effect.promise(() =>
 					client
 						.from('projects')
 						.delete()
-						.eq('id', project_id)
+						.eq('id', projectId)
 						.eq('owner_id', user.id)
 						.select('id')
 						.maybeSingle()
@@ -99,14 +96,14 @@ export class Service extends Effect.Service<Service>()('ProjectService', {
 					Effect.flatMap(
 						Option.match({
 							onSome: () => Effect.void,
-							onNone: () => Effect.fail(new NotFound(project_id))
+							onNone: () => Effect.fail(new NotFound({ projectId }))
 						})
 					),
 					Effect.catchTag(
 						'SupabasePostgrest',
 						(error): Effect.Effect<never, Supabase.PostgrestError | HasDependencies> =>
 							error.code === '23503'
-								? Effect.fail(new HasDependencies(project_id))
+								? Effect.fail(new HasDependencies({ projectId }))
 								: Effect.fail(error)
 					)
 				),
@@ -115,24 +112,19 @@ export class Service extends Effect.Service<Service>()('ProjectService', {
 			 * 특정 프로젝트의 상세 정보를 조회한다
 			 */
 			getProjectById: (
-				project_id: string
+				projectId: string
 			): Effect.Effect<typeof ProjectSchema.Type, Supabase.PostgrestError | NotFound> =>
 				Effect.promise(() =>
-					client
-						.from('projects')
-						.select()
-						.eq('id', project_id)
-						.eq('owner_id', user.id)
-						.maybeSingle()
+					client.from('projects').select().eq('id', projectId).eq('owner_id', user.id).maybeSingle()
 				).pipe(
 					Effect.flatMap(Supabase.mapPostgrestResponseOptional),
 					Effect.flatMap(
 						Option.match({
 							onSome: (project) =>
 								S.decode(ProjectSchema)(project).pipe(
-									Effect.mapError(() => new NotFound(project_id))
+									Effect.mapError(() => new NotFound({ projectId }))
 								),
-							onNone: () => Effect.fail(new NotFound(project_id))
+							onNone: () => Effect.fail(new NotFound({ projectId }))
 						})
 					)
 				),
@@ -167,13 +159,13 @@ export class Service extends Effect.Service<Service>()('ProjectService', {
 			 * 프로젝트를 아카이브한다 (active를 false로 설정)
 			 */
 			archiveProject: (
-				project_id: string
+				projectId: string
 			): Effect.Effect<void, Supabase.PostgrestError | NotFound> =>
 				Effect.promise(() =>
 					client
 						.from('projects')
 						.update({ active: false })
-						.eq('id', project_id)
+						.eq('id', projectId)
 						.eq('owner_id', user.id)
 						.select('id')
 						.maybeSingle()
@@ -182,7 +174,7 @@ export class Service extends Effect.Service<Service>()('ProjectService', {
 					Effect.flatMap(
 						Option.match({
 							onSome: () => Effect.void,
-							onNone: () => Effect.fail(new NotFound(project_id))
+							onNone: () => Effect.fail(new NotFound({ projectId }))
 						})
 					)
 				),
@@ -191,13 +183,13 @@ export class Service extends Effect.Service<Service>()('ProjectService', {
 			 * 아카이브된 프로젝트를 복원한다 (active를 true로 설정)
 			 */
 			restoreProject: (
-				project_id: string
+				projectId: string
 			): Effect.Effect<void, Supabase.PostgrestError | NotFound> =>
 				Effect.promise(() =>
 					client
 						.from('projects')
 						.update({ active: true })
-						.eq('id', project_id)
+						.eq('id', projectId)
 						.eq('owner_id', user.id)
 						.select('id')
 						.maybeSingle()
@@ -206,7 +198,7 @@ export class Service extends Effect.Service<Service>()('ProjectService', {
 					Effect.flatMap(
 						Option.match({
 							onSome: () => Effect.void,
-							onNone: () => Effect.fail(new NotFound(project_id))
+							onNone: () => Effect.fail(new NotFound({ projectId }))
 						})
 					)
 				),
