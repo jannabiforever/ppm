@@ -10,12 +10,13 @@ import { mapDomainError } from '$lib/shared/errors';
 export const load: PageServerLoad = async ({ locals }) => {
 	const programResources = Layer.mergeAll(
 		FocusSessionProjectLookup.Service.Default,
-		FocusSession.Service.Default,
-		Project.Service.Default,
 		Task.Service.Default
-	).pipe(Layer.provide(locals.supabase));
+	).pipe(
+		Layer.provide(Layer.mergeAll(FocusSession.Service.Default, Project.Service.Default)),
+		Layer.provide(locals.supabase)
+	);
 
-	const todayTasksAndSessionsResult = await Effect.gen(function* () {
+	const program = await Effect.gen(function* () {
 		const taskRepo = yield* Task.Service;
 		const focusSessionRepo = yield* FocusSessionProjectLookup.Service;
 		const today = yield* DateTime.nowAsDate;
@@ -31,7 +32,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		Effect.runPromise
 	);
 
-	return Either.match(todayTasksAndSessionsResult, {
+	return Either.match(program, {
 		onLeft: (err) => error(err.status, err),
 		onRight: (data) => ({
 			todayTasks: data.todayTasks,
