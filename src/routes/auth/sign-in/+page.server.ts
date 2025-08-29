@@ -3,50 +3,51 @@ import * as Either from 'effect/Either';
 import * as S from 'effect/Schema';
 import { fail, redirect, type Actions } from '@sveltejs/kit';
 import { Console, Effect, Layer } from 'effect';
-import HttpStatusCodes from 'http-status-codes';
-import type { ParseError } from 'effect/ParseResult';
+import { StatusCodes } from 'http-status-codes';
+import { mapDomainError } from '$lib/shared/errors';
 
 export const actions = {
 	'sign-in': async ({ locals, request, cookies }) => {
+		const programResources = Layer.provide(Auth.Service.Default, locals.supabase);
 		const formData = await request.formData();
-		const decoded: Either.Either<
-			typeof Auth.SignInSchema.Type & { remember: boolean },
-			ParseError
-		> = Effect.gen(function* () {
-			const email = formData.get('email');
-			const password = formData.get('password');
-			const remember = formData.get('remember') === 'on';
+		const program: Either.Either<typeof Auth.SignInSchema.Type & { remember: boolean }, App.Error> =
+			await Effect.gen(function* () {
+				const email = formData.get('email');
+				const password = formData.get('password');
+				const remember = formData.get('remember') === 'on';
 
-			const result = yield* S.decodeUnknown(Auth.SignInSchema)({
-				email,
-				password
-			});
+				const result = yield* S.decodeUnknown(Auth.SignInSchema)({
+					email,
+					password
+				});
 
-			return {
-				...result,
-				remember
-			};
-		}).pipe(Effect.tapError(Console.error), Effect.either, Effect.runSync);
+				const authService = yield* Auth.Service;
+				yield* authService.signInWithPassword(result);
 
-		if (Either.isLeft(decoded)) {
-			return fail(HttpStatusCodes.BAD_REQUEST, decoded.left);
-		}
+				return {
+					...result,
+					remember
+				};
+			}).pipe(
+				Effect.provide(programResources),
+				Effect.tapError(Console.error),
+				Effect.catchAll((err) => {
+					if (err._tag === 'ParseError')
+						return Effect.fail({
+							type: err._tag,
+							title: `잘못된 요청입니다: ${err.message}`,
+							status: StatusCodes.BAD_REQUEST
+						} as App.Error);
+					return Effect.fail(mapDomainError(err));
+				}),
+				Effect.either,
+				Effect.runPromise
+			);
 
-		const result = await Effect.gen(function* () {
-			const auth = yield* Auth.Service;
-			return yield* auth.signInWithPassword(decoded.right);
-		}).pipe(
-			Effect.provide(Layer.provide(Auth.Service.Default, locals.supabase)),
-			Effect.tapError(Console.error),
-			Effect.either,
-			Effect.runPromise
-		);
-
-		return Either.match(result, {
-			onRight: () => {
-				// Handle remember
-				if (decoded.right.remember) {
-					cookies.set('email', decoded.right.email, {
+		return Either.match(program, {
+			onRight: (result) => {
+				if (result.remember) {
+					cookies.set('email', result.email, {
 						httpOnly: true,
 						sameSite: 'strict',
 						secure: true,
@@ -55,10 +56,10 @@ export const actions = {
 					});
 				}
 
-				return redirect(HttpStatusCodes.SEE_OTHER, '/app');
+				return redirect(StatusCodes.SEE_OTHER, '/app');
 			},
 			onLeft: (error) => {
-				return fail(HttpStatusCodes.UNAUTHORIZED, error);
+				return fail(error.status, error);
 			}
 		});
 	}

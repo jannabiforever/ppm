@@ -40,6 +40,8 @@ export type DomainError =
  * 도메인 에러를 표현 계층, 즉 클라이언트 레벨로 전파할 때
  * SvelteKit에서 정의된 App.Error로 변환함
  *
+ * TODO: 각 에러 상황 모두 지원하기
+ *
  * @param error 모듈이나 애플리케이션 레벨에서 정의된 도메인 에러
  */
 export const mapDomainError = (error: DomainError): App.Error => {
