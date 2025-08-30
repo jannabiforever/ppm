@@ -36,7 +36,7 @@
 		</Dialog.Trigger>
 	{/if}
 	<Dialog.Portal>
-		<Dialog.Overlay class="{overlayAnimateClass} fixed inset-0 z-50  bg-surface-950/80" />
+		<Dialog.Overlay class="{overlayAnimateClass} fixed inset-0 z-50 bg-surface-950/80" />
 		<Dialog.Content
 			class="{contentAnimateClass} fixed top-[50%] left-[50%] z-50 {contentWidthClass} max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-[20px] border bg-surface-50-950 p-5 outline-hidden sm:max-w-[490px]"
 		>

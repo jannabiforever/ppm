@@ -1,11 +1,25 @@
 <script lang="ts">
-	import { Separator } from 'bits-ui';
-	import { DateTime, Effect } from 'effect';
+	import Button from '../ui/Button.svelte';
+	import Dialog from '../ui/Dialog.svelte';
+	import Select from '../ui/Select.svelte';
 	import SessionCard from './SessionCard.svelte';
 	import type { FocusSessionProjectLookupSchema } from '$lib/applications/session-project-lookup/types';
-	import Dialog from '../ui/Dialog.svelte';
+	import type { ProjectSchema } from '$lib/modules/projects';
+	import { DateTime, Effect } from 'effect';
+	import { Hash } from 'lucide-svelte';
+	import { ICON_PROPS } from '../constants';
+	import { Separator } from 'bits-ui';
 	import { formatTimeKstHHmm, getKstMidnightAsUtc } from '$lib/shared/utils/datetime.svelte';
-	import Button from '../ui/Button.svelte';
+
+	/**
+	 * 모든 활성 프로젝트 목록 가져오기
+	 */
+	async function getAllProjects(): Promise<Array<typeof ProjectSchema.Type>> {
+		return new Promise((resolve) => {
+			// TODO: 구현
+			resolve([]);
+		});
+	}
 
 	/**
 	 * 세션 시간 단위. 반올림할 때 사용
@@ -13,10 +27,10 @@
 	const QUANTIZED_UNIT_IN_MINUTES = 15;
 
 	interface Props {
-		focusSessions: Array<typeof FocusSessionProjectLookupSchema.Type>;
+		focusSessionProjectLookups: Array<typeof FocusSessionProjectLookupSchema.Type>;
 	}
 
-	let { focusSessions }: Props = $props();
+	let { focusSessionProjectLookups }: Props = $props();
 	let containerElement: HTMLDivElement;
 
 	type TimelineState =
@@ -55,7 +69,7 @@
 	});
 
 	let assignedFocusSessions = $derived(
-		focusSessions.toSorted((a, b) => a.start_at.epochMillis - b.start_at.epochMillis)
+		focusSessionProjectLookups.toSorted((a, b) => a.start_at.epochMillis - b.start_at.epochMillis)
 	);
 
 	// Y 좌표를 시간으로 변환
@@ -159,9 +173,11 @@
 	});
 </script>
 
-{#snippet singleTimeLine(label: string)}
+{#snippet singleTimeLine(hour: number)}
 	<div class="flex h-[calc(100%/25)] flex-row items-start justify-between">
-		<span class="min-w-[45px] text-right text-sm text-surface-500">{label}</span>
+		<span class="min-w-[45px] text-right text-sm text-surface-500">
+			{`${hour.toString().padStart(2, '0')}:00`}
+		</span>
 		<Separator.Root class="mr-2 ml-5 h-px flex-1 bg-surface-300" />
 	</div>
 {/snippet}
@@ -175,13 +191,18 @@
 	role="grid"
 	tabindex="0"
 >
-	{#each Array(25)
-		.keys()
-		.map((index) => index.toString()) as hour (hour)}
-		{@render singleTimeLine(`${hour.padStart(2, '0')}:00`)}
+	{#each Array(25).keys() as hour (hour)}
+		{@render singleTimeLine(hour)}
 	{/each}
 
-	<!-- 선택 영역 -->
+	{#each assignedFocusSessions as fs (fs.id)}
+		{@const top = calculateDateTimeUtcToY(fs.start_at)}
+		{@const height = calculateDateTimeUtcToY(fs.end_at) - top}
+		<div class="absolute right-4 left-16" style="top: {top}px; height: {height}px;">
+			<SessionCard focusSession={fs} />
+		</div>
+	{/each}
+
 	{#if timelineState.type !== 'idle' && interval !== null}
 		<div
 			class="pointer-events-none absolute right-4 left-16 z-10 rounded-lg border-2 border-primary-500 bg-surface-50-950"
@@ -193,17 +214,6 @@
 			</div>
 		</div>
 	{/if}
-
-	<div class="relative w-full">
-		<!-- 세션 카드들 -->
-		{#each assignedFocusSessions as fs (fs.id)}
-			{@const top = calculateDateTimeUtcToY(fs.start_at)}
-			{@const height = calculateDateTimeUtcToY(fs.end_at) - top}
-			<div class="absolute right-4 left-16" style="top: {top}px; height: {height}px;">
-				<SessionCard focusSession={fs} />
-			</div>
-		{/each}
-	</div>
 </div>
 
 <Dialog
@@ -217,12 +227,24 @@
 >
 	{#snippet content()}
 		{#if interval !== null}
-			<form method="POST" action="/api/focus-sessions">
+			<form method="POST" action="/api/focus-sessions" class="flex w-full flex-col gap-3 pt-3">
 				<input type="hidden" name="start_at" value={DateTime.formatIso(interval[0])} />
 				<input type="hidden" name="end_at" value={DateTime.formatIso(interval[1])} />
-				<label for="project_id">프로젝트 선택</label>
-				<!-- TODO: 프로젝트 선택 콤보박스 or Select -->
-				<input type="text" name="project_id" />
+				{#await getAllProjects() then projects}
+					{@const projectsIncludingInbox = projects
+						.map((p) => ({ label: p.name, value: p.id }))
+						.concat([{ label: '수집함', value: 'inbox' }])}
+					<Select ariaLabel="프로젝트 선택" items={projectsIncludingInbox}>
+						{#snippet trigger({ selectedValue })}
+							<Hash {...ICON_PROPS.md} class="text-surface-300-700" />
+							<span class="ml-3 flex-1 text-start text-sm text-surface-300-700">
+								{selectedValue
+									? projects.find((p) => p.id === selectedValue)?.name
+									: '프로젝트 선택'}
+							</span>
+						{/snippet}
+					</Select>
+				{/await}
 
 				<Button filled type="submit">생성</Button>
 			</form>

@@ -26,6 +26,6 @@
 			<span class="font-semibold">집중 세션</span>
 			<span class="flex-1">{data.todayFocusSessionProjectLookups.length}개</span>
 		</div>
-		<Timeline focusSessions={data.todayFocusSessionProjectLookups} />
+		<Timeline focusSessionProjectLookups={data.todayFocusSessionProjectLookups} />
 	</div>
 </div>
