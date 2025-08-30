@@ -22,7 +22,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		const today = yield* DateTime.nowAsDate;
 		return {
 			todayTasks: yield* taskRepo.getTodayTasks(),
-			todaySessions: yield* focusSessionRepo.getFocusSessionProjectLookupsByDate(today)
+			todayFocusSessionProjectLookups:
+				yield* focusSessionRepo.getFocusSessionProjectLookupsByDate(today)
 		};
 	}).pipe(
 		Effect.provide(programResources),
@@ -34,9 +35,6 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	return Either.match(program, {
 		onLeft: (err) => error(err.status, err),
-		onRight: (data) => ({
-			todayTasks: data.todayTasks,
-			todaySessions: data.todaySessions
-		})
+		onRight: (data) => data
 	});
 };
