@@ -1,22 +1,22 @@
-import * as FocusSession from '$lib/modules/focus_sessions/index.server';
+import * as Project from '$lib/modules/projects/index.server';
 import * as S from 'effect/Schema';
-import type { RequestHandler } from './$types';
+import type { RequestHandler } from '@sveltejs/kit';
 import { Effect, Layer, Console, Either } from 'effect';
 import { error, json } from '@sveltejs/kit';
 import { mapToAppError } from '$lib/shared/errors';
 import { IdParamsSchema } from '$lib/shared/params';
 
 export const GET: RequestHandler = async ({ locals, params }) => {
-	const programResources = Layer.provide(FocusSession.Service.Default, locals.supabase);
+	const programResources = Layer.provide(Project.Service.Default, locals.supabase);
 	const program = await Effect.gen(function* () {
 		// 파라미터 검증
 		const { id } = yield* S.decodeUnknown(IdParamsSchema)(params);
 
-		const fsService = yield* FocusSession.Service;
-		const session = yield* fsService.getFocusSessionById(id);
+		const projectService = yield* Project.Service;
+		const project = yield* projectService.getProjectById(id);
 
 		// 인코딩하여 클라이언트에 전송
-		return yield* S.encode(FocusSession.FocusSessionSchema)(session);
+		return yield* S.encode(Project.ProjectSchema)(project);
 	}).pipe(
 		Effect.provide(programResources),
 		Effect.tapError(Console.error),
@@ -32,7 +32,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 };
 
 export const PATCH: RequestHandler = async ({ locals, params, request }) => {
-	const programResources = Layer.provide(FocusSession.Service.Default, locals.supabase);
+	const programResources = Layer.provide(Project.Service.Default, locals.supabase);
 	const program = await Effect.gen(function* () {
 		// 파라미터 검증
 		const { id } = yield* S.decodeUnknown(IdParamsSchema)(params);
@@ -40,12 +40,12 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 		const json = yield* Effect.promise(() => request.json());
 
 		// 검증 후 재 인코딩
-		const payload: typeof FocusSession.FocusSessionUpdateSchema.Encoded = yield* S.decodeUnknown(
-			FocusSession.FocusSessionUpdateSchema
-		)(json).pipe(Effect.flatMap(S.encode(FocusSession.FocusSessionUpdateSchema)));
+		const payload: typeof Project.ProjectUpdateSchema.Encoded = yield* S.decodeUnknown(
+			Project.ProjectUpdateSchema
+		)(json).pipe(Effect.flatMap(S.encode(Project.ProjectUpdateSchema)));
 
-		const fsService = yield* FocusSession.Service;
-		yield* fsService.updateFocusSession(id, payload);
+		const projectService = yield* Project.Service;
+		yield* projectService.updateProject(id, payload);
 
 		return { success: true };
 	}).pipe(
@@ -63,13 +63,13 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 };
 
 export const DELETE: RequestHandler = async ({ locals, params }) => {
-	const programResources = Layer.provide(FocusSession.Service.Default, locals.supabase);
+	const programResources = Layer.provide(Project.Service.Default, locals.supabase);
 	const program = await Effect.gen(function* () {
 		// 파라미터 검증
 		const { id } = yield* S.decodeUnknown(IdParamsSchema)(params);
 
-		const fsService = yield* FocusSession.Service;
-		yield* fsService.deleteFocusSession(id);
+		const projectService = yield* Project.Service;
+		yield* projectService.deleteProject(id);
 
 		return { success: true };
 	}).pipe(
