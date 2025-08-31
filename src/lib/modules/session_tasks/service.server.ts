@@ -3,6 +3,7 @@ import * as S from 'effect/Schema';
 import * as Supabase from '../supabase/index.server';
 import { PaginationQuerySchema } from '$lib/shared/pagination';
 import { TaskAlreadyInSessionError, TaskNotInSessionError } from './errors';
+import { SessionTaskSchema } from './types';
 
 export class Service extends Effect.Service<Service>()('SessionTaskRepository', {
 	effect: Effect.gen(function* () {
@@ -112,7 +113,10 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				}
 
 				return yield* Effect.promise(() => query).pipe(
-					Effect.flatMap(Supabase.mapPostgrestResponse)
+					Effect.flatMap(Supabase.mapPostgrestResponse),
+					Effect.flatMap((tasks) =>
+						Effect.all(tasks.map((task) => S.decode(SessionTaskSchema)(task).pipe(Effect.orDie)))
+					)
 				);
 			});
 
@@ -133,7 +137,12 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				}
 
 				return yield* Effect.promise(() => query).pipe(
-					Effect.flatMap(Supabase.mapPostgrestResponse)
+					Effect.flatMap(Supabase.mapPostgrestResponse),
+					Effect.flatMap((sessions) =>
+						Effect.all(
+							sessions.map((session) => S.decode(SessionTaskSchema)(session).pipe(Effect.orDie))
+						)
+					)
 				);
 			});
 
@@ -147,7 +156,16 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 					.eq('task_id', params.task_id)
 					.limit(1)
 					.maybeSingle()
-			).pipe(Effect.flatMap(Supabase.mapPostgrestResponseOptional));
+			).pipe(
+				Effect.flatMap(Supabase.mapPostgrestResponseOptional),
+				Effect.flatMap((option) =>
+					Option.match(option, {
+						onNone: () => Effect.succeed(Option.none()),
+						onSome: (task) =>
+							S.decode(SessionTaskSchema)(task).pipe(Effect.map(Option.some), Effect.orDie)
+					})
+				)
+			);
 
 		// 현재 활성 세션의 태스크 목록
 		const getActiveSessionTasks = () =>
@@ -193,7 +211,10 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				}
 
 				return yield* Effect.promise(() => query).pipe(
-					Effect.flatMap(Supabase.mapPostgrestResponse)
+					Effect.flatMap(Supabase.mapPostgrestResponse),
+					Effect.flatMap((tasks) =>
+						Effect.all(tasks.map((task) => S.decode(SessionTaskSchema)(task).pipe(Effect.orDie)))
+					)
 				);
 			});
 

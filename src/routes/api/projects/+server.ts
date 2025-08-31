@@ -43,7 +43,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	const program = await Effect.gen(function* () {
 		// URL 쿼리 파라미터를 객체로 변환
 		const queryParams: Record<string, string | string[]> = {};
-		url.searchParams.forEach((value: string, key: string) => {
+		url.searchParams.forEach((value, key) => {
 			if (queryParams[key]) {
 				if (Array.isArray(queryParams[key])) {
 					(queryParams[key] as string[]).push(value);
