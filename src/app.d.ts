@@ -16,8 +16,6 @@ declare global {
 			/** 에러 부가 내용 */
 			readonly detail?: string;
 			readonly status: number;
-			// 확장 필드
-			readonly [key: string]: unknown;
 		}
 		interface Locals {
 			supabase: Layer.Layer<Supabase.Service, never, never>;

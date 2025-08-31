@@ -71,7 +71,8 @@ DB 제약 조건 때문에 모듈에 비즈니스 로직이 스며드는 것처�
 ```
 src/lib/modules/focus_sessions
 ├── __test__
-│   └── schema.test.ts
+│   └── schema.test.ts
+├── api.ts
 ├── errors.ts
 ├── index.ts
 ├── index.server.ts
@@ -81,11 +82,36 @@ src/lib/modules/focus_sessions
 
 ## index.ts
 
-클라이언트와 서버 양쪽에서 사용 가능한 export를 포함하는 파일. 주로 타입, 스키마, 에러 정의 등을 export한다.
+클라이언트와 서버 양쪽에서 사용 가능한 export를 포함하는 파일. 주로 타입, 스키마, 에러 정의, api 서비스 등을 export한다.
 
 ## index.server.ts
 
 서버 전용 export를 포함하는 파일. service.server.ts와 같은 서버 전용 파일들을 export한다.
+
+## api.ts
+
+클라이언트에서 서버 API를 호출하기 위한 서비스 파일. `Effect.Service`와 `HttpClient`를 활용하여 구성한다.
+
+```typescript
+export class ApiService extends Effect.Service<ApiService>()('api/FocusSession', {
+	effect: Effect.gen(function* () {
+		const client = yield* HttpClient.HttpClient;
+
+		return {
+			createFocusSession: (payload: Omit<typeof FocusSessionInsertSchema.Encoded, 'owner_id'>) =>
+				HttpBody.json(payload).pipe(
+					Effect.flatMap((body) => client.post('/api/focus-sessions', { body })),
+					Effect.flatMap((res) => res.json),
+					Effect.flatMap(parseOrAppError(CreateFocusSessionSchemaResponse))
+				)
+		};
+	})
+}) {}
+```
+
+- 서버의 REST API 엔드포인트와 통신하는 클라이언트 측 서비스
+- `owner_id`와 같은 서버에서 자동으로 설정되는 필드는 페이로드에서 제외
+- 응답은 스키마를 통해 검증하고 `App.Error`로 변환
 
 ## errors.ts
 

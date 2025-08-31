@@ -9,6 +9,8 @@ import * as Supabase from '$lib/modules/supabase';
 // 애플리케이션 임포트
 import * as SessionProjectLookup from '$lib/applications/session-project-lookup';
 import * as SessionScheduling from '$lib/applications/session-scheduling';
+import { Effect, ParseResult, Schema, Option, Either } from 'effect';
+import { StatusCodes } from 'http-status-codes';
 // import * as SessionTaskManagement from '$lib/applications/session-task-management';
 
 /**
@@ -48,3 +50,67 @@ export const mapDomainError = (error: DomainError): App.Error => {
 	void { error };
 	throw new Error('구현 안 됨');
 };
+
+/**
+ * 전송된 데이터 검증 시 에러를 반환. (서버에 전송하기 전 전처리)
+ *
+ * @param error ParseError
+ * @returns
+ */
+export const mapParseError = (error: ParseResult.ParseError): App.Error => {
+	// 문자열로 요약
+	const summary = ParseResult.TreeFormatter.formatErrorSync(error);
+
+	return {
+		type: error._tag, // "ParseError"
+		title: '전송된 데이터에 주요 정보가 누락되었습니다.',
+		message: error.message,
+		detail: summary,
+		status: StatusCodes.UNPROCESSABLE_ENTITY
+	};
+};
+
+/**
+ * ParseError & DomainError 모두 App.Error로 변환
+ */
+export const mapToAppError = (error: DomainError | ParseResult.ParseError): App.Error => {
+	if (error instanceof ParseResult.ParseError) {
+		return mapParseError(error);
+	}
+
+	return mapDomainError(error);
+};
+
+/**
+ * App.Error 스키마
+ */
+export const AppErrorSchema = Schema.Struct({
+	type: Schema.String,
+	title: Schema.String,
+	message: Schema.String,
+	detail: Schema.UndefinedOr(Schema.String),
+	status: Schema.Number
+});
+
+/**
+ * Api Response를 App.Error 또는 주어진 schema로 변환하는 함수
+ *
+ * @param schema Parse할 스키마
+ * @returns
+ */
+export function parseOrAppError<A, I>(
+	schema: Schema.Schema<A, I>
+): (payload: unknown) => Effect.Effect<A, App.Error | ParseResult.ParseError> {
+	return (payload) => {
+		const parsedOk = Schema.decodeUnknownOption(schema)(payload);
+		if (Option.isSome(parsedOk)) {
+			return Effect.succeed(parsedOk.value);
+		}
+
+		const parsedErr = Schema.decodeUnknownEither(AppErrorSchema)(payload);
+		return Either.match(parsedErr, {
+			onLeft: (err) => Effect.fail(err),
+			onRight: (err) => Effect.fail(err)
+		});
+	};
+}
