@@ -5,6 +5,8 @@
 	import { DateTime, Effect } from 'effect';
 	import { Separator } from 'bits-ui';
 	import { formatTimeKstHHmm, getKstMidnightAsUtc } from '$lib/shared/utils/datetime.svelte';
+	import { Circle } from 'lucide-svelte';
+	import { currentTime } from '$lib/stores/time';
 
 	/**
 	 * 세션 시간 단위. 반올림할 때 사용
@@ -90,7 +92,9 @@
 	// 시간을 Y 좌표로 변환
 	// NOTE: 15분 단위로 반올림
 	function calculateDateTimeUtcToY(time: DateTime.Utc): number {
-		if (!containerElement) return 0;
+		if (!containerElement) {
+			return 0;
+		}
 
 		const rect = containerElement.getBoundingClientRect();
 		const todayMidnight = getKstMidnightAsUtc(time);
@@ -101,6 +105,8 @@
 			Math.floor(DateTime.distance(todayStart, time) / (1000 * 60 * QUANTIZED_UNIT_IN_MINUTES)) *
 			QUANTIZED_UNIT_IN_MINUTES;
 		const hours = diffMinutes / 60;
+
+		console.log(`${(hours / TIMELINE_HOURS) * rect.height} px`);
 
 		// 15시간(07:00-22:00) 기준으로 Y 위치 계산
 		return (hours / TIMELINE_HOURS) * rect.height;
@@ -172,47 +178,74 @@
 	});
 </script>
 
-{#snippet singleTimeLine(hour: number)}
-	<div class="flex h-[calc(100%/16)] flex-row items-start justify-between">
-		<span class="min-w-[45px] text-right text-sm text-surface-500">
-			{`${hour.toString().padStart(2, '0')}:00`}
-		</span>
-		<Separator.Root class="mr-2 ml-5 h-px flex-1 bg-surface-300" />
+<div class="flex h-full w-full gap-1">
+	<!-- 시간 표현 영역 -->
+	<div class="flex h-full flex-col justify-between">
+		{#each Array.from({ length: TIMELINE_HOURS + 1 }, (_, i) => i + TIMELINE_START_HOUR) as hour (hour)}
+			<div class="h-[20px] text-end">{hour.toString().padStart(2, '0')}:00</div>
+		{/each}
 	</div>
-{/snippet}
 
-<div
-	bind:this={containerElement}
-	class="relative flex h-full w-full flex-col justify-center px-2 select-none"
-	{onmousedown}
-	{onmousemove}
-	{onmouseup}
-	role="grid"
-	tabindex="0"
->
-	{#each Array(16).keys() as index (index)}
-		{@render singleTimeLine(index + TIMELINE_START_HOUR)}
-	{/each}
-
-	{#each assignedFocusSessions as fs (fs.id)}
-		{@const top = calculateDateTimeUtcToY(fs.start_at)}
-		{@const height = calculateDateTimeUtcToY(fs.end_at) - top}
-		<div class="absolute right-4 left-16" style="top: {top}px; height: {height}px;">
-			<TimelineFocusSessionCard focusSession={fs} />
-		</div>
-	{/each}
-
-	{#if timelineState.type !== 'idle' && interval !== null}
-		<div
-			class="pointer-events-none absolute right-4 left-16 z-10 rounded-lg border-2 border-primary-500 bg-surface-50-950"
-			class:border-error-500={checkCollision(interval)}
-			style={selectionStyle}
-		>
-			<div class="p-2 text-sm font-medium text-primary-700">
-				{formatTimeKstHHmm(interval[0])} ~ {formatTimeKstHHmm(interval[1])}
+	<!-- 상호 작용 영역 -->
+	<div
+		bind:this={containerElement}
+		{onmousedown}
+		{onmouseup}
+		{onmousemove}
+		role="grid"
+		tabindex="0"
+		class="relative flex h-full flex-1 flex-col justify-between"
+	>
+		<!-- 수평 시간 구분선 -->
+		{#each Array.from({ length: TIMELINE_HOURS + 1 }, (_, i) => i + TIMELINE_START_HOUR) as hour (hour)}
+			<div class="flex h-[20px] w-full items-center">
+				<Separator.Root class="mx-2 my-1 h-px w-full bg-surface-200-800" />
 			</div>
+		{/each}
+
+		<!-- 수직 구분선 -->
+		<div class="absolute left-3" style:height="calc(100% - 8px)">
+			<Separator.Root class="m-1 h-full w-px bg-surface-200-800" orientation="vertical" />
 		</div>
-	{/if}
+
+		<!-- 현재 시간 인디케이터 -->
+		<div
+			class="absolute left-2"
+			style:width="calc(100% - 8px)"
+			style:top="{calculateDateTimeUtcToY(DateTime.unsafeFromDate(currentTime))}px"
+		>
+			<Separator.Root class="mx-2 my-1 h-[2px] bg-error-500" />
+		</div>
+
+		<div
+			class="absolute left-2"
+			style:top="calc({calculateDateTimeUtcToY(DateTime.unsafeFromDate(currentTime))}px - 3px)"
+		>
+			<Circle fill="red" size="18" strokeWidth="0" />
+		</div>
+
+		<!-- 생성 중인 세션 -->
+		{#if timelineState.type !== 'idle' && interval !== null}
+			<div
+				class="absolute left-4 rounded-sm preset-filled-primary-500"
+				style={selectionStyle}
+				style:width="calc(100% - 24px)"
+			>
+				<span class="select-none">
+					{formatTimeKstHHmm(interval[0])} ~ {formatTimeKstHHmm(interval[1])}
+				</span>
+			</div>
+		{/if}
+
+		<!-- 생성된 세션 -->
+		{#each focusSessionProjectLookups as focusSession (focusSession.id)}
+			{@const top = calculateDateTimeUtcToY(focusSession.start_at)}
+			{@const bottom = calculateDateTimeUtcToY(focusSession.end_at)}
+			<div class="absolute left-4" style:top="{top}px" style:height="{bottom - top}px">
+				<TimelineFocusSessionCard {focusSession} />
+			</div>
+		{/each}
+	</div>
 </div>
 
 {#if interval !== null}

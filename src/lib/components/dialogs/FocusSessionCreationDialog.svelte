@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as Project from '$lib/modules/projects';
+	import * as FocusSession from '$lib/modules/focus_sessions';
 	import Button from '../ui/Button.svelte';
 	import Dialog from '../ui/Dialog.svelte';
 	import Select from '../ui/Select.svelte';
@@ -15,6 +16,7 @@
 	};
 
 	let { open = $bindable(), interval = $bindable(), onOpenChange }: Props = $props();
+	let selectedProjectId: string | null = $state(null);
 
 	/**
 	 * 모든 활성 프로젝트 목록 가져오기
@@ -27,32 +29,56 @@
 			return projects;
 		}).pipe(Effect.provide(programResources), Effect.runPromise);
 	}
+
+	/**
+	 * 집중 세션 생성하기
+	 */
+	async function createFocusSession(): Promise<{ id: string }> {
+		const programResources = Layer.provide(FocusSession.ApiService.Default, FetchHttpClient.layer);
+		return await Effect.gen(function* () {
+			const s = yield* FocusSession.ApiService;
+			return yield* s.createFocusSession({
+				start_at: DateTime.formatIso(interval[0]),
+				end_at: DateTime.formatIso(interval[1]),
+				project_id: selectedProjectId
+			});
+		}).pipe(Effect.provide(programResources), Effect.runPromise);
+	}
 </script>
 
 <Dialog title="집중 세션 생성하기" bind:open {onOpenChange}>
 	{#snippet content()}
 		{#if interval !== null}
-			<form method="POST" action="/api/focus-sessions" class="flex w-full flex-col gap-3 pt-3">
-				<input type="hidden" name="start_at" value={DateTime.formatIso(interval[0])} />
-				<input type="hidden" name="end_at" value={DateTime.formatIso(interval[1])} />
-				{#await getAllProjects() then projects}
-					{@const projectsIncludingInbox = projects
-						.map((p) => ({ label: p.name, value: p.id }))
-						.concat([{ label: '수집함', value: 'inbox' }])}
-					<Select ariaLabel="프로젝트 선택" items={projectsIncludingInbox}>
-						{#snippet trigger({ selectedValue })}
-							<Hash {...ICON_PROPS.md} class="text-surface-300-700" />
-							<span class="ml-3 flex-1 text-start text-sm text-surface-300-700">
-								{selectedValue
-									? projects.find((p) => p.id === selectedValue)?.name
-									: '프로젝트 선택'}
-							</span>
-						{/snippet}
-					</Select>
-				{/await}
+			{#await getAllProjects() then projects}
+				{@const projectsIncludingInbox = projects
+					.map((p) => ({ label: p.name, value: p.id }))
+					.concat([{ label: '수집함', value: 'inbox' }])}
+				<Select
+					ariaLabel="프로젝트 선택"
+					items={projectsIncludingInbox}
+					bind:selectedValue={selectedProjectId}
+				>
+					{#snippet trigger({ selectedValue })}
+						<Hash {...ICON_PROPS.md} class="text-surface-300-700" />
+						<span class="ml-3 flex-1 text-start text-sm text-surface-300-700">
+							{selectedValue
+								? projectsIncludingInbox.find((p) => p.value === selectedValue)?.label
+								: '프로젝트 선택'}
+						</span>
+					{/snippet}
+				</Select>
+			{/await}
 
-				<Button filled type="submit">생성</Button>
-			</form>
+			<Button
+				type="button"
+				filled
+				onclick={async () => {
+					await createFocusSession();
+					onOpenChange?.(false);
+				}}
+			>
+				생성
+			</Button>
 		{/if}
 	{/snippet}
 </Dialog>

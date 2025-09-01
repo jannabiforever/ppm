@@ -6,9 +6,9 @@
 	import { currentTime } from '$lib/stores/time';
 	import type { FocusSessionWithAssignedTasksSchema } from '$lib/applications/session-task-management/types';
 
-	interface Props {
+	type Props = {
 		focusSessionWithAssignedTasks: typeof FocusSessionWithAssignedTasksSchema.Type;
-	}
+	};
 
 	let { focusSessionWithAssignedTasks }: Props = $props();
 

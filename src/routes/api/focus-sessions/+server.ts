@@ -1,9 +1,8 @@
-import * as FocusSession from '$lib/modules/focus_sessions/index.server';
-import * as S from 'effect/Schema';
 import type { RequestHandler } from './$types';
-import { Effect, Layer, Console, Either } from 'effect';
+import { Effect, Layer, Schema, Console, Either } from 'effect';
 import { error, json } from '@sveltejs/kit';
 import { mapToAppError } from '$lib/shared/errors';
+import { FocusSession } from '$lib/modules/index.server';
 
 export const POST: RequestHandler = async ({ locals, request }) => {
 	const programResources = Layer.provide(FocusSession.Service.Default, locals.supabase);
@@ -11,12 +10,11 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		const json = yield* Effect.promise(() => request.json());
 
 		// 검증 후 재 인코딩
-		const payload: typeof FocusSession.FocusSessionInsertSchema.Encoded = yield* S.decodeUnknown(
-			FocusSession.FocusSessionInsertSchema
-		)({
-			...json,
-			owner_id: locals.user.id
-		}).pipe(Effect.flatMap(S.encode(FocusSession.FocusSessionInsertSchema)));
+		const payload: typeof FocusSession.FocusSessionInsertSchema.Encoded =
+			yield* Schema.decodeUnknown(FocusSession.FocusSessionInsertSchema)({
+				...json,
+				owner_id: locals.user.id
+			}).pipe(Effect.flatMap(Schema.encode(FocusSession.FocusSessionInsertSchema)));
 
 		const fsService = yield* FocusSession.Service;
 		const id = yield* fsService.createFocusSession(payload);
@@ -56,16 +54,16 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		});
 
 		// 쿼리 파라미터 검증 후 재인코딩
-		const query = yield* S.decodeUnknown(FocusSession.FocusSessionQuerySchema)(queryParams).pipe(
-			Effect.flatMap(S.encode(FocusSession.FocusSessionQuerySchema))
-		);
+		const query = yield* Schema.decodeUnknown(FocusSession.FocusSessionQuerySchema)(
+			queryParams
+		).pipe(Effect.flatMap(Schema.encode(FocusSession.FocusSessionQuerySchema)));
 
 		const fsService = yield* FocusSession.Service;
 		const sessions = yield* fsService.getFocusSessions(query);
 
 		// 인코딩하여 클라이언트에 전송
 		return yield* Effect.all(
-			sessions.map((session) => S.encode(FocusSession.FocusSessionSchema)(session))
+			sessions.map((session) => Schema.encode(FocusSession.FocusSessionSchema)(session))
 		);
 	}).pipe(
 		Effect.provide(programResources),

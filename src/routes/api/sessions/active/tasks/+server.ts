@@ -1,9 +1,9 @@
-import * as SessionTask from '$lib/modules/session_tasks/index.server';
-import * as S from 'effect/Schema';
+import * as Schema from 'effect/Schema';
 import type { RequestHandler } from '@sveltejs/kit';
 import { Effect, Layer, Console, Either } from 'effect';
 import { error, json } from '@sveltejs/kit';
 import { mapToAppError } from '$lib/shared/errors';
+import { SessionTask } from '$lib/modules/index.server';
 
 // 현재 활성 세션의 태스크 목록 조회
 export const GET: RequestHandler = async ({ locals }) => {
@@ -13,7 +13,9 @@ export const GET: RequestHandler = async ({ locals }) => {
 		const tasks = yield* sessionTaskService.getActiveSessionTasks();
 
 		// 인코딩하여 클라이언트에 전송
-		return yield* Effect.all(tasks.map((task) => S.encode(SessionTask.SessionTaskSchema)(task)));
+		return yield* Effect.all(
+			tasks.map((task) => Schema.encode(SessionTask.SessionTaskSchema)(task))
+		);
 	}).pipe(
 		Effect.provide(programResources),
 		Effect.tapError(Console.error),

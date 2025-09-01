@@ -1,9 +1,8 @@
-import * as Project from '$lib/modules/projects/index.server';
-import * as S from 'effect/Schema';
 import type { RequestHandler } from '@sveltejs/kit';
-import { Effect, Layer, Console, Either } from 'effect';
+import { Effect, Layer, Console, Either, Schema } from 'effect';
 import { error, json } from '@sveltejs/kit';
 import { mapToAppError } from '$lib/shared/errors';
+import { Project } from '$lib/modules/index.server';
 
 export const GET: RequestHandler = async ({ locals }) => {
 	const programResources = Layer.provide(Project.Service.Default, locals.supabase);
@@ -12,7 +11,9 @@ export const GET: RequestHandler = async ({ locals }) => {
 		const projects = yield* projectService.getArchivedProjects();
 
 		// 인코딩하여 클라이언트에 전송
-		return yield* Effect.all(projects.map((project) => S.encode(Project.ProjectSchema)(project)));
+		return yield* Effect.all(
+			projects.map((project) => Schema.encode(Project.ProjectSchema)(project))
+		);
 	}).pipe(
 		Effect.provide(programResources),
 		Effect.tapError(Console.error),

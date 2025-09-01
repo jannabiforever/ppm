@@ -2,17 +2,16 @@
 	import { Select } from 'bits-ui';
 	import { ICON_PROPS } from '../constants';
 	import { Check, ChevronsDown, ChevronsUp, ChevronsUpDown } from 'lucide-svelte';
-	import type { Snippet } from 'svelte';
+	import { type Snippet } from 'svelte';
 
 	type Props = {
 		items: Array<{ label: string; value: string }>;
+		selectedValue?: string | null;
 		ariaLabel: string;
 		trigger: Snippet<[{ selectedValue: string | null }]>;
 	};
 
-	let { items, ariaLabel, trigger }: Props = $props();
-
-	let selectedValue: string | null = $state(null);
+	let { items, ariaLabel, trigger, selectedValue = $bindable(null) }: Props = $props();
 </script>
 
 <Select.Root type="single" onValueChange={(v) => (selectedValue = v)} {items}>

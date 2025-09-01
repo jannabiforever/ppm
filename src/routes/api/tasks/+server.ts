@@ -1,9 +1,8 @@
-import * as Task from '$lib/modules/tasks/index.server';
-import * as S from 'effect/Schema';
 import type { RequestHandler } from '@sveltejs/kit';
-import { Effect, Layer, Console, Either } from 'effect';
+import { Effect, Layer, Schema, Console, Either } from 'effect';
 import { error, json } from '@sveltejs/kit';
 import { mapToAppError } from '$lib/shared/errors';
+import { Task } from '$lib/modules/index.server';
 
 export const POST: RequestHandler = async ({ locals, request }) => {
 	const programResources = Layer.provide(Task.Service.Default, locals.supabase);
@@ -11,12 +10,12 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		const json = yield* Effect.promise(() => request.json());
 
 		// 검증 후 재 인코딩
-		const payload: typeof Task.TaskInsertSchema.Encoded = yield* S.decodeUnknown(
+		const payload: typeof Task.TaskInsertSchema.Encoded = yield* Schema.decodeUnknown(
 			Task.TaskInsertSchema
 		)({
 			...json,
 			owner_id: locals.user!.id
-		}).pipe(Effect.flatMap(S.encode(Task.TaskInsertSchema)));
+		}).pipe(Effect.flatMap(Schema.encode(Task.TaskInsertSchema)));
 
 		const taskService = yield* Task.Service;
 		const id = yield* taskService.createTask(payload);
@@ -61,15 +60,15 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		});
 
 		// 쿼리 파라미터 검증 후 재인코딩
-		const query = yield* S.decodeUnknown(Task.TaskQuerySchema)(queryParams).pipe(
-			Effect.flatMap(S.encode(Task.TaskQuerySchema))
+		const query = yield* Schema.decodeUnknown(Task.TaskQuerySchema)(queryParams).pipe(
+			Effect.flatMap(Schema.encode(Task.TaskQuerySchema))
 		);
 
 		const taskService = yield* Task.Service;
 		const tasks = yield* taskService.getTasks(query);
 
 		// 인코딩하여 클라이언트에 전송
-		return yield* Effect.all(tasks.map((task) => S.encode(Task.TaskSchema)(task)));
+		return yield* Effect.all(tasks.map((task) => Schema.encode(Task.TaskSchema)(task)));
 	}).pipe(
 		Effect.provide(programResources),
 		Effect.tapError(Console.error),

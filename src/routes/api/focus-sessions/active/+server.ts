@@ -1,7 +1,6 @@
-import * as FocusSession from '$lib/modules/focus_sessions/index.server';
-import * as S from 'effect/Schema';
 import type { RequestHandler } from './$types';
-import { Effect, Layer, Console, Either, Option } from 'effect';
+import { Effect, Layer, Schema, Console, Either, Option } from 'effect';
+import { FocusSession } from '$lib/modules/index.server';
 import { error, json } from '@sveltejs/kit';
 import { mapToAppError } from '$lib/shared/errors';
 
@@ -13,7 +12,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 
 		return yield* Option.match(sessionOption, {
 			onNone: () => Effect.succeed(null),
-			onSome: (session) => S.encode(FocusSession.FocusSessionSchema)(session)
+			onSome: (session) => Schema.encode(FocusSession.FocusSessionSchema)(session)
 		});
 	}).pipe(
 		Effect.provide(programResources),

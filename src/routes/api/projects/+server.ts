@@ -1,9 +1,8 @@
-import * as Project from '$lib/modules/projects/index.server';
-import * as S from 'effect/Schema';
 import type { RequestHandler } from '@sveltejs/kit';
-import { Effect, Layer, Console, Either } from 'effect';
+import { Effect, Layer, Schema, Console, Either } from 'effect';
 import { error, json } from '@sveltejs/kit';
 import { mapToAppError } from '$lib/shared/errors';
+import { Project } from '$lib/modules/index.server';
 
 export const POST: RequestHandler = async ({ locals, request }) => {
 	const programResources = Layer.provide(Project.Service.Default, locals.supabase);
@@ -11,12 +10,12 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		const json = yield* Effect.promise(() => request.json());
 
 		// 검증 후 재 인코딩
-		const payload: typeof Project.ProjectInsertSchema.Encoded = yield* S.decodeUnknown(
+		const payload: typeof Project.ProjectInsertSchema.Encoded = yield* Schema.decodeUnknown(
 			Project.ProjectInsertSchema
 		)({
 			...json,
 			owner_id: locals.user!.id
-		}).pipe(Effect.flatMap(S.encode(Project.ProjectInsertSchema)));
+		}).pipe(Effect.flatMap(Schema.encode(Project.ProjectInsertSchema)));
 
 		const projectService = yield* Project.Service;
 		const id = yield* projectService.createProject(payload);
@@ -56,15 +55,17 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		});
 
 		// 쿼리 파라미터 검증 후 재인코딩
-		const query = yield* S.decodeUnknown(Project.ProjectQuerySchema)(queryParams).pipe(
-			Effect.flatMap(S.encode(Project.ProjectQuerySchema))
+		const query = yield* Schema.decodeUnknown(Project.ProjectQuerySchema)(queryParams).pipe(
+			Effect.flatMap(Schema.encode(Project.ProjectQuerySchema))
 		);
 
 		const projectService = yield* Project.Service;
 		const projects = yield* projectService.getProjects(query);
 
 		// 인코딩하여 클라이언트에 전송
-		return yield* Effect.all(projects.map((project) => S.encode(Project.ProjectSchema)(project)));
+		return yield* Effect.all(
+			projects.map((project) => Schema.encode(Project.ProjectSchema)(project))
+		);
 	}).pipe(
 		Effect.provide(programResources),
 		Effect.tapError(Console.error),
