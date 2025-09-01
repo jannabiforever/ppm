@@ -1,34 +1,31 @@
 <script lang="ts">
-	import Button from '../ui/Button.svelte';
-	import Dialog from '../ui/Dialog.svelte';
-	import Select from '../ui/Select.svelte';
-	import SessionCard from './SessionCard.svelte';
+	import FocusSessionCreationDialog from '../dialogs/FocusSessionCreationDialog.svelte';
+	import TimelineFocusSessionCard from './TimelineFocusSessionCard.svelte';
 	import type { FocusSessionProjectLookupSchema } from '$lib/applications/session-project-lookup/types';
-	import type { ProjectSchema } from '$lib/modules/projects';
 	import { DateTime, Effect } from 'effect';
-	import { Hash } from 'lucide-svelte';
-	import { ICON_PROPS } from '../constants';
 	import { Separator } from 'bits-ui';
 	import { formatTimeKstHHmm, getKstMidnightAsUtc } from '$lib/shared/utils/datetime.svelte';
-
-	/**
-	 * 모든 활성 프로젝트 목록 가져오기
-	 */
-	async function getAllProjects(): Promise<Array<typeof ProjectSchema.Type>> {
-		return new Promise((resolve) => {
-			// TODO: 구현
-			resolve([]);
-		});
-	}
 
 	/**
 	 * 세션 시간 단위. 반올림할 때 사용
 	 */
 	const QUANTIZED_UNIT_IN_MINUTES = 15;
+	/**
+	 * 타임라인 시작 시간 (KST 07:00)
+	 */
+	const TIMELINE_START_HOUR = 7;
+	/**
+	 * 타임라인 종료 시간 (KST 22:00)
+	 */
+	const TIMELINE_END_HOUR = 22;
+	/**
+	 * 타임라인 전체 시간 범위
+	 */
+	const TIMELINE_HOURS = TIMELINE_END_HOUR - TIMELINE_START_HOUR;
 
-	interface Props {
+	type Props = {
 		focusSessionProjectLookups: Array<typeof FocusSessionProjectLookupSchema.Type>;
-	}
+	};
 
 	let { focusSessionProjectLookups }: Props = $props();
 	let containerElement: HTMLDivElement;
@@ -78,13 +75,14 @@
 		const rect = containerElement.getBoundingClientRect();
 		const relativeY = Math.max(0, Math.min(y - rect.top, rect.height));
 
-		// 24시간을 기준으로 비율 계산
-		const hourOffset = (relativeY / rect.height) * 24;
+		// 15시간(07:00-22:00)을 기준으로 비율 계산
+		const hourOffset = (relativeY / rect.height) * TIMELINE_HOURS;
 		const minuteOffset = hourOffset * 60;
 
-		// 오늘 KST 자정 기준으로 시간 계산
+		// 오늘 KST 07:00 기준으로 시간 계산
 		const todayMidnight = getKstMidnightAsUtc(DateTime.now.pipe(Effect.runSync));
-		return DateTime.add(todayMidnight, {
+		const todayStart = DateTime.add(todayMidnight, { hours: TIMELINE_START_HOUR });
+		return DateTime.add(todayStart, {
 			minutes: Math.floor(minuteOffset / QUANTIZED_UNIT_IN_MINUTES) * QUANTIZED_UNIT_IN_MINUTES
 		});
 	}
@@ -96,15 +94,16 @@
 
 		const rect = containerElement.getBoundingClientRect();
 		const todayMidnight = getKstMidnightAsUtc(time);
+		const todayStart = DateTime.add(todayMidnight, { hours: TIMELINE_START_HOUR });
 
-		// 자정으로부터의 분 단위 차이 계산
+		// 07:00으로부터의 분 단위 차이 계산
 		const diffMinutes =
-			Math.floor(DateTime.distance(todayMidnight, time) / (1000 * 60 * QUANTIZED_UNIT_IN_MINUTES)) *
+			Math.floor(DateTime.distance(todayStart, time) / (1000 * 60 * QUANTIZED_UNIT_IN_MINUTES)) *
 			QUANTIZED_UNIT_IN_MINUTES;
 		const hours = diffMinutes / 60;
 
-		// 24시간 기준으로 Y 위치 계산
-		return (hours / 24) * rect.height;
+		// 15시간(07:00-22:00) 기준으로 Y 위치 계산
+		return (hours / TIMELINE_HOURS) * rect.height;
 	}
 
 	/**
@@ -174,7 +173,7 @@
 </script>
 
 {#snippet singleTimeLine(hour: number)}
-	<div class="flex h-[calc(100%/25)] flex-row items-start justify-between">
+	<div class="flex h-[calc(100%/16)] flex-row items-start justify-between">
 		<span class="min-w-[45px] text-right text-sm text-surface-500">
 			{`${hour.toString().padStart(2, '0')}:00`}
 		</span>
@@ -191,15 +190,15 @@
 	role="grid"
 	tabindex="0"
 >
-	{#each Array(25).keys() as hour (hour)}
-		{@render singleTimeLine(hour)}
+	{#each Array(16).keys() as index (index)}
+		{@render singleTimeLine(index + TIMELINE_START_HOUR)}
 	{/each}
 
 	{#each assignedFocusSessions as fs (fs.id)}
 		{@const top = calculateDateTimeUtcToY(fs.start_at)}
 		{@const height = calculateDateTimeUtcToY(fs.end_at) - top}
 		<div class="absolute right-4 left-16" style="top: {top}px; height: {height}px;">
-			<SessionCard focusSession={fs} />
+			<TimelineFocusSessionCard focusSession={fs} />
 		</div>
 	{/each}
 
@@ -216,38 +215,16 @@
 	{/if}
 </div>
 
-<Dialog
-	title="집중 세션 생성하기"
-	open={timelineState.type === 'dialog-open'}
-	onOpenChange={(open) => {
-		if (!open) {
-			timelineState = { type: 'idle' };
-		}
-	}}
->
-	{#snippet content()}
-		{#if interval !== null}
-			<form method="POST" action="/api/focus-sessions" class="flex w-full flex-col gap-3 pt-3">
-				<input type="hidden" name="start_at" value={DateTime.formatIso(interval[0])} />
-				<input type="hidden" name="end_at" value={DateTime.formatIso(interval[1])} />
-				{#await getAllProjects() then projects}
-					{@const projectsIncludingInbox = projects
-						.map((p) => ({ label: p.name, value: p.id }))
-						.concat([{ label: '수집함', value: 'inbox' }])}
-					<Select ariaLabel="프로젝트 선택" items={projectsIncludingInbox}>
-						{#snippet trigger({ selectedValue })}
-							<Hash {...ICON_PROPS.md} class="text-surface-300-700" />
-							<span class="ml-3 flex-1 text-start text-sm text-surface-300-700">
-								{selectedValue
-									? projects.find((p) => p.id === selectedValue)?.name
-									: '프로젝트 선택'}
-							</span>
-						{/snippet}
-					</Select>
-				{/await}
-
-				<Button filled type="submit">생성</Button>
-			</form>
-		{/if}
-	{/snippet}
-</Dialog>
+{#if interval !== null}
+	<FocusSessionCreationDialog
+		open={timelineState.type === 'dialog-open'}
+		{interval}
+		onOpenChange={(open) => {
+			if (open) {
+				timelineState.type = 'dialog-open';
+			} else {
+				timelineState.type = 'idle';
+			}
+		}}
+	/>
+{/if}
