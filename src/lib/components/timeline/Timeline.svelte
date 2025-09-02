@@ -165,7 +165,7 @@
 	<!-- Time label area -->
 	<div class="flex h-full flex-col justify-between">
 		{#each hourRangeArray as hour (hour)}
-			<div class=" h-[20px] text-end select-none">
+			<div class="h-[20px] text-end text-xs select-none">
 				{hour.toString().padStart(2, '0')}:00
 			</div>
 		{/each}

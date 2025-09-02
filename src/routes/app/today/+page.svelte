@@ -8,24 +8,26 @@
 
 <div class="flex w-full gap-3">
 	<CalendarCheck2 {...ICON_PROPS.lg} />
-	<span class="font-semibold">오늘 </span>
+	<span class="font-semibold">오늘</span>
 </div>
 
 <div class="flex w-full flex-1 gap-15">
-	<!-- 태스크 탭 -->
+	<!-- Task tab -->
 	<div class="flex w-full flex-col gap-2.5">
 		<div class="flex w-full gap-2.5 rounded-sm bg-surface-100-900/80 px-2 py-3">
-			<span class="font-semibold">태스크</span>
-			<span class="flex-1">{data.todayTasks.length}개</span>
+			<span class="text-sm font-semibold">태스크</span>
+			<span class="flex-1 text-sm">{data.todayTasks.length}개</span>
 		</div>
 	</div>
 
-	<!-- 집중 세션 탭 -->
+	<!-- Focus Session tab -->
 	<div class="flex w-full flex-col gap-2.5">
 		<div class="flex w-full gap-2.5 rounded-sm bg-surface-100-900/80 px-2 py-3">
-			<span class="font-semibold">집중 세션</span>
-			<span class="flex-1">{data.todayFocusSessionProjectLookups.length}개</span>
+			<span class="text-sm font-semibold">집중 세션</span>
+			<span class="flex-1 text-sm">{data.todayFocusSessionProjectLookups.length}개</span>
 		</div>
+
+		<!-- Timeline -->
 		<Timeline focusSessionProjectLookups={data.todayFocusSessionProjectLookups} />
 	</div>
 </div>
