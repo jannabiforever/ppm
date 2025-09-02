@@ -137,8 +137,12 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 						queryBuilder = queryBuilder.ilike('title', `%${decodedQuery.title_query}%`);
 					}
 
-					if (decodedQuery.project_id) {
-						queryBuilder = queryBuilder.eq('project_id', decodedQuery.project_id);
+					if (decodedQuery.project_id !== undefined) {
+						if (decodedQuery.project_id === null) {
+							queryBuilder = queryBuilder.is('project_id', null);
+						} else {
+							queryBuilder = queryBuilder.eq('project_id', decodedQuery.project_id);
+						}
 					}
 
 					if (decodedQuery.status && HashSet.size(decodedQuery.status) > 0) {

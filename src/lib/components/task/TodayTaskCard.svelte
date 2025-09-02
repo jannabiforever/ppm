@@ -1,12 +1,12 @@
 <script lang="ts">
-	import type { TaskWithComputedStatus } from '$lib/modules/tasks';
 	import { Hash } from 'lucide-svelte';
 	import { ICON_PROPS } from '../constants';
 	import TaskStatusIcon from './TaskStatusIcon.svelte';
 	import { Separator } from 'bits-ui';
+	import type { TaskSchema } from '$lib/modules/tasks';
 
 	interface Props {
-		task: TaskWithComputedStatus;
+		task: typeof TaskSchema.Type;
 	}
 
 	let { task }: Props = $props();
@@ -21,12 +21,7 @@
 					<span class="text-xs text-surface-400-600">{task.description}</span>
 				{/if}
 			</div>
-			<TaskStatusIcon
-				status={task.status}
-				isPlanned={task.isPlanned ?? false}
-				isInSession={task.isInSession ?? false}
-				iconProps={ICON_PROPS.md}
-			/>
+			<TaskStatusIcon {task} iconProps={ICON_PROPS.md} />
 		</div>
 
 		<div class="flex justify-end gap-1 text-surface-400-600">

@@ -47,7 +47,7 @@ export const TaskUpdateSchema = S.Struct({
 export const TaskQuerySchema = S.Struct({
 	date_end: S.optional(S.Date),
 	date_start: S.optional(S.Date),
-	project_id: S.optional(S.String),
+	project_id: S.NullishOr(S.String),
 	status: S.optional(S.HashSet(TaskStatusSchema)),
 	title_query: S.optional(S.String)
 });
