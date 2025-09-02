@@ -8,6 +8,7 @@
 	import { FetchHttpClient } from '@effect/platform';
 	import { Hash } from 'lucide-svelte';
 	import { ICON_PROPS } from '../constants';
+	import { invalidateAll } from '$app/navigation';
 
 	type Props = {
 		open: boolean;
@@ -70,6 +71,7 @@
 				onclick={async () => {
 					await createFocusSession();
 					onOpenChange?.(false);
+					await invalidateAll();
 				}}
 			>
 				생성

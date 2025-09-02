@@ -56,7 +56,7 @@ const EitherTransporter: Transporter = {
 const DateTimeUtcTransporter: Transporter = {
 	encode: (value) => {
 		if (!DateTime.isUtc(value)) return false;
-		return [DateTime.formatIsoDateUtc(value)];
+		return [DateTime.formatIso(value)];
 	},
 	decode: ([utc]: [string]) => DateTime.unsafeMake(utc)
 };
