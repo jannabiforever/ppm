@@ -18,9 +18,6 @@
 	let { open = $bindable(), interval = $bindable(), onOpenChange }: Props = $props();
 	let selectedProjectId: string | null = $state(null);
 
-	/**
-	 * 모든 활성 프로젝트 목록 가져오기
-	 */
 	async function getAllProjects(): Promise<ReadonlyArray<typeof Project.ProjectSchema.Type>> {
 		const programResources = Layer.provide(Project.ApiService.Default, FetchHttpClient.layer);
 		return await Effect.gen(function* () {
@@ -30,9 +27,6 @@
 		}).pipe(Effect.provide(programResources), Effect.runPromise);
 	}
 
-	/**
-	 * 집중 세션 생성하기
-	 */
 	async function createFocusSession(): Promise<{ id: string }> {
 		const programResources = Layer.provide(FocusSession.ApiService.Default, FetchHttpClient.layer);
 		return await Effect.gen(function* () {
@@ -70,6 +64,7 @@
 			{/await}
 
 			<Button
+				class="w-full"
 				type="button"
 				filled
 				onclick={async () => {

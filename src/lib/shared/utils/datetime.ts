@@ -1,7 +1,7 @@
 import { DateTime } from 'effect';
 
 // ------------------------------------------------------------
-// 한국 TZ 관련 헬퍼 함수
+// Helper functions about KST timezone handling
 // ------------------------------------------------------------
 
 export const KST_TIMEZONE = DateTime.zoneUnsafeMakeNamed('Asia/Seoul');

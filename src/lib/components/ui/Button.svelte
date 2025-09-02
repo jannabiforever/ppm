@@ -1,13 +1,20 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	interface Props {
+	type Props = {
 		children: Snippet<[]>;
 		filled: boolean;
+		class?: string;
 		type: 'submit' | 'reset' | 'button';
-	}
+	};
 
-	let { children, filled, type, ...props }: Props & Record<string, unknown> = $props();
+	let {
+		children,
+		filled,
+		type,
+		class: className,
+		...props
+	}: Props & Record<string, unknown> = $props();
 
 	let bgClass = $derived(
 		filled
@@ -18,7 +25,7 @@
 
 <button
 	{type}
-	class="rounded-[9px] {bgClass} flex items-center justify-center gap-2.5 px-6 py-4 heading-font-weight"
+	class="rounded-[9px] {bgClass} flex items-center justify-center gap-2.5 px-6 py-4 heading-font-weight {className}"
 	{...props}
 >
 	{@render children()}

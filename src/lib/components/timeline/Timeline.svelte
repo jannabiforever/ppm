@@ -4,113 +4,61 @@
 	import type { FocusSessionProjectLookupSchema } from '$lib/applications/session-project-lookup/types';
 	import { DateTime, Effect } from 'effect';
 	import { Separator } from 'bits-ui';
-	import { formatTimeKstHHmm, getKstMidnightAsUtc } from '$lib/shared/utils/datetime.svelte';
+	import { formatTimeKstHHmm, getKstZoned } from '$lib/shared/utils/datetime';
 	import { Circle } from 'lucide-svelte';
-	import { currentTime } from '$lib/stores/time';
-
-	/**
-	 * 세션 시간 단위. 반올림할 때 사용
-	 */
-	const QUANTIZED_UNIT_IN_MINUTES = 15;
-	/**
-	 * 타임라인 시작 시간 (KST 07:00)
-	 */
-	const TIMELINE_START_HOUR = 7;
-	/**
-	 * 타임라인 종료 시간 (KST 22:00)
-	 */
-	const TIMELINE_END_HOUR = 22;
-	/**
-	 * 타임라인 전체 시간 범위
-	 */
-	const TIMELINE_HOURS = TIMELINE_END_HOUR - TIMELINE_START_HOUR;
+	import {
+		CoordinateCalculator,
+		DEFAULT_TIMELINE_CONFIG,
+		DEFAULT_TIMELINE_STATE,
+		getInterval,
+		type TimelineConfig,
+		type TimelineState
+	} from './timeline';
 
 	type Props = {
 		focusSessionProjectLookups: Array<typeof FocusSessionProjectLookupSchema.Type>;
+		timelineConfig?: TimelineConfig;
 	};
 
-	let { focusSessionProjectLookups }: Props = $props();
-	let containerElement: HTMLDivElement;
-
-	type TimelineState =
-		| {
-				type: 'idle';
-		  }
-		| {
-				type: 'select';
-				// 처음 선택한 시간대
-				anchor: DateTime.Utc;
-				// 마우스 트래킹 시간대
-				nonAnchor: DateTime.Utc;
-		  }
-		| {
-				type: 'dialog-open';
-				start: DateTime.Utc;
-				end: DateTime.Utc;
-		  };
-
-	let timelineState: TimelineState = $state({
-		type: 'idle'
-	});
-
-	let interval: [DateTime.Utc, DateTime.Utc] | null = $derived.by(() => {
-		if (timelineState.type === 'idle') return null;
-		if (timelineState.type === 'select') {
-			return [
-				DateTime.min(timelineState.anchor, timelineState.nonAnchor),
-				DateTime.max(timelineState.anchor, timelineState.nonAnchor)
-			];
-		}
-		if (timelineState.type === 'dialog-open') {
-			return [timelineState.start, timelineState.end];
-		}
-		return null;
-	});
-
+	let { focusSessionProjectLookups, timelineConfig = DEFAULT_TIMELINE_CONFIG }: Props = $props();
 	let assignedFocusSessions = $derived(
 		focusSessionProjectLookups.toSorted((a, b) => a.start_at.epochMillis - b.start_at.epochMillis)
 	);
 
-	// Y 좌표를 시간으로 변환
-	// NOTE: 15분 단위로 반올림
-	function calculateYToDateTimeUtc(y: number): DateTime.Utc {
+	/** undefined while not mounted */
+	let containerElement: HTMLDivElement | undefined = $state(undefined);
+	let calculator = $derived.by(() => {
+		if (typeof window === 'undefined' || !containerElement) return undefined;
 		const rect = containerElement.getBoundingClientRect();
-		const relativeY = Math.max(0, Math.min(y - rect.top, rect.height));
+		return new CoordinateCalculator(rect.top, rect.height, currentTime, timelineConfig);
+	});
+	let timelineState: TimelineState = $state(DEFAULT_TIMELINE_STATE);
 
-		// 15시간(07:00-22:00)을 기준으로 비율 계산
-		const hourOffset = (relativeY / rect.height) * TIMELINE_HOURS;
-		const minuteOffset = hourOffset * 60;
+	/**
+	 * Current time in DateTime.Utc format.
+	 * Updates every 5 minutes.
+	 */
+	let currentTime = $state(DateTime.now.pipe(Effect.runSync));
+	let currentTimeHour = $derived.by(() => {
+		const zoned = getKstZoned(currentTime);
+		return DateTime.getPart(zoned, 'hours');
+	});
+	setTimeout(
+		() => {
+			currentTime = DateTime.now.pipe(Effect.runSync);
+		},
+		1000 * 60 * 5
+	);
 
-		// 오늘 KST 07:00 기준으로 시간 계산
-		const todayMidnight = getKstMidnightAsUtc(DateTime.now.pipe(Effect.runSync));
-		const todayStart = DateTime.add(todayMidnight, { hours: TIMELINE_START_HOUR });
-		return DateTime.add(todayStart, {
-			minutes: Math.floor(minuteOffset / QUANTIZED_UNIT_IN_MINUTES) * QUANTIZED_UNIT_IN_MINUTES
-		});
-	}
-
-	// 시간을 Y 좌표로 변환
-	// NOTE: 15분 단위로 반올림
-	function calculateDateTimeUtcToY(time: DateTime.Utc): number {
-		if (!containerElement) {
-			return 0;
-		}
-
-		const rect = containerElement.getBoundingClientRect();
-		const todayMidnight = getKstMidnightAsUtc(time);
-		const todayStart = DateTime.add(todayMidnight, { hours: TIMELINE_START_HOUR });
-
-		// 07:00으로부터의 분 단위 차이 계산
-		const diffMinutes =
-			Math.floor(DateTime.distance(todayStart, time) / (1000 * 60 * QUANTIZED_UNIT_IN_MINUTES)) *
-			QUANTIZED_UNIT_IN_MINUTES;
-		const hours = diffMinutes / 60;
-
-		console.log(`${(hours / TIMELINE_HOURS) * rect.height} px`);
-
-		// 15시간(07:00-22:00) 기준으로 Y 위치 계산
-		return (hours / TIMELINE_HOURS) * rect.height;
-	}
+	/**
+	 * Array that holds numbers from startHour to endHour.
+	 */
+	const hourRangeArray = $derived(
+		Array.from(
+			{ length: timelineConfig.endHour - timelineConfig.startHour + 1 },
+			(_, i) => i + timelineConfig.startHour
+		)
+	);
 
 	/**
 	 * 세션 간 충돌 검사
@@ -126,8 +74,8 @@
 	 * @param e 마우스 이벤트
 	 */
 	function onmousedown(e: MouseEvent) {
-		if (timelineState.type === 'idle') {
-			const time = calculateYToDateTimeUtc(e.clientY);
+		if (timelineState.type === 'idle' && calculator) {
+			const time = calculator.calculateYToUtc(e.clientY);
 			timelineState = {
 				type: 'select',
 				anchor: time,
@@ -141,8 +89,8 @@
 	 * @param e 마우스 이벤트
 	 */
 	function onmousemove(e: MouseEvent) {
-		if (timelineState.type === 'select') {
-			timelineState.nonAnchor = calculateYToDateTimeUtc(e.clientY);
+		if (timelineState.type === 'select' && calculator) {
+			timelineState.nonAnchor = calculator.calculateYToUtc(e.clientY);
 		}
 	}
 
@@ -151,10 +99,10 @@
 	 * @param e 마우스 이벤트
 	 */
 	function onmouseup() {
-		// 이 경우, timelineState가 'idle'임이 보장
+		const interval = getInterval(timelineState);
 		if (interval !== null) {
 			// 충돌 검사
-			if (checkCollision(interval)) {
+			if (checkCollision(interval) || interval[0] === interval[1]) {
 				timelineState = { type: 'idle' };
 				return;
 			}
@@ -169,19 +117,37 @@
 
 	/** 선택 영역 스타일 */
 	let selectionStyle = $derived.by(() => {
-		// 이 경우, timelineState가 'idle'임이 보장
-		if (interval === null) return '';
-		const top = calculateDateTimeUtcToY(interval[0]);
-		const bottom = calculateDateTimeUtcToY(interval[1]);
-		const height = bottom - top;
-		return `top: ${top}px; height: ${height}px;`;
+		const interval = getInterval(timelineState);
+		if (interval === null || !calculator) return '';
+
+		const startY = calculator.calculateUtcToY(interval[0]);
+		const endY = calculator.calculateUtcToY(interval[1]);
+		const containerTop = containerElement?.getBoundingClientRect().top ?? 0;
+		const relativeTop = startY - containerTop;
+		const height = endY - startY;
+
+		return `top: ${relativeTop}px; height: ${height}px;`;
 	});
 </script>
+
+{#snippet timeIndicator(utc: DateTime.Utc)}
+	{#if calculator}
+		{@const y = calculator.calculateUtcToY(utc)}
+		{@const relativeY = y - (containerElement?.getBoundingClientRect().top ?? 0)}
+		<div class="absolute left-2" style:width="calc(100% - 8px)" style:top="{relativeY}px">
+			<Separator.Root class="mx-2 my-1 h-[2px] bg-error-500" />
+		</div>
+
+		<div class="absolute left-2" style:top="{relativeY - 3}px">
+			<Circle fill="red" size="18" strokeWidth="0" />
+		</div>
+	{/if}
+{/snippet}
 
 <div class="flex h-full w-full gap-1">
 	<!-- 시간 표현 영역 -->
 	<div class="flex h-full flex-col justify-between">
-		{#each Array.from({ length: TIMELINE_HOURS + 1 }, (_, i) => i + TIMELINE_START_HOUR) as hour (hour)}
+		{#each hourRangeArray as hour (hour)}
 			<div class="h-[20px] text-end">{hour.toString().padStart(2, '0')}:00</div>
 		{/each}
 	</div>
@@ -197,7 +163,7 @@
 		class="relative flex h-full flex-1 flex-col justify-between"
 	>
 		<!-- 수평 시간 구분선 -->
-		{#each Array.from({ length: TIMELINE_HOURS + 1 }, (_, i) => i + TIMELINE_START_HOUR) as hour (hour)}
+		{#each hourRangeArray as hour (hour)}
 			<div class="flex h-[20px] w-full items-center">
 				<Separator.Root class="mx-2 my-1 h-px w-full bg-surface-200-800" />
 			</div>
@@ -208,50 +174,46 @@
 			<Separator.Root class="m-1 h-full w-px bg-surface-200-800" orientation="vertical" />
 		</div>
 
-		<!-- 현재 시간 인디케이터 -->
-		<div
-			class="absolute left-2"
-			style:width="calc(100% - 8px)"
-			style:top="{calculateDateTimeUtcToY(DateTime.unsafeFromDate(currentTime))}px"
-		>
-			<Separator.Root class="mx-2 my-1 h-[2px] bg-error-500" />
-		</div>
-
-		<div
-			class="absolute left-2"
-			style:top="calc({calculateDateTimeUtcToY(DateTime.unsafeFromDate(currentTime))}px - 3px)"
-		>
-			<Circle fill="red" size="18" strokeWidth="0" />
-		</div>
+		<!-- current time indicator -->
+		{#if currentTimeHour > timelineConfig.startHour && currentTimeHour < timelineConfig.endHour}
+			{@render timeIndicator(currentTime)}
+		{/if}
 
 		<!-- 생성 중인 세션 -->
-		{#if timelineState.type !== 'idle' && interval !== null}
+		{#if timelineState.type !== 'idle'}
 			<div
 				class="absolute left-4 rounded-sm preset-filled-primary-500"
 				style={selectionStyle}
 				style:width="calc(100% - 24px)"
 			>
 				<span class="select-none">
-					{formatTimeKstHHmm(interval[0])} ~ {formatTimeKstHHmm(interval[1])}
+					{formatTimeKstHHmm(getInterval(timelineState)[0])} ~ {formatTimeKstHHmm(
+						getInterval(timelineState)[1]
+					)}
 				</span>
 			</div>
 		{/if}
 
 		<!-- 생성된 세션 -->
 		{#each focusSessionProjectLookups as focusSession (focusSession.id)}
-			{@const top = calculateDateTimeUtcToY(focusSession.start_at)}
-			{@const bottom = calculateDateTimeUtcToY(focusSession.end_at)}
-			<div class="absolute left-4" style:top="{top}px" style:height="{bottom - top}px">
-				<TimelineFocusSessionCard {focusSession} />
-			</div>
+			{#if calculator && containerElement}
+				{@const startY = calculator.calculateUtcToY(focusSession.start_at)}
+				{@const endY = calculator.calculateUtcToY(focusSession.end_at)}
+				{@const containerTop = containerElement.getBoundingClientRect().top}
+				{@const relativeTop = startY - containerTop}
+				{@const height = endY - startY}
+				<div class="absolute left-4" style:top="{relativeTop}px" style:height="{height}px">
+					<TimelineFocusSessionCard {focusSession} />
+				</div>
+			{/if}
 		{/each}
 	</div>
 </div>
 
-{#if interval !== null}
+{#if timelineState.type === 'dialog-open'}
 	<FocusSessionCreationDialog
 		open={timelineState.type === 'dialog-open'}
-		{interval}
+		interval={getInterval(timelineState)}
 		onOpenChange={(open) => {
 			if (open) {
 				timelineState.type = 'dialog-open';
