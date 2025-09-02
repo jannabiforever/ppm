@@ -1,6 +1,4 @@
 <script lang="ts">
-	import * as Project from '$lib/modules/projects';
-	import * as FocusSession from '$lib/modules/focus_sessions';
 	import Button from '../ui/Button.svelte';
 	import Dialog from '../ui/Dialog.svelte';
 	import Select from '../ui/Select.svelte';
@@ -9,6 +7,7 @@
 	import { Hash } from 'lucide-svelte';
 	import { ICON_PROPS } from '../constants';
 	import { invalidateAll } from '$app/navigation';
+	import { FocusSession, Project } from '$lib/modules';
 
 	type Props = {
 		open: boolean;
