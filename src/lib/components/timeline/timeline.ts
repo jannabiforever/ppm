@@ -89,13 +89,6 @@ export const DEFAULT_TIMELINE_CONFIG: TimelineConfig = {
 	endHour: 22
 };
 
-export interface Rect {
-	top: number;
-	left: number;
-	bottom: number;
-	right: number;
-}
-
 export class CoordinateCalculator {
 	private readonly config: TimelineConfig;
 	private readonly viewportTop: number;
@@ -161,7 +154,7 @@ export class CoordinateCalculator {
 	}
 
 	#top() {
-		return this.viewportTop - this.config.singleLineHeightInPx / 2;
+		return this.viewportTop + this.config.singleLineHeightInPx / 2;
 	}
 
 	#height() {
