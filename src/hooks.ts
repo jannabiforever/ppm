@@ -4,7 +4,7 @@ import * as Either from 'effect/Either';
 import * as DateTime from 'effect/DateTime';
 
 // ------------------------------------------------------------
-// Option 트랜스포터
+// Option Transporter
 // ------------------------------------------------------------
 
 type OptionObject<T> =
@@ -25,7 +25,7 @@ const OptionTransporter: Transporter = {
 };
 
 // ------------------------------------------------------------
-// Either 트랜스포터
+// Either Transporter
 // ------------------------------------------------------------
 
 type EitherObject<E, A> =
@@ -50,7 +50,7 @@ const EitherTransporter: Transporter = {
 };
 
 // ------------------------------------------------------------
-// DateTime.Utc 트랜스포터
+// DateTime.Utc Transporter
 // ------------------------------------------------------------
 
 const DateTimeUtcTransporter: Transporter = {
