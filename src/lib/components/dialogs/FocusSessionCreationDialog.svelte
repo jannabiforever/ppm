@@ -35,7 +35,7 @@
 			return yield* s.createFocusSession({
 				start_at: DateTime.formatIso(interval[0]),
 				end_at: DateTime.formatIso(interval[1]),
-				project_id: selectedProjectId
+				project_id: selectedProjectId === 'inbox' ? null : selectedProjectId
 			});
 		}).pipe(Effect.provide(programResources), Effect.runPromise);
 	}

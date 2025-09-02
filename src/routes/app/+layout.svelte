@@ -60,9 +60,7 @@
 		</div>
 
 		<!-- Session Timer -->
-		<div class="flex w-full items-center justify-center">
-			{#if data.currentSession}{/if}
-		</div>
+		<div class="flex w-full items-center justify-center"></div>
 	</aside>
 	<main class="ml-[220px] flex w-full flex-1 justify-center p-5">
 		<!-- TODO: 적당한 반응형 고려한 레이아웃 -->
