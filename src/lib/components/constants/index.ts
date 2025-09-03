@@ -1,18 +1,27 @@
 export const ICON_PROPS = {
-	xl: {
-		size: 28,
+	/** very small icon (e.g. next to helper text) */
+	xs: {
+		size: 12,
 		strokeWidth: 2
 	},
+	/** small icon, commonly used with body text */
+	sm: {
+		size: 16,
+		strokeWidth: 2
+	},
+	/** medium icon, good for buttons and navigation */
+	md: {
+		size: 20,
+		strokeWidth: 2
+	},
+	/** large icon, suitable for emphasized buttons or card titles */
 	lg: {
 		size: 24,
 		strokeWidth: 2
 	},
-	md: {
-		size: 18,
-		strokeWidth: 2
-	},
-	sm: {
-		size: 14,
+	/** extra large icon, for headers or hero sections */
+	xl: {
+		size: 28,
 		strokeWidth: 2
 	}
-};
+} as const;
