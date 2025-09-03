@@ -1,6 +1,6 @@
 <script>
 	import { ICON_PROPS } from '$lib/components/constants';
-	import TodayTaskCard from '$lib/components/task/TodayTaskCard.svelte';
+	import TaskCard from '$lib/components/task/TaskCard.svelte';
 	import { Inbox } from 'lucide-svelte';
 
 	let { data } = $props();
@@ -11,8 +11,8 @@
 	<span class="font-semibold">수집함</span>
 </div>
 
-<div>
+<div class="flex w-full flex-col gap-3 pt-8">
 	{#each data.inboxTasks as task (task.id)}
-		<TodayTaskCard {task} />
+		<TaskCard {task} />
 	{/each}
 </div>

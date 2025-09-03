@@ -7,13 +7,13 @@
 		userProfile: UserProfile;
 	}
 
-	let { userProfile: userAndProfile }: Props = $props();
+	let { userProfile }: Props = $props();
 </script>
 
 <div class="flex w-full items-center justify-between">
 	<div class="m-2.5 flex items-center gap-2.5">
 		<img src={icon} alt="User Avatar" height="24" width="24" />
-		<span class="text-sm font-medium">{userAndProfile.profile.name}</span>
+		<span class="text-sm font-medium">{userProfile.profile.name}</span>
 	</div>
 	<DarkModeHandler />
 </div>

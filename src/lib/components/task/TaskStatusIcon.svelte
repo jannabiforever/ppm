@@ -1,18 +1,18 @@
 <script lang="ts">
 	import type { TaskSchema } from '$lib/modules/tasks';
-	import { Book, BookX, CircleCheck, BookCheck, type IconProps } from 'lucide-svelte';
+	import { Book, BookX, CircleCheck, BookCheck } from 'lucide-svelte';
+	import { getIconProps, type UISize } from '../constants';
 
 	type Props = {
 		task: typeof TaskSchema.Type;
-		iconProps: IconProps;
+		size: UISize;
 	};
 
-	const { task, iconProps = {} }: Props = $props();
-
-	let isPlanned = $derived(task.planned_for !== null);
+	const { task, size }: Props = $props();
+	const iconProps = getIconProps(size);
 </script>
 
-{#if isPlanned}
+{#if task.planned_for !== null}
 	<BookCheck {...iconProps} />
 {:else if task.status === 'backlog'}
 	<Book {...iconProps} aria-label="백로그 - 진행 대기 중" />

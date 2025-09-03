@@ -3,14 +3,16 @@
 	import NavItemSeparator from './NavItemSeparator.svelte';
 	import { AlarmClock } from 'lucide-svelte';
 	import { ICON_PROPS } from '../constants';
-	import { currentTime } from '$lib/stores/time';
 	import type { FocusSessionWithAssignedTasksSchema } from '$lib/applications/session-task-management/types';
+	import { currentTime } from '$lib/stores/time';
+	import { ProjectSchema } from '$lib/modules/projects';
 
 	type Props = {
 		focusSessionWithAssignedTasks: typeof FocusSessionWithAssignedTasksSchema.Type;
+		project: typeof ProjectSchema.Type | null;
 	};
 
-	let { focusSessionWithAssignedTasks }: Props = $props();
+	let { focusSessionWithAssignedTasks, project }: Props = $props();
 
 	let remainingTimeInSeconds = $derived(
 		(focusSessionWithAssignedTasks.end_at.epochMillis - currentTime.getTime()) / 1000
@@ -34,7 +36,7 @@
 	</div>
 	<NavItemSeparator />
 	<div class="flex w-full flex-col">
-		<span class="text-semibold">{focusSessionWithAssignedTasks.project_id ?? '무제'}</span>
+		<span class="font-semibold">{project?.name ?? '수집함'}</span>
 		<div class="flex items-center gap-3 py-2">
 			<span class="text-[24px] font-semibold">{remainingTimeInHHMM}</span>
 			<span>남음</span>

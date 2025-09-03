@@ -12,6 +12,8 @@
 	import NavLink from '$lib/components/nav/NavLink.svelte';
 	import NavItemSeparator from '$lib/components/nav/NavItemSeparator.svelte';
 	import { ICON_PROPS } from '$lib/components/constants';
+	import CurrentFocusSessionTimer from '$lib/components/nav/currentFocusSessionTimer.svelte';
+	import { Option } from 'effect';
 
 	let { children, data }: LayoutProps = $props();
 </script>
@@ -23,8 +25,8 @@
 	>
 		<NavHeader
 			userProfile={{
-				user: data.user!,
-				profile: data.profile!
+				user: data.user,
+				profile: data.profile
 			}}
 		/>
 
@@ -43,7 +45,7 @@
 			<NavLink href="/app/projects" label="프로젝트" selected={false}>
 				<FolderKanban {...ICON_PROPS.md} />
 			</NavLink>
-			{#each data.activeProjects! as project (project.id)}
+			{#each data.activeProjects as project (project.id)}
 				<NavLink
 					href={`/app/projects/${project.id}`}
 					label={project.name}
@@ -60,11 +62,19 @@
 		</div>
 
 		<!-- Session Timer -->
-		<div class="flex w-full items-center justify-center"></div>
+		{#if Option.isSome(data.currentFocusSessionInfo)}
+			{@const fs = data.currentFocusSessionInfo.value}
+			<div class="flex w-full flex-1 items-center justify-center">
+				<CurrentFocusSessionTimer
+					focusSessionWithAssignedTasks={fs}
+					project={data.activeProjects.find((project) => project.id === fs.project_id) ?? null}
+				/>
+			</div>
+		{/if}
 	</aside>
 	<main class="ml-[220px] flex w-full flex-1 justify-center p-5">
 		<!-- TODO: 적당한 반응형 고려한 레이아웃 -->
-		<div class="flex w-2/3 flex-col gap-5">
+		<div class="flex w-1/3 flex-col gap-5">
 			{@render children?.()}
 		</div>
 	</main>

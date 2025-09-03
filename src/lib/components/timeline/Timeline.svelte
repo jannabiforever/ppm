@@ -2,7 +2,7 @@
 	import FocusSessionCreationDialog from '../dialogs/FocusSessionCreationDialog.svelte';
 	import TimelineFocusSessionCard from './TimelineFocusSessionCard.svelte';
 	import type { FocusSessionProjectLookupSchema } from '$lib/applications/session-project-lookup/types';
-	import { DateTime, Effect } from 'effect';
+	import { DateTime } from 'effect';
 	import { Separator } from 'bits-ui';
 	import { formatTimeKstHHmm, getKstZoned } from '$lib/shared/utils/datetime';
 	import { Circle } from 'lucide-svelte';
@@ -14,6 +14,7 @@
 		type TimelineConfig,
 		type TimelineState
 	} from './timeline';
+	import { currentTime } from '$lib/stores/time';
 
 	type Props = {
 		focusSessionProjectLookups: Array<typeof FocusSessionProjectLookupSchema.Type>;
@@ -30,25 +31,18 @@
 	let calculator = $derived.by(() => {
 		if (typeof window === 'undefined' || !containerElement) return undefined;
 		const rect = containerElement.getBoundingClientRect();
-		return new CoordinateCalculator(rect.top, rect.height, currentTime, timelineConfig);
+		return new CoordinateCalculator(rect.top, rect.height, currentTimeUtc, timelineConfig);
 	});
 	let timelineState: TimelineState = $state(DEFAULT_TIMELINE_STATE);
 
 	/**
 	 * Current time in DateTime.Utc format.
-	 * Updates every 5 minutes.
 	 */
-	let currentTime = $state(DateTime.now.pipe(Effect.runSync));
+	let currentTimeUtc = $state(DateTime.unsafeMake(currentTime));
 	let currentTimeHour = $derived.by(() => {
-		const zoned = getKstZoned(currentTime);
+		const zoned = getKstZoned(currentTimeUtc);
 		return DateTime.getPart(zoned, 'hours');
 	});
-	setTimeout(
-		() => {
-			currentTime = DateTime.now.pipe(Effect.runSync);
-		},
-		1000 * 60 * 5
-	);
 
 	/**
 	 * Array that holds numbers from startHour to endHour.
@@ -196,7 +190,7 @@
 
 		<!-- current time indicator -->
 		{#if currentTimeHour > timelineConfig.startHour && currentTimeHour < timelineConfig.endHour}
-			{@render timeIndicator(currentTime)}
+			{@render timeIndicator(currentTimeUtc)}
 		{/if}
 
 		<!-- Session Creating -->
