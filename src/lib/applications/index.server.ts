@@ -1,3 +1,3 @@
-export * as SessionTaskManagement from './session-task-management/index.server';
-export * as SessionProjectLookup from './session-project-lookup/index.server';
-export * as SessionScheduling from './session-scheduling/index.server';
+export * as FocusSessionTaskManagement from './session-task-management/index.server';
+export * as FocusSessionProjectLookup from './session-project-lookup/index.server';
+export * as FocusSessionScheduling from './session-scheduling/index.server';
