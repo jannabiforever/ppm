@@ -32,16 +32,11 @@
 			return yield* s.createTask({
 				title,
 				description,
-				project_id: castProjectId(projectId),
+				project_id: projectId,
 				planned_for: plannedForString
 			});
 		}).pipe(Effect.provide(programResources), Effect.runPromise);
 	}
-
-	const castProjectId = (projectId: string | null) => {
-		if (projectId === 'inbox' || projectId === null) return null;
-		return projectId;
-	};
 </script>
 
 <Dialog title="태스크 생성하기" bind:open {onOpenChange}>

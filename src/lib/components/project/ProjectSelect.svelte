@@ -16,7 +16,7 @@
 		projectId?: string | null;
 	};
 
-	let { projectId = $bindable() }: Props = $props();
+	let { projectId = $bindable(null) }: Props = $props();
 	let allProjectsExcludeInbox: Array<typeof Project.ProjectSchema.Type> = $state([]);
 	let projectItemsIncludingInbox: Array<{
 		label: string;
@@ -29,11 +29,6 @@
 				value: project.id
 			}))
 		];
-	});
-
-	onMount(async () => {
-		const projects = await getAllProjects();
-		allProjectsExcludeInbox.push(...projects);
 	});
 
 	async function getAllProjects(): Promise<ReadonlyArray<typeof Project.ProjectSchema.Type>> {
@@ -52,11 +47,22 @@
 	 * Note that `selectedValue === null` doesn't mean that the inbox is selected, but that no item is selected.
 	 * Associated value for inbox is 'Inbox'.
 	 */
-	let selectedValue = $state(null);
+	let selectedValue = $state<string | null>(null);
 	$effect(() => {
 		if (selectedValue === null) return;
-		if (selectedValue === 'Inbox') projectId = null;
+		if (selectedValue === 'Inbox') {
+			projectId = null;
+			return;
+		}
 		projectId = selectedValue;
+	});
+
+	onMount(async () => {
+		const projects = await getAllProjects();
+		allProjectsExcludeInbox.push(...projects);
+
+		if (projectId === null) selectedValue = 'Inbox';
+		else selectedValue = projectId;
 	});
 </script>
 
