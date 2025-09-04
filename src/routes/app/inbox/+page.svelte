@@ -1,9 +1,11 @@
 <script>
 	import { ICON_PROPS } from '$lib/components/constants';
 	import TaskCard from '$lib/components/task/TaskCard.svelte';
-	import { Inbox } from 'lucide-svelte';
+	import { Inbox, Plus } from 'lucide-svelte';
 
 	let { data } = $props();
+
+	let hover = $state(false);
 </script>
 
 <div class="flex w-full gap-3">
@@ -15,4 +17,24 @@
 	{#each data.inboxTasks as task (task.id)}
 		<TaskCard {task} />
 	{/each}
+
+	<!-- Creation Dialog-->
+	<button
+		class="flex items-center gap-1"
+		onmouseenter={() => (hover = true)}
+		onmouseleave={() => (hover = false)}
+		onclick={() => {
+			console.log('Creation Button clicked');
+		}}
+	>
+		<Plus
+			class="rounded-full text-primary-500 {hover
+				? 'preset-filled-primary-500 text-surface-50'
+				: ''}"
+			{...ICON_PROPS.sm}
+		/>
+		<span class="mt-0.5 text-sm" class:text-surface-500={!hover} class:text-primary-500={hover}>
+			태스크 추가
+		</span>
+	</button>
 </div>
