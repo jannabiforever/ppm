@@ -7,6 +7,7 @@
 	import { Task } from '$lib/modules';
 	import TextInput from '../ui/TextInput.svelte';
 	import ProjectSelect from '../project/ProjectSelect.svelte';
+	import DatePicker from '../ui/DatePicker.svelte';
 
 	type Props = {
 		open: boolean;
@@ -60,6 +61,11 @@
 					name="description"
 					bind:value={description}
 				/>
+			</div>
+
+			<!-- planned_for -->
+			<div class="flex w-full items-center justify-between">
+				<DatePicker bind:utc={plannedFor} label="작업 날짜 (선택)" />
 			</div>
 
 			<!-- Select Project -->

@@ -59,6 +59,7 @@
 		"vitest-browser-svelte": "^0.1.0"
 	},
 	"dependencies": {
+		"@internationalized/date": "^3.9.0",
 		"@supabase/ssr": "^0.6.1",
 		"@supabase/supabase-js": "^2.53.0",
 		"bits-ui": "^2.9.2",
