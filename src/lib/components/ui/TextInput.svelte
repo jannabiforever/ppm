@@ -5,6 +5,7 @@
 		disabled?: boolean;
 		name: string;
 		type?: string;
+		value: string;
 		autocomplete?: 'email' | 'username' | 'current-password' | null;
 	}
 
@@ -14,6 +15,7 @@
 		disabled = false,
 		name,
 		type = 'text',
+		value = $bindable(),
 		autocomplete = null,
 		...props
 	}: Props & Record<string, unknown> = $props();
@@ -30,6 +32,7 @@
 		{name}
 		{type}
 		{autocomplete}
+		bind:value
 		{...props}
 	/>
 </div>

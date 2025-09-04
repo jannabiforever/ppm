@@ -17,7 +17,7 @@
 <Select.Root type="single" onValueChange={(v) => (selectedValue = v)} {items}>
 	<Select.Trigger
 		aria-label={ariaLabel}
-		class="flex w-[220px] items-center rounded-[9px] border border-surface-200-800 px-4 py-2"
+		class="flex w-[220px] items-center justify-between rounded-[9px] border border-surface-200-800 px-4 py-2"
 	>
 		{@render trigger({ selectedValue })}
 		<ChevronsUpDown {...ICON_PROPS.md} />

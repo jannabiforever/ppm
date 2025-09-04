@@ -1,11 +1,13 @@
 <script>
 	import { ICON_PROPS } from '$lib/components/constants';
 	import TaskCard from '$lib/components/task/TaskCard.svelte';
+	import TaskCreationDialog from '$lib/components/task/TaskCreationDialog.svelte';
 	import { Inbox, Plus } from 'lucide-svelte';
 
 	let { data } = $props();
 
 	let hover = $state(false);
+	let dialogOpen = $state(false);
 </script>
 
 <div class="flex w-full gap-3">
@@ -24,7 +26,7 @@
 		onmouseenter={() => (hover = true)}
 		onmouseleave={() => (hover = false)}
 		onclick={() => {
-			console.log('Creation Button clicked');
+			dialogOpen = true;
 		}}
 	>
 		<Plus
@@ -38,3 +40,7 @@
 		</span>
 	</button>
 </div>
+
+{#if dialogOpen}
+	<TaskCreationDialog bind:open={dialogOpen} onOpenChange={() => (dialogOpen = false)} />
+{/if}
