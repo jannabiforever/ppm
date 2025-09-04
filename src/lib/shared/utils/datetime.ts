@@ -20,7 +20,7 @@ export function getKstMidnightAsUtc(utc: DateTime.Utc): DateTime.Utc {
 	return DateTime.toUtc(DateTime.startOf(kstZoned, 'day'));
 }
 
-/**  시간 포맷팅 헬퍼: KST TZ에서 HH:mm 꼴로. **/
+/** Time formatting helper: HH:mm in KST */
 export function formatTimeKstHHmm(time: DateTime.Utc): string {
 	return DateTime.formatIntl(
 		time,
