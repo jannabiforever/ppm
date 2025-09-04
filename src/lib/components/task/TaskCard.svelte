@@ -2,6 +2,7 @@
 	import TaskStatusIcon from './TaskStatusIcon.svelte';
 	import type { TaskSchema } from '$lib/modules/tasks';
 	import { Separator } from 'bits-ui';
+	import TaskDueDateSpan from './taskDueDateSpan.svelte';
 
 	interface Props {
 		task: typeof TaskSchema.Type;
@@ -21,6 +22,9 @@
 			</div>
 			<TaskStatusIcon {task} size="md" />
 		</div>
+		{#if task.planned_for}
+			<TaskDueDateSpan date={task.planned_for} />
+		{/if}
 	</div>
 
 	<Separator.Root class="mx-1 my-2 h-px bg-surface-200-800" orientation="horizontal" />

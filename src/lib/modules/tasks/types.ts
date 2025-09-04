@@ -9,7 +9,7 @@ export const TaskSchema = S.Struct({
 	id: S.String,
 	memo: S.NullOr(S.String),
 	owner_id: S.String,
-	planned_for: S.NullOr(S.Date),
+	planned_for: S.NullOr(S.DateTimeUtc),
 	project_id: S.NullOr(S.String),
 	status: TaskStatusSchema,
 	title: S.String,
@@ -23,7 +23,7 @@ export const TaskInsertSchema = S.Struct({
 	id: S.optional(S.String),
 	memo: S.optional(S.NullishOr(S.String)),
 	owner_id: S.String,
-	planned_for: S.NullishOr(S.Date),
+	planned_for: S.NullishOr(S.DateTimeUtc),
 	project_id: S.NullishOr(S.String),
 	status: S.optional(TaskStatusSchema),
 	title: S.String,
@@ -45,8 +45,8 @@ export const TaskUpdateSchema = S.Struct({
 });
 
 export const TaskQuerySchema = S.Struct({
-	date_end: S.optional(S.Date),
-	date_start: S.optional(S.Date),
+	date_end: S.optional(S.DateTimeUtc),
+	date_start: S.optional(S.DateTimeUtc),
 	project_id: S.NullishOr(S.String),
 	status: S.optional(S.HashSet(TaskStatusSchema)),
 	title_query: S.optional(S.String)

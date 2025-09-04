@@ -25,7 +25,9 @@
 			<TaskStatusIcon {task} size="md" />
 		</div>
 
-		<ProjectLabel {project} size="md" />
+		<div class="mr-2 flex justify-end">
+			<ProjectLabel {project} size="sm" />
+		</div>
 	</div>
 
 	<Separator.Root class="mx-1 my-2 h-px bg-surface-200-800" orientation="horizontal" />

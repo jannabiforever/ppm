@@ -3,14 +3,17 @@
 	import { Calendar, ChevronLeft, ChevronRight } from 'lucide-svelte';
 	import { ICON_PROPS } from '../constants';
 	import { DateTime } from 'effect';
-	import { type CalendarDate } from '@internationalized/date';
+	import { today, type CalendarDate } from '@internationalized/date';
 
 	type Props = {
 		label: string;
 		utc: DateTime.Utc | null;
+		afterToday?: boolean;
 	};
 
-	let { label, utc = $bindable(null) }: Props = $props();
+	let { label, utc = $bindable(null), afterToday }: Props = $props();
+
+	const todayCalendarDate = today('Asia/Seoul');
 
 	let dateValue = $state<CalendarDate | undefined>(undefined);
 	$effect(() => {
@@ -18,13 +21,32 @@
 			utc = DateTime.unsafeMake(dateValue.toDate('Asia/Seoul'));
 		}
 	});
+
+	let isErrornic = $derived.by(() => {
+		if (afterToday && dateValue && dateValue.compare(todayCalendarDate) < 0) {
+			return true;
+		}
+		return false;
+	});
 </script>
 
-<DatePicker.Root weekdayFormat="short" fixedWeeks={true} bind:value={dateValue}>
-	<div class="flex w-full max-w-[232px] flex-col gap-1.5">
-		<DatePicker.Label class="block text-sm font-medium select-none">{label}</DatePicker.Label>
+<DatePicker.Root
+	weekdayFormat="short"
+	fixedWeeks={true}
+	bind:value={dateValue}
+	minValue={afterToday ? todayCalendarDate : undefined}
+>
+	<div class="flex w-full flex-col gap-1.5">
+		<DatePicker.Label class="block text-sm select-none">
+			{label}
+			{#if isErrornic}
+				<span class="ml-3 text-error-500">잘못된 날짜입니다</span>
+			{/if}
+		</DatePicker.Label>
 		<DatePicker.Input
-			class="flex w-full max-w-[232px] items-center rounded-sm border border-surface-200-800 bg-surface-50-950 px-2 py-3 text-sm tracking-[0.01em] select-none"
+			class="flex w-full  items-center rounded-sm border {isErrornic
+				? 'border-error-500'
+				: 'border-surface-200-800'} bg-surface-50-950 px-2 py-3 text-sm tracking-[0.01em] select-none"
 		>
 			{#snippet children({ segments })}
 				{#each segments as { part, value }, i (part + i)}

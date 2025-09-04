@@ -65,12 +65,12 @@
 
 			<!-- planned_for -->
 			<div class="flex w-full items-center justify-between">
-				<DatePicker bind:utc={plannedFor} label="작업 날짜 (선택)" />
+				<DatePicker bind:utc={plannedFor} label="작업 날짜 (선택)" afterToday={true} />
 			</div>
 
 			<!-- Select Project -->
-			<div class="flex w-full items-center justify-between">
-				<span>소속 프로젝트 선택</span>
+			<div class="flex w-full flex-col gap-2">
+				<span class="text-sm">소속 프로젝트 선택</span>
 				<ProjectSelect bind:projectId />
 			</div>
 
