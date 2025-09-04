@@ -33,7 +33,7 @@
 	<div class="flex w-full flex-col gap-2 rounded-sm border border-surface-200-800 p-4">
 		<div class="flex items-center gap-2.5">
 			<AlarmClock {...ICON_PROPS.md} />
-			<span class="text-semibold">현재 세션</span>
+			<span class="text-semibold">현재 집중 세션</span>
 		</div>
 		<NavItemSeparator />
 		<div class="flex w-full flex-col">
