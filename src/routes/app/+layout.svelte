@@ -74,7 +74,7 @@
 	</aside>
 	<main class="ml-[220px] flex w-full flex-1 justify-center p-5">
 		<!-- TODO: 적당한 반응형 고려한 레이아웃 -->
-		<div class="flex w-1/3 flex-col gap-5">
+		<div class="flex w-1/3 min-w-[640px] flex-col gap-5">
 			{@render children?.()}
 		</div>
 	</main>
