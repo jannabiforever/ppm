@@ -27,5 +27,5 @@
 		{/if}
 	</div>
 
-	<Separator.Root class="mx-1 my-2 h-px bg-surface-200-800" orientation="horizontal" />
+	<Separator.Root class="mt-2 h-px bg-surface-200-800" orientation="horizontal" />
 </div>

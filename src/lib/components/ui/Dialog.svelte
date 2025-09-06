@@ -55,7 +55,7 @@
 			</Dialog.Close>
 			<Separator.Root class="-mx-5 mt-5 mb-2 block h-px bg-surface-300" />
 			{#if description}
-				<Dialog.Description class="text-sm">
+				<Dialog.Description class="my-3 text-sm text-surface-400-600">
 					{description}
 				</Dialog.Description>
 			{/if}

@@ -22,17 +22,17 @@
 	);
 </script>
 
-{#if Duration.lessThan(distanceDuration, Duration.zero)}{:else if Duration.lessThan(distanceDuration, Duration.days(1))}
+{#if Duration.greaterThan(distanceDuration, Duration.zero)}{:else if Duration.greaterThan(distanceDuration, Duration.days(1))}
 	<div class="flex items-center gap-1 text-xs text-primary-500">
 		<CalendarCheck2 {...ICON_PROPS.xs} />
 		오늘
 	</div>
-{:else if Duration.lessThan(distanceDuration, Duration.days(2))}
+{:else if Duration.greaterThan(distanceDuration, Duration.days(2))}
 	<div class="flex items-center gap-1 text-xs text-secondary-500">
 		<CalendarCheck2 {...ICON_PROPS.xs} />
 		내일
 	</div>
-{:else if Duration.lessThan(distanceDuration, Duration.days(7))}
+{:else if Duration.greaterThan(distanceDuration, Duration.days(7))}
 	<div class="flex items-center gap-1 text-xs text-tertiary-500">
 		<CalendarCheck2 {...ICON_PROPS.xs} />
 		{Duration.toDays(distanceDuration)}일 후
