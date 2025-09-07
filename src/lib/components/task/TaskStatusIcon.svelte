@@ -2,6 +2,8 @@
 	import type { TaskSchema } from '$lib/modules/tasks';
 	import { Book, BookX, CircleCheck, BookCheck } from 'lucide-svelte';
 	import { getIconProps, type UISize } from '../constants';
+	import { DateTime } from 'effect';
+	import { currentKSTMidnight } from '$lib/stores/time';
 
 	type Props = {
 		task: typeof TaskSchema.Type;
@@ -12,7 +14,7 @@
 	const iconProps = getIconProps(size);
 </script>
 
-{#if task.planned_for !== null}
+{#if task.planned_for !== null && DateTime.distance($currentKSTMidnight, task.planned_for) >= 0}
 	<BookCheck {...iconProps} />
 {:else if task.status === 'backlog'}
 	<Book {...iconProps} aria-label="백로그 - 진행 대기 중" />

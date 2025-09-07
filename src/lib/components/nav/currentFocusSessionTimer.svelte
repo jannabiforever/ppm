@@ -15,7 +15,7 @@
 	let { focusSessionWithAssignedTasks, project }: Props = $props();
 
 	let remainingTimeInSeconds = $derived(
-		(focusSessionWithAssignedTasks.end_at.epochMillis - currentTime.getTime()) / 1000
+		(focusSessionWithAssignedTasks.end_at.epochMillis - $currentTime.getTime()) / 1000
 	);
 
 	/**

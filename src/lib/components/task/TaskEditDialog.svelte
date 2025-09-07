@@ -13,25 +13,26 @@
 	type Props = {
 		open: boolean;
 		onOpenChange?: (open: boolean) => void;
-		projectId?: string | null;
+		task: typeof Task.TaskSchema.Type;
 	};
 
-	let { open = $bindable(), onOpenChange, projectId = null }: Props = $props();
+	let { open = $bindable(), onOpenChange, task }: Props = $props();
 
-	let title = $state('');
-	let description = $state('');
-	let plannedFor = $state<DateTime.Utc | null>(null);
+	let title = $state(task.title);
+	let description = $state(task.description ?? '');
+	let plannedFor = $state<DateTime.Utc | null>(task.planned_for);
+	let projectId = $state(task.project_id);
 
 	let plannedForString = $derived.by(() => {
 		if (!plannedFor) return null;
 		return DateTime.formatIso(plannedFor);
 	});
 
-	async function createTask(): Promise<{ id: string }> {
+	async function updateTask(): Promise<void> {
 		const programResources = Layer.provide(Task.ApiService.Default, FetchHttpClient.layer);
-		return await Effect.gen(function* () {
+		await Effect.gen(function* () {
 			const s = yield* Task.ApiService;
-			return yield* s.createTask({
+			return yield* s.updateTask(task.id, {
 				title,
 				description,
 				project_id: projectId,
@@ -41,7 +42,7 @@
 	}
 </script>
 
-<Dialog title="태스크 생성하기" bind:open {onOpenChange}>
+<Dialog title="태스크 수정하기" bind:open {onOpenChange}>
 	{#snippet content()}
 		<div class="flex w-full flex-col gap-3">
 			<!-- title -->
@@ -85,12 +86,12 @@
 				type="button"
 				filled
 				onclick={async () => {
-					await createTask();
+					await updateTask();
 					onOpenChange?.(false);
 					await invalidateAll();
 				}}
 			>
-				생성
+				수정
 			</Button>
 		</div>
 	{/snippet}

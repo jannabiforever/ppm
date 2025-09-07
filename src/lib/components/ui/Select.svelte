@@ -17,7 +17,7 @@
 <Select.Root type="single" onValueChange={(v) => (selectedValue = v)} {items}>
 	<Select.Trigger
 		aria-label={ariaLabel}
-		class="flex w-full items-center justify-between rounded-sm border border-surface-200-800 px-4 py-4"
+		class="flex w-[220px] items-center justify-between rounded-sm border border-surface-200-800 px-3 py-2"
 	>
 		{@render trigger({ selectedValue })}
 		<ChevronsUpDown {...ICON_PROPS.md} />
@@ -26,7 +26,7 @@
 		<Select.Content
 			side="bottom"
 			sideOffset={10}
-			class="z-50 max-h-96 w-[448px] overflow-hidden rounded-sm border border-surface-200-800 bg-surface-50-950 shadow-xl"
+			class="z-50 max-h-96 w-[220px] overflow-hidden rounded-sm border border-surface-200-800 bg-surface-50-950 shadow-xl"
 		>
 			<Select.ScrollUpButton
 				class="flex w-full items-center justify-center py-1 hover:bg-surface-100-900"

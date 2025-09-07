@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { getKstMidnightAsUtc } from '$lib/shared/utils/datetime';
 	import { Duration, DateTime } from 'effect';
 	import { ICON_PROPS } from '../constants';
 	import { CalendarCheck2 } from 'lucide-svelte';
+	import { currentKSTMidnight } from '$lib/stores/time';
+	import { onMount } from 'svelte';
 
 	type Props = {
 		date: DateTime.Utc;
@@ -10,8 +11,10 @@
 
 	let { date }: Props = $props();
 
-	const todayMidnight = getKstMidnightAsUtc(DateTime.unsafeNow());
-	const distanceDuration = DateTime.distanceDuration(todayMidnight, date);
+	const distanceDuration = DateTime.distanceDuration($currentKSTMidnight, date);
+	onMount(() => {
+		console.log('mounted distance', distanceDuration);
+	});
 	const formattedDate = DateTime.formatIntl(
 		date,
 		new Intl.DateTimeFormat('ko-KR', {

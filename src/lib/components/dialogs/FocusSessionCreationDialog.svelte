@@ -34,7 +34,7 @@
 		{#if interval !== null}
 			<div class="flex w-full flex-col gap-3">
 				<div class="flex w-full items-center justify-between">
-					<span>소속 프로젝트 선택</span>
+					<span class="text-sm">소속 프로젝트 선택</span>
 					<ProjectSelect />
 				</div>
 

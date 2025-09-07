@@ -14,7 +14,7 @@
 		type TimelineConfig,
 		type TimelineState
 	} from './timeline';
-	import { currentTime } from '$lib/stores/time';
+	import { currentTimeUtc } from '$lib/stores/time';
 
 	type Props = {
 		focusSessionProjectLookups: Array<typeof FocusSessionProjectLookupSchema.Type>;
@@ -31,16 +31,15 @@
 	let calculator = $derived.by(() => {
 		if (typeof window === 'undefined' || !containerElement) return undefined;
 		const rect = containerElement.getBoundingClientRect();
-		return new CoordinateCalculator(rect.top, rect.height, currentTimeUtc, timelineConfig);
+		return new CoordinateCalculator(rect.top, rect.height, $currentTimeUtc, timelineConfig);
 	});
 	let timelineState: TimelineState = $state(DEFAULT_TIMELINE_STATE);
 
 	/**
 	 * Current time in DateTime.Utc format.
 	 */
-	let currentTimeUtc = $state(DateTime.unsafeMake(currentTime));
 	let currentTimeHour = $derived.by(() => {
-		const zoned = getKstZoned(currentTimeUtc);
+		const zoned = getKstZoned($currentTimeUtc);
 		return DateTime.getPart(zoned, 'hours');
 	});
 

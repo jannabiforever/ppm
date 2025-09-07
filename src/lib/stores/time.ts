@@ -1,10 +1,14 @@
-import { SvelteDate } from 'svelte/reactivity';
+import { readable, derived } from 'svelte/store';
+import { DateTime } from 'effect';
+import { getKstMidnightAsUtc } from '$lib/shared/utils/datetime';
 
-/**
- * 현재 시간을 추적하는 store.
- */
-export const currentTime = new SvelteDate();
+// time store
+export const currentTime = readable(new Date(), (set) => {
+	const id = setInterval(() => set(new Date()), 10_000);
+	return () => clearInterval(id);
+});
 
-setInterval(() => {
-	currentTime.setTime(new Date().getTime());
-}, 1000);
+// effect/DateTime current time store
+export const currentTimeUtc = derived(currentTime, ($t) => DateTime.unsafeFromDate($t));
+
+export const currentKSTMidnight = derived(currentTimeUtc, ($utc) => getKstMidnightAsUtc($utc));

@@ -48,10 +48,8 @@
 	</button>
 </div>
 
-{#if dialogOpen}
-	<TaskCreationDialog
-		projectId={page.params.projectId}
-		bind:open={dialogOpen}
-		onOpenChange={() => (dialogOpen = false)}
-	/>
-{/if}
+<TaskCreationDialog
+	projectId={page.params.projectId}
+	bind:open={dialogOpen}
+	onOpenChange={() => (dialogOpen = false)}
+/>

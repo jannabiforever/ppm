@@ -18,7 +18,7 @@
 		</a>
 
 		<!-- dropdown menu -->
-		<div class="mr-1 flex">
+		<div class="mr-1">
 			<ProjectDropdownMenu {project} />
 		</div>
 	</div>
