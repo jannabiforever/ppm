@@ -1,5 +1,5 @@
 <script lang="ts">
-	import FocusSessionCreationDialog from '../dialogs/FocusSessionCreationDialog.svelte';
+	import FocusSessionCreationDialog from '../focus_session/FocusSessionCreationDialog.svelte';
 	import TimelineFocusSessionCard from './TimelineFocusSessionCard.svelte';
 	import type { FocusSessionProjectLookupSchema } from '$lib/applications/session-project-lookup/types';
 	import { DateTime } from 'effect';
@@ -189,7 +189,7 @@
 
 		<!-- current time indicator -->
 		{#if currentTimeHour > timelineConfig.startHour && currentTimeHour < timelineConfig.endHour}
-			{@render timeIndicator(currentTimeUtc)}
+			{@render timeIndicator($currentTimeUtc)}
 		{/if}
 
 		<!-- Session Creating -->
@@ -229,7 +229,7 @@
 	<FocusSessionCreationDialog
 		open={timelineState.type === 'dialog-open'}
 		interval={getInterval(timelineState)}
-		onOpenChange={(open) => {
+		onOpenChange={(open: boolean) => {
 			if (open) {
 				timelineState.type = 'dialog-open';
 			} else {
