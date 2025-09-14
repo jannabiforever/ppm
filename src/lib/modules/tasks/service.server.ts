@@ -6,7 +6,11 @@ import { TaskQuerySchema, TaskSchema, TaskInsertSchema, TaskUpdateSchema } from 
 import { NotFound, InvalidProject, InvalidSession, HasDependencies } from './errors';
 
 /**
- * 태스크 데이터의 생성, 조회, 수정, 삭제를 관리한다
+ * Task Service
+ *
+ * @description
+ * Manages the creation, retrieval, update, and deletion of task data.
+ * This service provides a comprehensive API for task management within the application.
  */
 export class Service extends Effect.Service<Service>()('TaskService', {
 	effect: Effect.gen(function* () {
@@ -16,7 +20,13 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 
 		return {
 			/**
-			 * 새로운 태스크을 생성한다
+			 * Creates a new task
+			 *
+			 * @param payload - The task data to be inserted
+			 * @returns A promise that resolves to the ID of the newly created task
+			 * @throws {Supabase.PostgrestError} When a database error occurs
+			 * @throws {InvalidProject} When the specified project ID does not exist
+			 * @throws {InvalidSession} When the specified session ID does not exist
 			 */
 			createTask: (
 				payload: typeof TaskInsertSchema.Encoded
@@ -55,7 +65,13 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 				),
 
 			/**
-			 * 태스크을 삭제한다
+			 * Deletes an existing task
+			 *
+			 * @param taskId - The unique identifier of the task to delete
+			 * @returns A promise that resolves to void on successful deletion
+			 * @throws {Supabase.PostgrestError} When a database error occurs
+			 * @throws {NotFound} When the specified task does not exist
+			 * @throws {HasDependencies} When the task cannot be deleted due to dependencies
 			 */
 			deleteTask: (
 				taskId: string
@@ -86,7 +102,12 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 				),
 
 			/**
-			 * 특정 태스크의 상세 정보를 조회한다
+			 * Retrieves detailed information for a specific task
+			 *
+			 * @param taskId - The unique identifier of the task to retrieve
+			 * @returns A promise that resolves to the task data
+			 * @throws {Supabase.PostgrestError} When a database error occurs
+			 * @throws {NotFound} When the specified task does not exist
 			 */
 			getTaskById: (
 				taskId: string
@@ -105,7 +126,10 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 				),
 
 			/**
-			 * 오늘 계획된 태스크 목록을 조회한다
+			 * Retrieves all tasks planned for today
+			 *
+			 * @returns A promise that resolves to an array of tasks scheduled for the current day
+			 * @throws {Supabase.PostgrestError} When a database error occurs
 			 */
 			getTodayTasks: (): Effect.Effect<Array<typeof TaskSchema.Type>, Supabase.PostgrestError> =>
 				Effect.gen(function* () {
@@ -122,7 +146,11 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 				}),
 
 			/**
-			 * 조건에 맞는 태스크 목록을 조회한다
+			 * Retrieves tasks based on specified query parameters
+			 *
+			 * @param query - The query parameters to filter tasks by
+			 * @returns A promise that resolves to an array of tasks matching the criteria
+			 * @throws {Supabase.PostgrestError} When a database error occurs
 			 */
 			getTasks: (
 				query: typeof TaskQuerySchema.Encoded
@@ -151,12 +179,12 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 					}
 
 					if (decodedQuery.date_start) {
-						const dateString = `${decodedQuery.date_start.getFullYear()}-${String(decodedQuery.date_start.getMonth() + 1).padStart(2, '0')}-${String(decodedQuery.date_start.getDate()).padStart(2, '0')}`;
+						const dateString = DateTime.formatIsoDate(decodedQuery.date_start);
 						queryBuilder = queryBuilder.gte('planned_for', dateString);
 					}
 
 					if (decodedQuery.date_end) {
-						const dateString = `${decodedQuery.date_end.getFullYear()}-${String(decodedQuery.date_end.getMonth() + 1).padStart(2, '0')}-${String(decodedQuery.date_end.getDate()).padStart(2, '0')}`;
+						const dateString = DateTime.formatIsoDate(decodedQuery.date_end);
 						queryBuilder = queryBuilder.lte('planned_for', dateString);
 					}
 
@@ -170,7 +198,15 @@ export class Service extends Effect.Service<Service>()('TaskService', {
 				}),
 
 			/**
-			 * 기존 태스크의 정보를 수정한다
+			 * Updates an existing task with new information
+			 *
+			 * @param taskId - The unique identifier of the task to update
+			 * @param payload - The updated task data
+			 * @returns A promise that resolves to void on successful update
+			 * @throws {Supabase.PostgrestError} When a database error occurs
+			 * @throws {NotFound} When the specified task does not exist
+			 * @throws {InvalidProject} When the specified project ID does not exist
+			 * @throws {InvalidSession} When the specified session ID does not exist
 			 */
 			updateTask: (
 				taskId: string,

@@ -1,33 +1,32 @@
-**주의: 명시적으로 시키지 않은 일을 수행하지 말 것**
+**Note: Do not perform tasks that were not explicitly instructed**
 
-# 도메인 정의
+# Domain Definition
 
-도메인 정의는 `doc/PPM.md`를 참고할 것.
-만약 도메인에 추가 변경사항이 생길 시에는 해당 문서를 읽고 업데이트 하는 방향으로 진행. (단, 수정 전에 항상 허락을 받을 것.)
+Refer to `doc/PPM.md` for domain definitions.
+If there are additional changes to the domain, proceed by reading and updating the document. (However, always get permission before making modifications.)
 
-# 테스트
+# Testing
 
-[테스트 규칙](.rules/testing.md)을 따를 것.
+Follow the [testing rules](.rules/testing.md).
 
-# 에러 처리
+# Error Handling
 
-[에러 처리 규칙](.rules/error_handling.md)을 따를 것.
+Follow the [error handling rules](.rules/error_handling.md).
 
-# 로깅
+# Logging
 
-[로깅 규칙](.rules/logging.md)을 따를 것.
+Follow the [logging rules](.rules/logging.md).
 
-# 아키텍쳐
+# Architecture
 
-[아키텍쳐 규칙](.rules/architecture.md)을 따를 것.
+Follow the [architecture rules](.rules/architecture.md).
 
-# 스타일 가이드
+# Style Guide
 
-[스타일 가이드](.rules/style-guide.md)를 따를 것.
+Follow the [style guide](.rules/style-guide.md).
 
-# 주석
+# Comments
 
-함수나 클래스에 대한 주석을 작성할 때에는 최대한 대상의 추상적인 개념만을 설명할 것.
+When writing comments for functions or classes, explain only the abstract concepts of the target as much as possible.
 
-- 구체 구현에 대한 주석이 들어가는 순간, 나중에 내부 로직을 바꿨을 때 주석이 수정되는 것이 강요되지 않기 때문에
-  주석과 코드가 다른 구현이 될 수 있기 때문임.
+- The moment comments about specific implementations are included, when internal logic is changed later, comments might not be updated, which can lead to discrepancies between comments and code.

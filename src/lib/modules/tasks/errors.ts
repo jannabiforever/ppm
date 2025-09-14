@@ -1,46 +1,51 @@
 import { Data } from 'effect';
 
 /**
- * 주어진 id에 대응되는 태스크가 조회되지 않았을 때 발생하는 에러
+ * Error thrown when a task with the given ID is not found.
+ * This can occur during read, update, or delete operations.
  */
 export class NotFound extends Data.TaggedError('Task/NotFound')<{
 	/**
-	 * 조회 시도한 taskId
+	 * The ID of the task that was attempted to be accessed
 	 */
 	readonly taskId: string;
 }> {}
 
 /**
- * 유효하지 않은 프로젝트에 태스크를 연결하려 할 때 발생하는 에러
+ * Error thrown when attempting to associate a task with a non-existent or inaccessible project.
+ * Tasks can only be linked to projects owned by the same user.
  */
 export class InvalidProject extends Data.TaggedError('Task/InvalidProject')<{
 	/**
-	 * 연결 시도했으나 발견되지 않은 projectId
+	 * The ID of the project that was not found or is inaccessible
 	 */
 	readonly projectId: string;
 }> {}
 
 /**
- * 유효하지 않은 세션에 태스크를 연결하려 할 때 발생하는 에러
+ * Error thrown when attempting to associate a task with a non-existent or inaccessible session.
+ * This typically occurs when marking a task as completed within a specific focus session.
  */
 export class InvalidSession extends Data.TaggedError('Task/InvalidSession')<{
 	/**
-	 * 연결 시도했으나 발견되지 않은 sessionId
+	 * The ID of the session that was not found or is inaccessible
 	 */
 	readonly sessionId: string;
 }> {}
 
 /**
- * 태스크가 다른 리소스에서 참조되고 있어 삭제할 수 없을 때 발생하는 에러
+ * Error thrown when attempting to delete a task that has dependencies.
+ * This occurs when the task is referenced by other resources and cannot be safely removed.
  */
 export class HasDependencies extends Data.TaggedError('Task/HasDependencies')<{
 	/**
-	 * 삭제 시도한 taskId
+	 * The ID of the task that was attempted to be deleted
 	 */
 	readonly taskId: string;
 }> {}
 
 /**
- * 태스크 관련 에러
+ * Union type of all possible errors that can occur in the task module.
+ * Used for comprehensive error handling in task operations.
  */
 export type Error = NotFound | InvalidProject | InvalidSession | HasDependencies;

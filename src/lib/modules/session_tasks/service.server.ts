@@ -5,16 +5,19 @@ import { PaginationQuerySchema } from '$lib/shared/pagination';
 import { TaskAlreadyInSessionError, TaskNotInSessionError } from './errors';
 import { SessionTaskSchema } from './types';
 
+/**
+ * Service class for managing the relationship between focus sessions and tasks.
+ * Provides methods for adding/removing tasks from sessions and querying session-task associations.
+ */
 export class Service extends Effect.Service<Service>()('SessionTaskRepository', {
 	effect: Effect.gen(function* () {
 		const supabase = yield* Supabase.Service;
 		const client = yield* supabase.getClient();
-		// 1. 세션-태스크 연결 관리
+		// 1. Session-Task Association Management
 
-		// 세션에 태스크 추가
 		const addTaskToSession = (params: { session_id: string; task_id: string }) =>
 			Effect.gen(function* () {
-				// 이미 추가되어 있는지 확인
+				// Check if already added
 				const existing = yield* getSessionTask(params);
 				if (Option.isSome(existing)) {
 					return yield* Effect.fail(
@@ -25,7 +28,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 					);
 				}
 
-				// 추가
+				// Add the task
 				const data = {
 					session_id: params.session_id,
 					task_id: params.task_id
@@ -37,10 +40,9 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				);
 			});
 
-		// 세션에서 태스크 제거
 		const removeTaskFromSession = (params: { session_id: string; task_id: string }) =>
 			Effect.gen(function* () {
-				// 존재하는지 확인
+				// Check if exists
 				const existing = yield* getSessionTask(params);
 				if (Option.isNone(existing)) {
 					return yield* Effect.fail(
@@ -51,7 +53,7 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 					);
 				}
 
-				// 제거
+				// Remove the task
 				return yield* Effect.promise(() =>
 					client
 						.from('session_tasks')
@@ -61,21 +63,20 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				).pipe(Effect.flatMap(Supabase.mapPostgrestResponse), Effect.asVoid);
 			});
 
-		// 여러 태스크를 한번에 추가
 		const addTasksToSession = (params: { session_id: string; task_ids: readonly string[] }) =>
 			Effect.gen(function* () {
-				// 이미 추가된 태스크들 확인
+				// Check existing tasks
 				const existingTasks = yield* getTasksBySession(params.session_id);
 				const existingTaskIds = new Set(existingTasks.map((st) => st.task_id));
 
-				// 새로 추가할 태스크들만 필터링
+				// Filter only new tasks to add
 				const newTaskIds = params.task_ids.filter((id) => !existingTaskIds.has(id));
 
 				if (newTaskIds.length === 0) {
 					return;
 				}
 
-				// 벌크 추가
+				// Bulk insert
 				const data = newTaskIds.map((task_id) => ({
 					session_id: params.session_id,
 					task_id
@@ -87,16 +88,14 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				);
 			});
 
-		// 세션의 모든 태스크 연결 제거
 		const clearSessionTasks = (session_id: string) =>
 			Effect.promise(() => client.from('session_tasks').delete().eq('session_id', session_id)).pipe(
 				Effect.flatMap(Supabase.mapPostgrestResponse),
 				Effect.asVoid
 			);
 
-		// 2. 조회 기능
+		// 2. Query Functions
 
-		// 세션의 태스크 목록 조회
 		const getTasksBySession = (
 			session_id: string,
 			pagination?: S.Schema.Type<typeof PaginationQuerySchema>
@@ -120,7 +119,6 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				);
 			});
 
-		// 태스크가 속한 세션 목록 조회
 		const getSessionsByTask = (
 			task_id: string,
 			pagination?: S.Schema.Type<typeof PaginationQuerySchema>
@@ -146,7 +144,6 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				);
 			});
 
-		// 특정 세션-태스크 연결 조회
 		const getSessionTask = (params: { session_id: string; task_id: string }) =>
 			Effect.promise(() =>
 				client
@@ -167,10 +164,9 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				)
 			);
 
-		// 현재 활성 세션의 태스크 목록
 		const getActiveSessionTasks = () =>
 			Effect.gen(function* () {
-				// 현재 활성 세션 찾기
+				// Find current active session
 				const now = DateTime.formatIso(DateTime.unsafeNow());
 				const sessionResult = yield* Effect.promise(() =>
 					client
@@ -189,7 +185,6 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				return yield* getTasksBySession(sessionResult.value.id);
 			});
 
-		// 특정 기간 동안의 세션-태스크 연결 조회
 		const getSessionTasksInRange = (params: {
 			from_date: S.Schema.Type<typeof S.DateTimeUtc>;
 			to_date: S.Schema.Type<typeof S.DateTimeUtc>;
@@ -218,19 +213,17 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				);
 			});
 
-		// 3. 검증 및 비즈니스 로직
+		// 3. Validation and Business Logic
 
-		// 태스크가 현재 세션에 있는지 확인
 		const isTaskInSession = (params: { session_id: string; task_id: string }) =>
 			Effect.gen(function* () {
 				const result = yield* getSessionTask(params);
 				return Option.isSome(result);
 			});
 
-		// 태스크가 다른 활성 세션에 있는지 확인
 		const isTaskInActiveSession = (task_id: string) =>
 			Effect.gen(function* () {
-				// 현재 활성 세션 찾기
+				// Find current active session
 				const now = DateTime.formatIso(DateTime.unsafeNow());
 				const result = yield* Effect.promise(() =>
 					client
@@ -246,7 +239,6 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 				return Option.isSome(result);
 			});
 
-		// 세션의 태스크 개수 조회
 		const getSessionTaskCount = (session_id: string) =>
 			Effect.gen(function* () {
 				const result = yield* Effect.promise(() =>
@@ -264,22 +256,116 @@ export class Service extends Effect.Service<Service>()('SessionTaskRepository', 
 			});
 
 		return {
-			// 세션-태스크 연결 관리
+			// Session-Task Association Management
+			/**
+			 * Adds a task to a focus session.
+			 * Checks if the task is already in the session before adding.
+			 *
+			 * @param params - Object containing session_id and task_id
+			 * @returns Effect containing void or an error
+			 * @throws {TaskAlreadyInSessionError} When the task is already in the session
+			 * @throws {Supabase.PostgrestError} When database operation fails
+			 */
 			addTaskToSession,
+			/**
+			 * Removes a task from a focus session.
+			 * Checks if the task exists in the session before removing.
+			 *
+			 * @param params - Object containing session_id and task_id
+			 * @returns Effect containing void or an error
+			 * @throws {TaskNotInSessionError} When the task is not in the session
+			 * @throws {Supabase.PostgrestError} When database operation fails
+			 */
 			removeTaskFromSession,
+			/**
+			 * Adds multiple tasks to a focus session in bulk.
+			 * Filters out tasks that are already in the session.
+			 *
+			 * @param params - Object containing session_id and an array of task_ids
+			 * @returns Effect containing void or an error
+			 * @throws {Supabase.PostgrestError} When database operation fails
+			 */
 			addTasksToSession,
+			/**
+			 * Removes all tasks from a focus session.
+			 *
+			 * @param session_id - The ID of the session to clear
+			 * @returns Effect containing void or an error
+			 * @throws {Supabase.PostgrestError} When database operation fails
+			 */
 			clearSessionTasks,
 
-			// 조회 기능
+			// Query Functions
+			/**
+			 * Retrieves all tasks associated with a specific session.
+			 * Results are ordered by added_at in descending order.
+			 *
+			 * @param session_id - The ID of the session
+			 * @param pagination - Optional pagination parameters
+			 * @returns Effect containing an array of SessionTask objects
+			 * @throws {Supabase.PostgrestError} When database operation fails
+			 */
 			getTasksBySession,
+			/**
+			 * Retrieves all sessions that contain a specific task.
+			 * Results are ordered by added_at in descending order.
+			 *
+			 * @param task_id - The ID of the task
+			 * @param pagination - Optional pagination parameters
+			 * @returns Effect containing an array of SessionTask objects
+			 * @throws {Supabase.PostgrestError} When database operation fails
+			 */
 			getSessionsByTask,
+			/**
+			 * Retrieves a specific session-task association.
+			 *
+			 * @param params - Object containing session_id and task_id
+			 * @returns Effect containing Option of SessionTask (None if not found)
+			 * @throws {Supabase.PostgrestError} When database operation fails
+			 */
 			getSessionTask,
+			/**
+			 * Retrieves all tasks from the currently active focus session.
+			 * A session is considered active if the current time is between its start and end times.
+			 *
+			 * @returns Effect containing an array of SessionTask objects (empty if no active session)
+			 * @throws {Supabase.PostgrestError} When database operation fails
+			 */
 			getActiveSessionTasks,
+			/**
+			 * Retrieves all session-task associations created within a specific date range.
+			 * Results are ordered by added_at in descending order.
+			 *
+			 * @param params - Object containing from_date, to_date, and optional pagination
+			 * @returns Effect containing an array of SessionTask objects
+			 * @throws {Supabase.PostgrestError} When database operation fails
+			 */
 			getSessionTasksInRange,
 
-			// 검증 및 비즈니스 로직
+			// Validation and Business Logic
+			/**
+			 * Checks if a task is currently associated with a specific session.
+			 *
+			 * @param params - Object containing session_id and task_id
+			 * @returns Effect containing boolean (true if task is in session)
+			 * @throws {Supabase.PostgrestError} When database operation fails
+			 */
 			isTaskInSession,
+			/**
+			 * Checks if a task is associated with any currently active session.
+			 *
+			 * @param task_id - The ID of the task to check
+			 * @returns Effect containing boolean (true if task is in an active session)
+			 * @throws {Supabase.PostgrestError} When database operation fails
+			 */
 			isTaskInActiveSession,
+			/**
+			 * Counts the number of tasks associated with a specific session.
+			 *
+			 * @param session_id - The ID of the session
+			 * @returns Effect containing the count of tasks
+			 * @throws {Supabase.PostgrestError} When database operation fails
+			 */
 			getSessionTaskCount
 		};
 	})

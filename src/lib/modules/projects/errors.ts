@@ -1,36 +1,40 @@
 import { Data } from 'effect';
 
 /**
- * 주어진 id에 대응되는 프로젝트가 조회되지 않았을 때 발생하는 에러
+ * Error thrown when a project with the given ID is not found.
+ * This can occur during read, update, or delete operations.
  */
 export class NotFound extends Data.TaggedError('Project/NotFound')<{
 	/**
-	 * 조회 시도된 id
+	 * The ID of the project that was attempted to be accessed
 	 */
 	projectId: string;
 }> {}
 
 /**
- * 프로젝트 이름이 이미 존재할 때 발생하는 에러
+ * Error thrown when attempting to create or update a project with a name that already exists.
+ * Project names must be unique within a user's projects.
  */
 export class NameAlreadyExists extends Data.TaggedError('Project/NameAlreadyExists')<{
 	/**
-	 * 충돌되는 이름
+	 * The conflicting project name
 	 */
 	name: string;
 }> {}
 
 /**
- * 프로젝트가 다른 리소스에서 참조되고 있어 삭제할 수 없을 때 발생하는 에러
+ * Error thrown when attempting to delete a project that has dependencies.
+ * This occurs when the project is referenced by other resources such as tasks or sessions.
  */
 export class HasDependencies extends Data.TaggedError('Project/HasDependencies')<{
 	/**
-	 * 삭제 시도된 project id
+	 * The ID of the project that was attempted to be deleted
 	 */
 	projectId: string;
 }> {}
 
 /**
- * 프로젝트 모듈 관련 에러
+ * Union type of all possible errors that can occur in the project module.
+ * Used for comprehensive error handling in project operations.
  */
 export type Error = NotFound | NameAlreadyExists | HasDependencies;
