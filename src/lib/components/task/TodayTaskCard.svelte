@@ -1,8 +1,8 @@
 <script lang="ts">
 	import ProjectLabel from '../project/ProjectLabel.svelte';
 	import TaskStatusIcon from './TaskStatusIcon.svelte';
-	import type { ProjectSchema } from '$lib/modules/projects';
-	import type { TaskSchema } from '$lib/modules/tasks';
+	import type { ProjectSchema } from '$lib/modules/repository/projects';
+	import type { TaskSchema } from '$lib/modules/repository/tasks';
 	import { Separator } from 'bits-ui';
 
 	interface Props {

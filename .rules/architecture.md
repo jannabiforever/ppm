@@ -13,10 +13,24 @@ Objects, functions, or test helper functions that are commonly used across all s
 
 # Modules
 
-Modules that directly interact with infrastructure are located in the 'src/lib/modules' folder.
+Modules are organized into two categories under 'src/lib/modules':
 
-For example, repository pattern services that directly call the Supabase API,
-or services that use external modules like Redis, AWS S3, etc. should be placed here.
+## Infrastructure (src/lib/modules/infra)
+
+Core infrastructure services that provide foundational functionality:
+- `supabase` - Supabase client, authentication, and database connection management
+- `auth` - Authentication operations (sign in, sign out, OAuth)
+
+## Repository (src/lib/modules/repository)
+
+Repository pattern services that handle data persistence and retrieval:
+- `projects` - Project data management
+- `tasks` - Task data management  
+- `focus_sessions` - Focus session data management
+- `session_tasks` - Session-task relationship management
+- `user_profile` - User profile data management
+
+These repository services use the infrastructure services to interact with the database.
 
 # Applications
 

@@ -1,10 +1,10 @@
 // 모듈 임포트
-import * as FocusSession from '$lib/modules/focus_sessions';
-import * as Project from '$lib/modules/projects';
-import * as SessionTask from '$lib/modules/session_tasks';
-import * as Task from '$lib/modules/tasks';
-import * as UserProfile from '$lib/modules/user_profile';
-import * as Supabase from '$lib/modules/supabase';
+import * as FocusSession from '$lib/modules/repository/focus_sessions';
+import * as Project from '$lib/modules/repository/projects';
+import * as SessionTask from '$lib/modules/repository/session_tasks';
+import * as Task from '$lib/modules/repository/tasks';
+import * as UserProfile from '$lib/modules/repository/user_profile';
+import * as Supabase from '$lib/modules/infra/supabase';
 
 // 애플리케이션 임포트
 import * as SessionProjectLookup from '$lib/applications/session-project-lookup';

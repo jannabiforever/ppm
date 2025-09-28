@@ -5,7 +5,7 @@
 	import { ICON_PROPS } from '../constants';
 	import type { FocusSessionWithAssignedTasksSchema } from '$lib/applications/session-task-management/types';
 	import { currentTime } from '$lib/stores/time';
-	import { ProjectSchema } from '$lib/modules/projects';
+	import { ProjectSchema } from '$lib/modules/repository/projects';
 
 	type Props = {
 		focusSessionWithAssignedTasks: typeof FocusSessionWithAssignedTasksSchema.Type;

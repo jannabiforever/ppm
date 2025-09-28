@@ -1,6 +1,6 @@
 import * as S from 'effect/Schema';
-import { FocusSessionSchema } from '$lib/modules/focus_sessions';
-import { ProjectSchema } from '$lib/modules/projects';
+import { FocusSessionSchema } from '$lib/modules/repository/focus_sessions';
+import { ProjectSchema } from '$lib/modules/repository/projects';
 
 /**
  * 집중 세션 조회 시, project_id 대신 Project 객체가 필요한 경우 사용

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ProjectSchema } from '$lib/modules/projects';
+	import { ProjectSchema } from '$lib/modules/repository/projects';
 	import { Hash, Inbox } from 'lucide-svelte';
 	import { getIconProps, getTextSizeClass } from '../constants';
 

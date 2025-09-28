@@ -1,5 +1,5 @@
-import * as Supabase from '$lib/modules/supabase';
-import * as UserProfile from '$lib/modules/user_profile';
+import * as Supabase from '$lib/modules/infra/supabase';
+import * as UserProfile from '$lib/modules/repository/user_profile';
 import type { Layer } from 'effect';
 import type { Session, User } from '@supabase/supabase-js';
 

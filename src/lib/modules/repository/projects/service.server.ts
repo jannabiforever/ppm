@@ -1,6 +1,6 @@
 import { Effect } from 'effect';
 import * as Option from 'effect/Option';
-import * as Supabase from '../supabase/index.server';
+import * as Supabase from '../../infra/supabase/index.server';
 import * as S from 'effect/Schema';
 import {
 	ProjectSchema,

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TaskSchema } from '$lib/modules/tasks';
+	import type { TaskSchema } from '$lib/modules/repository/tasks';
 	import { Book, BookX, CircleCheck, BookCheck } from 'lucide-svelte';
 	import { getIconProps, type UISize } from '../constants';
 	import { DateTime } from 'effect';

@@ -4,7 +4,7 @@
 	import TaskEditDialog from './TaskEditDialog.svelte';
 	import { Calendar, Pencil } from 'lucide-svelte';
 	import { ICON_PROPS } from '../constants';
-	import { TaskSchema } from '$lib/modules/tasks';
+	import { TaskSchema } from '$lib/modules/repository/tasks';
 
 	type Props = {
 		task: typeof TaskSchema.Type;

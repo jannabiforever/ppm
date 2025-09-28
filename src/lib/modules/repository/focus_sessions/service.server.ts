@@ -1,5 +1,5 @@
 import { Effect, Option, DateTime } from 'effect';
-import * as Supabase from '../supabase/index.server';
+import * as Supabase from '../../infra/supabase/index.server';
 import * as S from 'effect/Schema';
 import {
 	FocusSessionSchema,

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ProjectSchema } from '$lib/modules/projects';
+	import type { ProjectSchema } from '$lib/modules/repository/projects';
 	import { Archive, Copy, Pencil, Trash } from 'lucide-svelte';
 	import DropdownMenu from '../ui/DropdownMenu.svelte';
 	import DropdownMenuItem from '../ui/DropdownMenuItem.svelte';
