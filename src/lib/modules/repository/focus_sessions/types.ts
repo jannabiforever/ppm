@@ -1,5 +1,5 @@
 import * as S from 'effect/Schema';
-import { PaginationQuerySchema } from '../../shared/pagination';
+import { PaginationQuerySchema } from '$lib/shared/pagination';
 
 /**
  * Schema for a complete focus session entity as stored in the database.

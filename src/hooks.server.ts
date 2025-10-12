@@ -1,7 +1,7 @@
 import * as Either from 'effect/Either';
 import * as Option from 'effect/Option';
-import * as Supabase from '$lib/modules/supabase/index.server';
-import * as UserProfile from '$lib/modules/user_profile/index.server';
+import * as Supabase from '$lib/modules/infra/supabase/index.server';
+import * as UserProfile from '$lib/modules/repository/user_profile/index.server';
 import type { Session, User } from '@supabase/supabase-js';
 import { Effect, Layer, Console } from 'effect';
 import { StatusCodes } from 'http-status-codes';

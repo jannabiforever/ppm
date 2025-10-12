@@ -1,6 +1,6 @@
 <script lang="ts">
 	import icon from '$lib/assets/favicon.svg';
-	import type { UserProfile } from '$lib/modules/user_profile';
+	import type { UserProfile } from '$lib/modules/repository/user_profile';
 	import DarkModeHandler from './DarkModeHandler.svelte';
 
 	interface Props {

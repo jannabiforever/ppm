@@ -1,10 +1,13 @@
 import { Effect } from 'effect';
 import * as Option from 'effect/Option';
-import * as FocusSession from '$lib/modules/focus_sessions/index.server';
-import * as SessionTask from '$lib/modules/session_tasks/index.server';
-import * as Task from '$lib/modules/tasks/index.server';
-import * as Supabase from '$lib/modules/supabase/index.server';
-import { TaskAlreadyInSessionError, TaskNotInSessionError } from '$lib/modules/session_tasks';
+import * as FocusSession from '$lib/modules/repository/focus_sessions/index.server';
+import * as SessionTask from '$lib/modules/repository/session_tasks/index.server';
+import * as Task from '$lib/modules/repository/tasks/index.server';
+import * as Supabase from '$lib/modules/infra/supabase/index.server';
+import {
+	TaskAlreadyInSessionError,
+	TaskNotInSessionError
+} from '$lib/modules/repository/session_tasks';
 import {
 	AddTaskToSessionSchema,
 	RemoveTaskFromSessionSchema,

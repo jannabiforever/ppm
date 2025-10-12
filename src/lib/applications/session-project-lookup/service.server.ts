@@ -1,7 +1,7 @@
 import { Effect } from 'effect';
-import * as Supabase from '$lib/modules/supabase/index.server';
-import * as FocusSession from '$lib/modules/focus_sessions/index.server';
-import * as Project from '$lib/modules/projects/index.server';
+import * as Supabase from '$lib/modules/infra/supabase/index.server';
+import * as FocusSession from '$lib/modules/repository/focus_sessions/index.server';
+import * as Project from '$lib/modules/repository/projects/index.server';
 import { FocusSessionProjectLookupSchema } from './types';
 import { SessionExistsButAssociatedProjectNotFound } from './errors';
 

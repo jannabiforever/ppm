@@ -1,6 +1,6 @@
 import { Effect } from 'effect';
 import * as S from 'effect/Schema';
-import * as Supabase from '$lib/modules/supabase/index.server';
+import * as Supabase from '../supabase/index.server';
 import { SignInSchema, SignUpSchema } from './types';
 
 /**

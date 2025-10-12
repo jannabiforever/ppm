@@ -1,5 +1,5 @@
 import { Effect } from 'effect';
-import * as Supabase from '$lib/modules/supabase/index.server';
+import * as Supabase from '$lib/modules/infra/supabase/index.server';
 import { type Profile, type ProfileInsert, type ProfileUpdate } from './types';
 import { AssociatedProfileNotFound } from './errors';
 

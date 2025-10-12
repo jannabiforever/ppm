@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ProjectSchema } from '$lib/modules/projects';
+	import type { ProjectSchema } from '$lib/modules/repository/projects';
 	import { Separator } from 'bits-ui';
 	import ProjectDropdownMenu from './ProjectDropdownMenu.svelte';
 	import ProjectLabel from './ProjectLabel.svelte';

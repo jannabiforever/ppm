@@ -1,4 +1,4 @@
-import * as Auth from '$lib/modules/auth/index.server';
+import * as Auth from '$lib/modules/infra/auth/index.server';
 import * as Either from 'effect/Either';
 import * as S from 'effect/Schema';
 import { fail, redirect, type Actions } from '@sveltejs/kit';

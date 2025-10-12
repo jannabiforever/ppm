@@ -13,15 +13,35 @@ Objects, functions, or test helper functions that are commonly used across all s
 
 # Modules
 
-Modules that directly interact with infrastructure are located in the 'src/lib/modules' folder.
+Modules are organized into two categories under 'src/lib/modules':
 
-For example, repository pattern services that directly call the Supabase API,
-or services that use external modules like Redis, AWS S3, etc. should be placed here.
+## Infrastructure (src/lib/modules/infra)
+
+Core infrastructure services that provide foundational functionality:
+- `supabase` - Supabase client, authentication, and database connection management
+- `auth` - Authentication operations (sign in, sign out, OAuth)
+- Future infrastructure services like Redis, AWS S3, external APIs, etc. should be placed here
+
+## Repository (src/lib/modules/repository)
+
+Repository pattern services that handle data persistence and retrieval:
+- `projects` - Project data management
+- `tasks` - Task data management
+- `focus_sessions` - Focus session data management
+- `session_tasks` - Session-task relationship management
+- `user_profile` - User profile data management
+
+These repository services use the infrastructure services to interact with the database.
 
 # Applications
 
-Services that implement use cases by utilizing modules (services that use external APIs) should be placed in the 'src/lib/applications' folder.
-For example, if you want to define a service that calls the Supabase API to upload files to S3, you should create a service definition folder like 'src/lib/applications/some-use-case'.
+Services that implement use cases by utilizing modules should be placed in the 'src/lib/applications' folder.
+Application services orchestrate multiple repository/infrastructure modules to implement complex business logic.
+
+Examples:
+- `session-scheduling` - Manages focus session scheduling with conflict detection
+- `session-task-management` - Handles task assignment to sessions
+- `session-project-lookup` - Enriches session data with project information
 
 ## Boundary between Applications and Modules
 
@@ -48,28 +68,62 @@ It may appear that business logic is seeping into modules due to DB constraints,
 
 ### Layer Role Summary
 
-- **Module (Repository/Adapter)**
+- **Infrastructure Module**
+		- Provides access to external systems (databases, APIs, etc.)
+		- Handles authentication and connection management
+		- Technology-specific implementation details
+
+- **Repository Module**
 		- Interface between infrastructure ↔ domain
 		- Interprets DB errors and converts them to domain invariant errors
-		- Unaware of cross-policy or transactions
+		- Single entity CRUD operations
+		- Unaware of cross-entity policies or transactions
 
 - **Application (UseCase)**
 		- Applies cross-entity rules
 		- Combines multiple modules and manages transaction boundaries
+		- Implements complex business workflows
 		- Remaps module errors to its own use case errors
 
 ### Conclusion
 
-- **Module = Invariant/Contract Layer**, **Application = Policy/Orchestration Layer**
-- Interpreting DB constraints in modules is inevitable, but this is **domain invariant naming** not business logic infiltration
-- Cross-policies, transactions, and workflows must be managed at the application layer
+- **Infrastructure = External System Access**, **Repository = Data Persistence**, **Application = Business Logic Orchestration**
+- Interpreting DB constraints in repository modules is inevitable, but this is **domain invariant naming** not business logic infiltration
+- Cross-entity policies, transactions, and complex workflows must be managed at the application layer
 
 # Service Definition Folder Rules
 
-A folder defining an arbitrary service should be structured as follows:
+A folder defining a service should follow this structure:
+
+## Repository Service Structure
 
 ```
-src/lib/modules/focus_sessions
+src/lib/modules/repository/projects
+├── __test__
+│   └── schema.test.ts
+├── api.ts
+├── errors.ts
+├── index.ts
+├── index.server.ts
+├── service.server.ts
+└── types.ts
+```
+
+## Infrastructure Service Structure
+
+```
+src/lib/modules/infra/supabase
+├── cookies.ts
+├── errors.ts
+├── index.server.ts
+├── index.ts
+└── service.server.ts
+```
+
+## Application Service Structure
+
+```
+src/lib/applications/session-scheduling
 ├── __test__
 │   └── schema.test.ts
 ├── api.ts
@@ -84,9 +138,20 @@ src/lib/modules/focus_sessions
 
 A file containing exports that can be used on both client and server. It mainly exports types, schemas, error definitions, and API services.
 
+```typescript
+export * from './types';
+export * from './errors';
+export { ApiService } from './api';
+```
+
 ## index.server.ts
 
 A file containing server-only exports. It exports server-only files such as service.server.ts.
+
+```typescript
+export { Service } from './service.server';
+export * from './errors';
+```
 
 ## api.ts
 
@@ -117,39 +182,89 @@ export class ApiService extends Effect.Service<ApiService>()('api/FocusSession',
 
 Error definition file. Defines errors using `Data.TaggedError`. See error-handling.md for details.
 
+```typescript
+import { Data } from 'effect';
+
+export class NotFound extends Data.TaggedError('Project/NotFound')<{
+	projectId: string;
+}> {}
+
+export class NameAlreadyExists extends Data.TaggedError('Project/NameAlreadyExists')<{
+	name: string;
+}> {}
+```
+
 ## service.server.ts
 
 An `Effect.Service` definition file containing the main logic.
-All services are named `Service` and are distinguished by different tags.
 
-Comments are not added to the service itself, but are instead added to the interfaces.
+### Repository Service Example
 
 ```typescript
 export class Service extends Effect.Service<Service>()('ProjectService', {
 	effect: Effect.gen(function* () {
-	...
+		const supabase = yield* Supabase.Service;
+		const client = yield* supabase.getClient();
+		const user = yield* supabase.getUser();
+
+		return {
+			/**
+			 * Creates a new project for the authenticated user
+			 */
+			createProject: (payload: typeof ProjectInsertSchema.Encoded) =>
+				// Implementation
+		};
 	})
-}) {};
+}) {}
 ```
 
-Each interface method basically uses schema constants defined in `types.ts`,
-with parameters being `typeof Schema.Encode` and the success type of the returned Effect being `typeof Schema.Type`.
+### Infrastructure Service Example
 
 ```typescript
-/**
-	* Retrieves a list of tasks matching the conditions
-	*/
-getTasks: (
-	query: typeof TaskQuerySchema.Encoded
-): Effect.Effect<Array<typeof TaskSchema.Type>, Supabase.PostgrestError> => {};
+export class Service extends Effect.Service<Service>()('infra/supabase', {
+	effect: Effect.gen(function* () {
+		const cookies = yield* Cookies.Service;
+		const client = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, { cookies });
+
+		return {
+			/**
+			 * Retrieves the Supabase client instance
+			 */
+			getClient: (): Effect.Effect<SupabaseClient<Database>> =>
+				Effect.succeed(client),
+		};
+	})
+}) {}
 ```
+
+### Application Service Example
+
+```typescript
+export class Service extends Effect.Service<Service>()('app/SessionScheduling', {
+	effect: Effect.gen(function* () {
+		const focusSessions = yield* FocusSessions.Service;
+		const supabase = yield* Supabase.Service;
+
+		return {
+			/**
+			 * Creates a session with conflict checking
+			 */
+			createSessionWithConflictCheck: (params: typeof CreateSessionWithConflictCheckParamsSchema.Type) =>
+				// Complex orchestration logic
+		};
+	})
+}) {}
+```
+
+Comments are not added to the service itself, but are instead added to the interface methods.
+
+Each interface method uses schema constants defined in `types.ts`:
+- Parameters: `typeof Schema.Encoded`
+- Return type: `Effect.Effect<typeof Schema.Type, ErrorTypes>`
 
 ## types.ts
 
-Schema constant definitions. (Using `effect/Schema`)
-
-Structured as in the example below. All types include their corresponding schemas.
-If there are RPC functions or views related to the service, appropriate schemas should be defined for all of them.
+Schema constant definitions using `effect/Schema`.
 
 ```typescript
 import * as S from 'effect/Schema';
@@ -186,15 +301,15 @@ export const ProjectUpdateSchema = S.Struct({
 
 export const ProjectQuerySchema = S.Struct({
 	name_query: S.optional(S.String),
-	status: S.optional(S.Boolean)
+	active: S.optional(S.Boolean)
 });
 ```
 
-## **test**/schema.test.ts
+All types include their corresponding schemas. If there are RPC functions or views related to the service, appropriate schemas should be defined for all of them.
+
+## __test__/schema.test.ts
 
 A test to check if the automatically generated type definitions from Supabase and schema constants are correctly paired.
-It uses the type definitions generated by Supabase defined in `lib/shared/database.types.ts` and
-the `Equal` helper type defined in `lib/shared/schema/index.ts`:
 
 ```typescript
 import { describe, expect, it } from 'vitest';
@@ -234,3 +349,5 @@ describe('Schema of ProjectUpdate', () => {
 	});
 });
 ```
+
+This test ensures type safety between database-generated types and application schemas.

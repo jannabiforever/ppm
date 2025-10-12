@@ -1,6 +1,6 @@
-export * as Project from './projects/index.server';
-export * as FocusSession from './focus_sessions/index.server';
-export * as SessionTask from './session_tasks/index.server';
-export * as UserProfile from './user_profile/index.server';
-export * as Task from './tasks/index.server';
-export * as Auth from './auth/index.server';
+export * as Project from './repository/projects/index.server';
+export * as FocusSession from './repository/focus_sessions/index.server';
+export * as SessionTask from './repository/session_tasks/index.server';
+export * as UserProfile from './repository/user_profile/index.server';
+export * as Task from './repository/tasks/index.server';
+export * as Auth from './infra/auth/index.server';

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import TaskStatusIcon from './TaskStatusIcon.svelte';
-	import type { TaskSchema } from '$lib/modules/tasks';
+	import type { TaskSchema } from '$lib/modules/repository/tasks';
 	import { Separator } from 'bits-ui';
 	import TaskDueDateSpan from './taskDueDateSpan.svelte';
 	import TaskDropdownMenu from './TaskDropdownMenu.svelte';

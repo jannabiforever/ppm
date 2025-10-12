@@ -1,5 +1,5 @@
-import { FocusSessionSchema } from '$lib/modules/focus_sessions';
-import { TaskSchema } from '$lib/modules/tasks';
+import { FocusSessionSchema } from '$lib/modules/repository/focus_sessions';
+import { TaskSchema } from '$lib/modules/repository/tasks';
 import * as S from 'effect/Schema';
 
 // 세션에 태스크 추가 시 사용하는 파라미터
